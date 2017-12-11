@@ -1,0 +1,10 @@
+[Unit]
+Description=gamemoded
+
+[Service]
+Type=dbus
+BusName=com.feralinteractive.GameMode
+ExecStart=/usr/bin/gamemoded -l
+
+[Install]
+WantedBy=default.target
