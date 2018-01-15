@@ -32,51 +32,74 @@ POSSIBILITY OF SUCH DAMAGE.
 #define _GNU_SOURCE
 
 #include "governors.h"
+#include "config.h"
+#include "governors-query.h"
 #include "logging.h"
 
 #include <linux/limits.h>
 #include <stdio.h>
+#include <sys/wait.h>
 #include <unistd.h>
 
-static char initial[32];
+static const char *initial = NULL;
 
-// Store the initial governor state to be referenced later
+/**
+ * Cache the governor state as seen at startup
+ */
 void update_initial_gov_state()
 {
-	static char *command = "cpugovctl get";
-
-	FILE *f = popen(command, "r");
-	if (!f) {
-		FATAL_ERRORNO("Failed to launch \"%s\" script", command);
-	}
-
-	if (!fgets(initial, sizeof(initial) - 1, f)) {
-		FATAL_ERROR("Failed to get output from \"%s\"", command);
-	}
-
-	pclose(f);
-
-	strtok(initial, "\n");
+	initial = get_gov_state();
 }
 
-// Sets all governors to a value, if NULL argument provided, will reset them back
-void set_governors(const char *value)
+/**
+ * Update the governors to the given argument, via pkexec
+ */
+bool set_governors(const char *value)
 {
-	const char *newval = value ? value : initial;
-	LOG_MSG("Setting governors to %s\n", newval ? newval : "initial values");
+	pid_t p;
+	int status = 0;
+	int ret = 0;
+	int r = -1;
 
-	char command[PATH_MAX] = {};
-	snprintf(command, sizeof(command), "cpugovctl set %s", newval);
+	const char *govern = value ? value : initial;
+	char *exec_args[] = {
+		"/usr/bin/pkexec", LIBEXECDIR "/cpugovctl", "set", (char *)govern, NULL,
+	};
 
-	FILE *f = popen(command, "r");
-	if (!f) {
-		FATAL_ERRORNO("Failed to launch %s script", command);
+	LOG_MSG("Requesting update of governor policy to %s\n", govern);
+
+	if ((p = fork()) < 0) {
+		LOG_ERROR("Failed to fork(): %s\n", strerror(errno));
+		return false;
+	} else if (p == 0) {
+		/* Execute the command */
+		if ((r = execv(exec_args[0], exec_args)) != 0) {
+			LOG_ERROR("Failed to execute cpugovctl helper: %s %s\n", exec_args[1], strerror(errno));
+			exit(EXIT_FAILURE);
+		}
+		_exit(EXIT_SUCCESS);
+	} else {
+		if (waitpid(p, &status, 0) < 0) {
+			LOG_ERROR("Failed to waitpid(%d): %s\n", (int)p, strerror(errno));
+			return false;
+		}
+		/* i.e. sigsev */
+		if (!WIFEXITED(status)) {
+			LOG_ERROR("Child process '%s' exited abnormally\n", exec_args[0]);
+		}
 	}
 
-	pclose(f);
+	if ((ret = WEXITSTATUS(status)) != 0) {
+		LOG_ERROR("Failed to update cpu governor policy\n");
+		return false;
+	}
+
+	return true;
 }
 
-// Return the initial governor
+/**
+ * Return the cached governor seen at startup
+ */
 const char *get_initial_governor()
 {
 	return initial;

@@ -28,20 +28,25 @@ ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 POSSIBILITY OF SUCH DAMAGE.
 
  */
+
 #include "logging.h"
 #include "syslog.h"
 
 static bool use_syslog = false;
 
-// Control if we want to use the system logger
+/**
+ * Control if we want to use the system logger
+ */
 void set_use_syslog(const char *name)
 {
-	// Open the syslog
+	/* Open the syslog */
 	openlog(name, LOG_PID, LOG_DAEMON);
 	use_syslog = true;
 }
 
-// Simple getter for the syslog var
+/**
+ *  Simple getter for the syslog var
+ */
 bool get_use_syslog()
 {
 	return use_syslog;

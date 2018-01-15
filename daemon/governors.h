@@ -28,16 +28,23 @@ ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 POSSIBILITY OF SUCH DAMAGE.
 
  */
-#ifndef _GOVERNORS_GAMEMODE_H_
-#define _GOVERNORS_GAMEMODE_H_
 
-// Store the initial governor state to be referenced later
+#pragma once
+
+#include <stdbool.h>
+
+/**
+ * Store initial governor so we can use it again
+ */
 void update_initial_gov_state();
 
-// Get the initial governor state
+/**
+ * Return the governer set in update_initial_gov_state
+ */
 const char *get_initial_governor();
 
-// Sets all governors to a value, if null argument provided, will reset them back
-void set_governors(const char *value);
-
-#endif // _GOVERNORS_GAMEMODE_H_
+/**
+ * Update all governors to the given value. If this is NULL, restore the
+ * initial governor.
+ */
+bool set_governors(const char *value);

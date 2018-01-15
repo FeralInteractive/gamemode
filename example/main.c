@@ -28,6 +28,7 @@ ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 POSSIBILITY OF SUCH DAMAGE.
 
  */
+
 #include "gamemode_client.h"
 
 #include <stdio.h>
@@ -35,15 +36,15 @@ POSSIBILITY OF SUCH DAMAGE.
 
 int main()
 {
-	// Request we start game mode
+	/* Request we start game mode */
 	if (gamemode_request_start() != 0) {
 		printf("Failed to request gamemode start: %s...\n", gamemode_error_string());
 	}
 
-	// Simulate running a game
+	/* Simulate running a game */
 	sleep(10);
 
-	// Request we end game mode (optional)
+	/* Request we end game mode (optional) */
 	if (gamemode_request_end() != 0) {
 		printf("Failed to request gamemode end: %s...\n", gamemode_error_string());
 	}

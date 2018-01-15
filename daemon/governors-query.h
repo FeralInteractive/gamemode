@@ -31,8 +31,17 @@ POSSIBILITY OF SUCH DAMAGE.
 
 #pragma once
 
+#include <linux/limits.h>
+
+#define MAX_GOVERNORS 128
+#define MAX_GOVERNOR_LENGTH PATH_MAX + 1
+
 /**
- * Attempt daemonization of the process.
- * If this fails, the process will exit
+ * Grab all of the governors
  */
-void daemonize(char *name);
+int fetch_governors(char governors[MAX_GOVERNORS][MAX_GOVERNOR_LENGTH]);
+
+/**
+ * Get the current governor state
+ */
+const char *get_gov_state();

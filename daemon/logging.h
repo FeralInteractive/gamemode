@@ -28,8 +28,8 @@ ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 POSSIBILITY OF SUCH DAMAGE.
 
  */
-#ifndef _LOGGING_GAMEMODE_H_
-#define _LOGGING_GAMEMODE_H_
+
+#pragma once
 
 #include <errno.h>
 #include <stdbool.h>
@@ -39,7 +39,7 @@ POSSIBILITY OF SUCH DAMAGE.
 #include <syslog.h>
 #include <unistd.h>
 
-// Logging helpers
+/* Macros to help with basic logging */
 #define PLOG_MSG(msg, ...) printf(msg, ##__VA_ARGS__)
 #define SYSLOG_MSG(msg, ...) syslog(LOG_INFO, msg, ##__VA_ARGS__)
 #define LOG_MSG(msg, ...)                                                                          \
@@ -62,7 +62,7 @@ POSSIBILITY OF SUCH DAMAGE.
 		}                                                                                          \
 	} while (0)
 
-// Fatal errors trigger an exit
+/* Fatal warnings trigger an exit */
 #define FATAL_ERRORNO(msg, ...)                                                                    \
 	do {                                                                                           \
 		LOG_ERROR(msg " (%s)\n", ##__VA_ARGS__, strerror(errno));                                  \
@@ -74,8 +74,8 @@ POSSIBILITY OF SUCH DAMAGE.
 		exit(EXIT_FAILURE);                                                                        \
 	} while (0)
 
-// Control if we want to use the system logger
+/**
+ * Control if and how how we use syslog
+ */
 void set_use_syslog(const char *name);
 bool get_use_syslog();
-
-#endif //_LOGGING_GAMEMODE_H_

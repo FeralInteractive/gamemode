@@ -28,16 +28,48 @@ ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 POSSIBILITY OF SUCH DAMAGE.
 
  */
-#ifndef _GAME_MODE_GAMEMODE_H_
-#define _GAME_MODE_GAMEMODE_H_
 
-// Initialise or terminate the game mode system
-void init_game_mode();
-void term_game_mode();
+#pragma once
 
-// Add or remove games to the tracker
-// Tracker will automatically start and stop game mode as appropriate
-void register_game(int pid);
-void unregister_game(int pid);
+#include <stdbool.h>
+#include <sys/types.h>
 
-#endif // _GAME_MODE_GAMEMODE_H_
+/**
+ * Opaque context
+ */
+typedef struct GameModeContext GameModeContext;
+
+/**
+ * Return the singleton instance
+ */
+GameModeContext *game_mode_context_instance(void);
+
+/**
+ * Initialise the GameModeContext
+ *
+ * This is performed in a thread-safe fashion.
+ */
+void game_mode_context_init(GameModeContext *self);
+
+/**
+ * Destroy the previously initialised GameModeContext.
+ *
+ * This is performed in a thread safe fashion.
+ */
+void game_mode_context_destroy(GameModeContext *self);
+
+/**
+ * Register a new game client with the context
+ *
+ * @param pid Process ID for the remote client
+ * @returns True if the new client could be registered
+ */
+bool game_mode_context_register(GameModeContext *self, pid_t pid);
+
+/**
+ * Unregister an existing remote game client from the context
+ *
+ * @param pid Process ID for the remote client
+ * @returns True if the client was removed, and existed.
+ */
+bool game_mode_context_unregister(GameModeContext *self, pid_t pid);

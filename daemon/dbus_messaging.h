@@ -28,13 +28,14 @@ ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 POSSIBILITY OF SUCH DAMAGE.
 
  */
-#ifndef _DBUS_MESSAGING_GAMEMODE_H_
-#define _DBUS_MESSAGING_GAMEMODE_H_
+
+#pragma once
 
 #include <stdbool.h>
 
-// Run the main dbus loop
-// Will not return until finished
-void run_dbus_main_loop(bool system_dbus);
+#include "gamemode.h"
 
-#endif // _DBUS_MESSAGING_GAMEMODE_H_
+/**
+ * Run the main D-BUS loop "forever"
+ */
+void game_mode_context_loop(GameModeContext *context);

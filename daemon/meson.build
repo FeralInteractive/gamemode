@@ -1,6 +1,7 @@
 # Convenience library for the duplicated logging functionality
 common_sources = [
     'logging.c',
+    'governors-query.c',
 ]
 
 daemon_common = static_library(
@@ -27,7 +28,11 @@ executable(
     sources: daemon_sources,
     dependencies: [
         link_daemon_common,
+        dep_threads,
         dep_systemd,
+    ],
+    include_directories: [
+        config_h_dir,
     ],
     install: true,
 )
@@ -44,4 +49,5 @@ cpugovctl = executable(
         link_daemon_common,
     ],
     install: true,
+    install_dir: path_libexecdir,
 )

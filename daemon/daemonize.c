@@ -36,10 +36,12 @@ POSSIBILITY OF SUCH DAMAGE.
 #include <sys/types.h>
 #include <unistd.h>
 
-// function to daemonize the process
+/**
+ * Helper to perform standard UNIX daemonization
+ */
 void daemonize(char *name)
 {
-	// Fork once
+	/* Initial fork */
 	pid_t pid = fork();
 	if (pid < 0) {
 		FATAL_ERRORNO("Failed to fork");
@@ -50,7 +52,7 @@ void daemonize(char *name)
 		exit(EXIT_SUCCESS);
 	}
 
-	// Fork a second time
+	/* Fork a second time */
 	pid = fork();
 	if (pid < 0) {
 		FATAL_ERRORNO("Failed to fork");
@@ -58,7 +60,7 @@ void daemonize(char *name)
 		exit(EXIT_SUCCESS);
 	}
 
-	// Continue to set up as a daemon
+	/* Now continue execution */
 	umask(0);
 	if (setsid() < 0) {
 		FATAL_ERRORNO("Failed to create process group\n");
