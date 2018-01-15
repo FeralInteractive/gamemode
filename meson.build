@@ -1,5 +1,5 @@
 project('gamemode', 'c',
-	version : '0.1',
+	version : '0.2',
 	license : 'BSD' )
 cc = meson.get_compiler('c')
 
