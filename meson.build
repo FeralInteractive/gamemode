@@ -1,54 +1,49 @@
-project('gamemode', 'c',
-	default_options : ['c_std=c11'],
-	version : '0.2',
-	license : 'BSD' )
+project(
+    'gamemode',
+    'c',
+    default_options : ['c_std=c11'],
+    version: '0.2',
+    license: 'BSD',
+)
+
 cc = meson.get_compiler('c')
 
-libsystemd = cc.find_library('systemd')
-libdl = cc.find_library('dl')
+path_prefix = get_option('prefix')
+path_bindir = join_paths(path_prefix, get_option('bindir'))
+path_datadir = join_paths(path_prefix, get_option('datadir'))
+path_includedir = join_paths(path_prefix, get_option('includedir'))
+path_libdir = join_paths(path_prefix, get_option('libdir'))
 
-executable( 'gamemoded',
-	'daemon/main.c',
-	'daemon/gamemode.c',
-	'daemon/logging.c',
-	'daemon/daemonize.c',
-	'daemon/dbus_messaging.c',
-	'daemon/governors.c',
-	dependencies: libsystemd,
-	install: true )
+# Find systemd via pkgconfig
+dep_systemd = dependency('libsystemd')
 
-# Main client library to message the daemon
-shared_library( 'gamemode',
-	'lib/client_impl.c',
-	dependencies: libsystemd,
-	install : true )
+# On non glibc systems this might be a stub, i.e. for musl
+libdl = cc.find_library('dl', required: false)
 
-# install the service file
-install_data( 'data/gamemoded.service', install_dir: '/etc/systemd/user' )
+# If the path isn't explicitly set, ask systemd for the systemd user unit directory
+path_systemd_unit_dir = get_option('with-systemd-user-unit-dir')
+if path_systemd_unit_dir == ''
+    message('Asking pkg-config for systemd\'s directories')
+    pkgconfig_systemd = dependency('systemd')
+    path_systemd_unit_dir = pkgconfig_systemd.get_pkgconfig_variable('systemduserunitdir')
+endif
 
-# Small target util to get and set cpu governors
-executable( 'cpugovctl',
-	'daemon/cpugovctl.c',
-	'daemon/logging.c',
-	install : true )
+subdir('lib')
+subdir('daemon')
+subdir('example')
+subdir('data')
 
-# Give cpugovctl the permissions it needs
-meson.add_install_script( 'data/cpugovctl_perms.sh',
-	dependencies : 'cpugovctl' )
+report = [
+    '    Build configuration:',
+    '    ====================',
+    '',
+    '    prefix:                                 @0@'.format(path_prefix),
+    '    bindir:                                 @0@'.format(path_bindir),
+    '    datadir:                                @0@'.format(path_datadir),
+    '    libdir:                                 @0@'.format(path_libdir),
+    '    includedir:                             @0@'.format(path_includedir),
+    '    systemd user unit directory:            @0@'.format(path_systemd_unit_dir),
+]
 
-# Small library to automatically use gamemode
-shared_library( 'gamemodeauto',
-	'lib/client_loader.c',
-	dependencies : libdl,
-	install : true )
-
-# Install the gamemode_client header
-install_headers( 'lib/gamemode_client.h' )
-
-# An example game
-libdir = include_directories('lib')
-executable( 'example',
-	'example/main.c',
-	dependencies : libdl,
-	include_directories : libdir )
-
+# Output some stuff to validate the build config
+message('\n\n\n' + '\n'.join(report) + '\n\n')

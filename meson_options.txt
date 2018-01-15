@@ -1,0 +1,1 @@
+option('with-systemd-user-unit-dir', type: 'string', description: 'Explicitly set the systemd user unit directory')

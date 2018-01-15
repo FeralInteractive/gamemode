@@ -4,7 +4,7 @@ set -e
 
 # Echo the rest so it's obvious
 set -x
-meson --prefix=/usr build
+meson --prefix=/usr build -Dwith-systemd-user-unit-dir=/etc/systemd/user
 cd build
 ninja
 
