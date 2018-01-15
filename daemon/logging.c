@@ -34,10 +34,10 @@ POSSIBILITY OF SUCH DAMAGE.
 static bool use_syslog = false;
 
 // Control if we want to use the system logger
-void set_use_syslog( const char* name )
+void set_use_syslog(const char *name)
 {
 	// Open the syslog
-	openlog( name, LOG_PID, LOG_DAEMON );
+	openlog(name, LOG_PID, LOG_DAEMON);
 	use_syslog = true;
 }
 

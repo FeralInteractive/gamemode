@@ -33,6 +33,6 @@ POSSIBILITY OF SUCH DAMAGE.
 
 // Function to daemonize the process
 // Exits with error in case of failure
-void daemonize( char* name );
+void daemonize(char *name);
 
 #endif // _DAEMONIZE_GAMEMODE_H_

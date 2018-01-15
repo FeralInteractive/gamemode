@@ -28,49 +28,57 @@ ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 POSSIBILITY OF SUCH DAMAGE.
 
  */
-#include <stdio.h>
-#include <stdlib.h>
-#include <unistd.h>
 #include <dlfcn.h>
 #include <errno.h>
+#include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include <systemd/sd-bus.h>
+#include <unistd.h>
 
 // Storage for error strings
 static char error_string[512] = {};
 
 // Simple requestor function for a gamemode
-static int gamemode_request( const char* function )
+static int gamemode_request(const char *function)
 {
-	sd_bus_message* msg = NULL;
-	sd_bus* bus = NULL;
+	sd_bus_message *msg = NULL;
+	sd_bus *bus = NULL;
 
 	int result = -1;
 
 	// Open the user bus
 	int ret = sd_bus_open_user(&bus);
-	if( ret < 0 )
-		snprintf( error_string, sizeof(error_string), "Could not connect to bus: %s", strerror(-ret) );
-	else
-	{
+	if (ret < 0) {
+		snprintf(error_string,
+		         sizeof(error_string),
+		         "Could not connect to bus: %s",
+		         strerror(-ret));
+	} else {
 		// Attempt to send the requested function
-		ret = sd_bus_call_method( bus,
-			"com.feralinteractive.GameMode",
-			"/com/feralinteractive/GameMode",
-			"com.feralinteractive.GameMode",
-			function,
-			NULL,
-			&msg,
-			"i",
-			getpid() );
-		if( ret < 0 )
-			snprintf( error_string, sizeof(error_string), "Could not call method on bus: %s", strerror(-ret) );
-		else
-		{
+		ret = sd_bus_call_method(bus,
+		                         "com.feralinteractive.GameMode",
+		                         "/com/feralinteractive/GameMode",
+		                         "com.feralinteractive.GameMode",
+		                         function,
+		                         NULL,
+		                         &msg,
+		                         "i",
+		                         getpid());
+		if (ret < 0) {
+			snprintf(error_string,
+			         sizeof(error_string),
+			         "Could not call method on bus: %s",
+			         strerror(-ret));
+		} else {
 			// Read the reply
-			ret = sd_bus_message_read( msg, "i", &result );
-			if( ret < 0 )
-				snprintf( error_string, sizeof(error_string), "Failure to parse response: %s", strerror(-ret) );
+			ret = sd_bus_message_read(msg, "i", &result);
+			if (ret < 0) {
+				snprintf(error_string,
+				         sizeof(error_string),
+				         "Failure to parse response: %s",
+				         strerror(-ret));
+			}
 		}
 	}
 
@@ -78,7 +86,7 @@ static int gamemode_request( const char* function )
 }
 
 // Get the error string
-extern const char* real_gamemode_error_string()
+extern const char *real_gamemode_error_string()
 {
 	return error_string;
 }
@@ -86,12 +94,11 @@ extern const char* real_gamemode_error_string()
 // Wrapper to call RegisterGame
 extern int real_gamemode_request_start()
 {
-	return gamemode_request( "RegisterGame" );
+	return gamemode_request("RegisterGame");
 }
 
 // Wrapper to call UnregisterGame
 extern int real_gamemode_request_end()
 {
-	return gamemode_request( "UnregisterGame" );
+	return gamemode_request("UnregisterGame");
 }
-

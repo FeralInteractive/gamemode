@@ -29,126 +29,125 @@ POSSIBILITY OF SUCH DAMAGE.
 
  */
 #include "dbus_messaging.h"
-#include "logging.h"
+#include "daemonize.h"
 #include "gamemode.h"
 #include "governors.h"
-#include "daemonize.h"
+#include "logging.h"
 
 #include <stdlib.h>
 
 #include <systemd/sd-bus.h>
 
 // sd-bus tracker values
-static sd_bus*      bus  = NULL;
-static sd_bus_slot* slot = NULL;
+static sd_bus *bus = NULL;
+static sd_bus_slot *slot = NULL;
 
 // Clean up any resources as needed
 static void clean_up()
 {
-	if( slot )
-		sd_bus_slot_unref( slot );
+	if (slot) {
+		sd_bus_slot_unref(slot);
+	}
 	slot = NULL;
-	if( bus )
-		sd_bus_unref( bus );
+	if (bus) {
+		sd_bus_unref(bus);
+	}
 	bus = NULL;
 }
 
 // Callback for RegisterGame
-static int method_register_game( sd_bus_message *m,
-		void *userdata,
-		sd_bus_error *ret_error )
+static int method_register_game(sd_bus_message *m, void *userdata, sd_bus_error *ret_error)
 {
 	int pid = 0;
 
-	int ret = sd_bus_message_read( m, "i", &pid );
-	if( ret < 0 )
-	{
-		LOG_ERROR( "Failed to parse input parameters: %s\n", strerror(-ret) );
+	int ret = sd_bus_message_read(m, "i", &pid);
+	if (ret < 0) {
+		LOG_ERROR("Failed to parse input parameters: %s\n", strerror(-ret));
 		return ret;
 	}
 
-	register_game( pid );
+	register_game(pid);
 
-	return sd_bus_reply_method_return( m, "i", 0 );
+	return sd_bus_reply_method_return(m, "i", 0);
 }
 
 // Callback for UnregisterGame
-static int method_unregister_game( sd_bus_message *m,
-		void *userdata,
-		sd_bus_error *ret_error )
+static int method_unregister_game(sd_bus_message *m, void *userdata, sd_bus_error *ret_error)
 {
 	int pid = 0;
 
-	int ret = sd_bus_message_read( m, "i", &pid );
-	if( ret < 0 )
-	{
-		LOG_ERROR( "Failed to parse input parameters: %s\n", strerror(-ret) );
+	int ret = sd_bus_message_read(m, "i", &pid);
+	if (ret < 0) {
+		LOG_ERROR("Failed to parse input parameters: %s\n", strerror(-ret));
 		return ret;
 	}
 
-	unregister_game( pid );
+	unregister_game(pid);
 
-	return sd_bus_reply_method_return( m, "i", 0 );
+	return sd_bus_reply_method_return(m, "i", 0);
 }
 
 // Vtable for function dispatch
-static const sd_bus_vtable gamemode_vtable[] = {
-	SD_BUS_VTABLE_START( 0 ),
-	SD_BUS_METHOD( "RegisterGame",   "i", "i", method_register_game,     SD_BUS_VTABLE_UNPRIVILEGED ),
-	SD_BUS_METHOD( "UnregisterGame", "i", "i", method_unregister_game,   SD_BUS_VTABLE_UNPRIVILEGED ),
-	SD_BUS_VTABLE_END
-};
+static const sd_bus_vtable gamemode_vtable[] =
+    { SD_BUS_VTABLE_START(0),
+	  SD_BUS_METHOD("RegisterGame", "i", "i", method_register_game, SD_BUS_VTABLE_UNPRIVILEGED),
+	  SD_BUS_METHOD("UnregisterGame", "i", "i", method_unregister_game, SD_BUS_VTABLE_UNPRIVILEGED),
+	  SD_BUS_VTABLE_END };
 
 // Main loop, will not return until something request a quit
-void run_dbus_main_loop( bool system_dbus )
+void run_dbus_main_loop(bool system_dbus)
 {
 	// Set up function to handle clean up of resources
-	atexit( clean_up );
+	atexit(clean_up);
 	int ret = 0;
-	
-	// Connec to the desired bus
-	if( system_dbus )
-		ret = sd_bus_open_system( &bus );
-	else
-		ret = sd_bus_open_user( &bus );
 
-	if( ret < 0 )
-		FATAL_ERROR( "Failed to connect to the bus: %s", strerror(-ret) );
+	// Connec to the desired bus
+	if (system_dbus) {
+		ret = sd_bus_open_system(&bus);
+	} else {
+		ret = sd_bus_open_user(&bus);
+	}
+
+	if (ret < 0) {
+		FATAL_ERROR("Failed to connect to the bus: %s", strerror(-ret));
+	}
 
 	// Create the object to allow connections
-	ret = sd_bus_add_object_vtable( bus,
-			&slot,
-			"/com/feralinteractive/GameMode",
-			"com.feralinteractive.GameMode",
-			gamemode_vtable,
-			NULL );
+	ret = sd_bus_add_object_vtable(bus,
+	                               &slot,
+	                               "/com/feralinteractive/GameMode",
+	                               "com.feralinteractive.GameMode",
+	                               gamemode_vtable,
+	                               NULL);
 
-	if( ret < 0 )
-		FATAL_ERROR( "Failed to install GameMode object: %s", strerror(-ret) );
+	if (ret < 0) {
+		FATAL_ERROR("Failed to install GameMode object: %s", strerror(-ret));
+	}
 
 	// Request our name
-	ret = sd_bus_request_name( bus, "com.feralinteractive.GameMode", 0 );
-	if( ret < 0 )
-		FATAL_ERROR( "Failed to acquire service name: %s", strerror(-ret) );
+	ret = sd_bus_request_name(bus, "com.feralinteractive.GameMode", 0);
+	if (ret < 0) {
+		FATAL_ERROR("Failed to acquire service name: %s", strerror(-ret));
+	}
 
-	LOG_MSG( "Successfully initialised bus with name [%s]...\n", "com.feralinteractive.GameMode" );
+	LOG_MSG("Successfully initialised bus with name [%s]...\n", "com.feralinteractive.GameMode");
 
 	// Now loop, waiting for callbacks
-	for(;;)
-	{
-		ret = sd_bus_process( bus, NULL );
-		if( ret < 0 )
-			FATAL_ERROR( "Failure when processing the bus: %s", strerror(-ret) );
+	for (;;) {
+		ret = sd_bus_process(bus, NULL);
+		if (ret < 0) {
+			FATAL_ERROR("Failure when processing the bus: %s", strerror(-ret));
+		}
 
 		// We're done processing
-		if( ret > 0 )
+		if (ret > 0) {
 			continue;
+		}
 
 		// Wait for more
-		ret = sd_bus_wait( bus, (uint64_t)-1 );
-		if( ret < 0 && -ret != EINTR )
-			FATAL_ERROR( "Failure when waiting on bus: %s", strerror(-ret) );
+		ret = sd_bus_wait(bus, (uint64_t)-1);
+		if (ret < 0 && -ret != EINTR) {
+			FATAL_ERROR("Failure when waiting on bus: %s", strerror(-ret));
+		}
 	}
 }
-
-

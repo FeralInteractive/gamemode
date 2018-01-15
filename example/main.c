@@ -30,19 +30,21 @@ POSSIBILITY OF SUCH DAMAGE.
  */
 #include "gamemode_client.h"
 
-#include <unistd.h>
 #include <stdio.h>
+#include <unistd.h>
 
-int main(){
+int main()
+{
 	// Request we start game mode
-	if( gamemode_request_start() != 0 )
-		printf( "Failed to request gamemode start: %s...\n", gamemode_error_string() );
+	if (gamemode_request_start() != 0) {
+		printf("Failed to request gamemode start: %s...\n", gamemode_error_string());
+	}
 
 	// Simulate running a game
-	sleep( 10 );
+	sleep(10);
 
 	// Request we end game mode (optional)
-	if( gamemode_request_end() != 0 )
-		printf( "Failed to request gamemode end: %s...\n", gamemode_error_string() );
+	if (gamemode_request_end() != 0) {
+		printf("Failed to request gamemode end: %s...\n", gamemode_error_string());
+	}
 }
-

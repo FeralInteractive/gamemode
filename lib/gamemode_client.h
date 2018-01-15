@@ -47,44 +47,52 @@ char _client_error_string[512] = {};
 int _libgamemode_loaded = 1;
 
 // Typedefs for the functions to load
-typedef int(*_gamemode_request_start)();
-typedef int(*_gamemode_request_end)();
-typedef const char*(*_gamemode_error_string)();
+typedef int (*_gamemode_request_start)();
+typedef int (*_gamemode_request_end)();
+typedef const char *(*_gamemode_error_string)();
 
 // Storage for functors
 _gamemode_request_start _REAL_gamemode_request_start = NULL;
-_gamemode_request_end   _REAL_gamemode_request_end   = NULL;
-_gamemode_error_string  _REAL_gamemode_error_string  = NULL;
+_gamemode_request_end _REAL_gamemode_request_end = NULL;
+_gamemode_error_string _REAL_gamemode_error_string = NULL;
 
 // Loads libgamemode and needed functions
 // returns 0 on success and -1 on failure
-__attribute__((always_inline))
-inline int _load_libgamemode()
+__attribute__((always_inline)) inline int _load_libgamemode()
 {
 	// We start at 1, 0 is a success and -1 is a fail
-	if ( _libgamemode_loaded != 1 )
+	if (_libgamemode_loaded != 1) {
 		return _libgamemode_loaded;
+	}
 
-	void* libgamemode = NULL;
+	void *libgamemode = NULL;
 
 	// Try and load libgamemode
-	libgamemode = dlopen( "libgamemode.so", RTLD_NOW );
-	if( !libgamemode )
-		snprintf( _client_error_string, sizeof(_client_error_string), "dylopen failed - %s", dlerror() );
-	else
-	{
-		_REAL_gamemode_request_start = (_gamemode_request_start)dlsym( libgamemode, "real_gamemode_request_start" );
-		_REAL_gamemode_request_end   = (_gamemode_request_end)  dlsym( libgamemode, "real_gamemode_request_end" );
-		_REAL_gamemode_error_string  = (_gamemode_error_string) dlsym( libgamemode, "real_gamemode_error_string" );
+	libgamemode = dlopen("libgamemode.so", RTLD_NOW);
+	if (!libgamemode) {
+		snprintf(_client_error_string,
+		         sizeof(_client_error_string),
+		         "dylopen failed - %s",
+		         dlerror());
+	} else {
+		_REAL_gamemode_request_start =
+		    (_gamemode_request_start)dlsym(libgamemode, "real_gamemode_request_start");
+		_REAL_gamemode_request_end =
+		    (_gamemode_request_end)dlsym(libgamemode, "real_gamemode_request_end");
+		_REAL_gamemode_error_string =
+		    (_gamemode_error_string)dlsym(libgamemode, "real_gamemode_error_string");
 
 		// Verify we have the functions we want
-		if( _REAL_gamemode_request_start && _REAL_gamemode_request_end && _REAL_gamemode_error_string )
-		{
+		if (_REAL_gamemode_request_start && _REAL_gamemode_request_end &&
+		    _REAL_gamemode_error_string) {
 			_libgamemode_loaded = 0;
 			return 0;
+		} else {
+			snprintf(_client_error_string,
+			         sizeof(_client_error_string),
+			         "dlsym failed - %s",
+			         dlerror());
 		}
-		else
-			snprintf( _client_error_string, sizeof(_client_error_string), "dlsym failed - %s", dlerror() );
 	}
 
 	_libgamemode_loaded = -1;
@@ -92,12 +100,12 @@ inline int _load_libgamemode()
 }
 
 // Redirect to the real libgamemode
-__attribute__((always_inline))
-inline const char* gamemode_error_string()
+__attribute__((always_inline)) inline const char *gamemode_error_string()
 {
 	// If we fail to load the system gamemode, return our error string
-	if( _load_libgamemode() < 0 )
+	if (_load_libgamemode() < 0) {
 		return _client_error_string;
+	}
 
 	return _REAL_gamemode_error_string();
 }
@@ -108,24 +116,21 @@ inline const char* gamemode_error_string()
 #ifdef GAMEMODE_AUTO
 __attribute__((constructor))
 #else
-__attribute__((always_inline))
-inline
+__attribute__((always_inline)) inline
 #endif
 int gamemode_request_start()
 {
 	// Need to load gamemode
-	if( _load_libgamemode() < 0 )
-	{
+	if (_load_libgamemode() < 0) {
 #ifdef GAMEMODE_AUTO
-		fprintf( stderr, "gamemodeauto: %s\n", gamemode_error_string() );
+		fprintf(stderr, "gamemodeauto: %s\n", gamemode_error_string());
 #endif
 		return -1;
 	}
 
-	if( _REAL_gamemode_request_start() < 0 )
-	{
+	if (_REAL_gamemode_request_start() < 0) {
 #ifdef GAMEMODE_AUTO
-		fprintf( stderr, "gamemodeauto: %s\n", gamemode_error_string() );
+		fprintf(stderr, "gamemodeauto: %s\n", gamemode_error_string());
 #endif
 		return -1;
 	}
@@ -137,24 +142,21 @@ int gamemode_request_start()
 #ifdef GAMEMODE_AUTO
 __attribute__((destructor))
 #else
-__attribute__((always_inline))
-inline
+__attribute__((always_inline)) inline
 #endif
 int gamemode_request_end()
 {
 	// Need to load gamemode
-	if( _load_libgamemode() < 0 )
-	{
+	if (_load_libgamemode() < 0) {
 #ifdef GAMEMODE_AUTO
-		fprintf( stderr, "gamemodeauto: %s\n", gamemode_error_string() );
+		fprintf(stderr, "gamemodeauto: %s\n", gamemode_error_string());
 #endif
 		return -1;
 	}
 
-	if( _REAL_gamemode_request_end() < 0 )
-	{
+	if (_REAL_gamemode_request_end() < 0) {
 #ifdef GAMEMODE_AUTO
-		fprintf( stderr, "gamemodeauto: %s\n", gamemode_error_string() );
+		fprintf(stderr, "gamemodeauto: %s\n", gamemode_error_string());
 #endif
 		return -1;
 	}

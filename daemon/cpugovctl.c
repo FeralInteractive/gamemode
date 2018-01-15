@@ -30,55 +30,57 @@ POSSIBILITY OF SUCH DAMAGE.
  */
 #include "logging.h"
 
-#include <sys/types.h>
-#include <dirent.h>
 #include <ctype.h>
+#include <dirent.h>
+#include <sys/types.h>
 
-#define MAX_GOVERNORS       128
-#define MAX_GOVERNOR_LENGTH PATH_MAX+1
+#define MAX_GOVERNORS 128
+#define MAX_GOVERNOR_LENGTH PATH_MAX + 1
 
 // Governers are located at /sys/devices/system/cpu/cpu*/cpufreq/scaling_governor
-static int fetch_governors( char governors[MAX_GOVERNORS][MAX_GOVERNOR_LENGTH] )
+static int fetch_governors(char governors[MAX_GOVERNORS][MAX_GOVERNOR_LENGTH])
 {
-	const char* cpu_base_path = "/sys/devices/system/cpu/";
-	DIR* dir = opendir( cpu_base_path );
-	if( !dir )
-		FATAL_ERRORNO( "cpu device path not found" );
+	const char *cpu_base_path = "/sys/devices/system/cpu/";
+	DIR *dir = opendir(cpu_base_path);
+	if (!dir) {
+		FATAL_ERRORNO("cpu device path not found");
+	}
 
 	int num_governors = 0;
 
 	// Explore the directory
-	struct dirent* ent;
-	while( ( ent = readdir(dir) ) && num_governors < MAX_GOVERNORS )
-	{
+	struct dirent *ent;
+	while ((ent = readdir(dir)) && num_governors < MAX_GOVERNORS) {
 		// CPU directories all start with "cpu"
-		if( strncmp( ent->d_name, "cpu", 3 ) == 0 )
-		{
+		if (strncmp(ent->d_name, "cpu", 3) == 0) {
 			// Check if this matches "cpu\d+"
-			const int len = strlen( ent->d_name );
-			if( len > 3 && len < 5
-				&& isdigit( ent->d_name[3] ) )
-			{
+			const int len = strlen(ent->d_name);
+			if (len > 3 && len < 5 && isdigit(ent->d_name[3])) {
 				// Construct the full path
 				char path[PATH_MAX] = {};
-				snprintf( path, sizeof(path), "%s%s/cpufreq/scaling_governor", cpu_base_path, ent->d_name );
+				snprintf(path,
+				         sizeof(path),
+				         "%s%s/cpufreq/scaling_governor",
+				         cpu_base_path,
+				         ent->d_name);
 
 				// Get the real path to the file
-				// Traditionally cpufreq symlinks to a policy directory that can be shared
-				// So let's prevent duplicates
+				// Traditionally cpufreq symlinks to a policy directory that can be
+				// shared So let's prevent duplicates
 				char fullpath[PATH_MAX] = {};
-				const char* ptr = realpath( path, fullpath );
-				if( fullpath != ptr )
+				const char *ptr = realpath(path, fullpath);
+				if (fullpath != ptr) {
 					continue;
-
-				// Only add if unique
-				for( int i = 0; i < num_governors; i++ )
-				{
-					if( strncmp( fullpath, governors[i], MAX_GOVERNOR_LENGTH ) == 0 )
-						continue;
 				}
 
-				strncpy( governors[num_governors], fullpath, MAX_GOVERNOR_LENGTH );
+				// Only add if unique
+				for (int i = 0; i < num_governors; i++) {
+					if (strncmp(fullpath, governors[i], MAX_GOVERNOR_LENGTH) == 0) {
+						continue;
+					}
+				}
+
+				strncpy(governors[num_governors], fullpath, MAX_GOVERNOR_LENGTH);
 				num_governors++;
 			}
 		}
@@ -89,102 +91,87 @@ static int fetch_governors( char governors[MAX_GOVERNORS][MAX_GOVERNOR_LENGTH] )
 }
 
 // Get the current governor state
-const char* get_gov_state()
+const char *get_gov_state()
 {
 	// To be returned
-	static char governor[64] = {0};
+	static char governor[64] = { 0 };
 
 	// State of all the overnors
-	char governors[MAX_GOVERNORS][MAX_GOVERNOR_LENGTH] = {{0}};
-	int num = fetch_governors( governors );
+	char governors[MAX_GOVERNORS][MAX_GOVERNOR_LENGTH] = { { 0 } };
+	int num = fetch_governors(governors);
 
 	// Check the list
-	for( int i = 0; i < num; i++ )
-	{
-		const char* gov = governors[i];
+	for (int i = 0; i < num; i++) {
+		const char *gov = governors[i];
 
-		FILE* f = fopen( gov, "r" );
-		if( !f )
-		{
-			LOG_ERROR( "Failed to open file for read %s\n", gov );
+		FILE *f = fopen(gov, "r");
+		if (!f) {
+			LOG_ERROR("Failed to open file for read %s\n", gov);
 			continue;
 		}
 
 		// Pull out the file contents
-		fseek( f, 0, SEEK_END );
+		fseek(f, 0, SEEK_END);
 		int length = ftell(f);
-		fseek( f, 0, SEEK_SET );
+		fseek(f, 0, SEEK_SET);
 
 		char contents[length];
 
-		if( fread(contents, 1, length, f) > 0 )
-		{
+		if (fread(contents, 1, length, f) > 0) {
 			// Files have a newline
 			strtok(contents, "\n");
-			if( strlen(governor) > 0 && strncmp( governor, contents, 64 ) != 0 )
-			{
+			if (strlen(governor) > 0 && strncmp(governor, contents, 64) != 0) {
 				// Don't handle the mixed case, this shouldn't ever happen
 				// But it is a clear sign we shouldn't carry on
-				LOG_ERROR( "Governors malformed: got \"%s\", expected \"%s\"", contents, governor );
+				LOG_ERROR("Governors malformed: got \"%s\", expected \"%s\"", contents, governor);
 				return "malformed";
 			}
-				
-			strncpy( governor, contents, sizeof(governor) );
-		}
-		else
-		{
-			LOG_ERROR( "Failed to read contents of %s\n", gov );
+
+			strncpy(governor, contents, sizeof(governor));
+		} else {
+			LOG_ERROR("Failed to read contents of %s\n", gov);
 		}
 
-		fclose( f );
+		fclose(f);
 	}
 
 	return governor;
 }
 
 // Sets all governors to a value
-void set_gov_state( const char* value )
+void set_gov_state(const char *value)
 {
-	char governors[MAX_GOVERNORS][MAX_GOVERNOR_LENGTH] = {{0}};
-	int num = fetch_governors( governors );
+	char governors[MAX_GOVERNORS][MAX_GOVERNOR_LENGTH] = { { 0 } };
+	int num = fetch_governors(governors);
 
-	LOG_MSG( "Setting governors to %s\n", value );
-	for( int i = 0; i < num; i++ )
-	{
-		const char* gov = governors[i];
-		FILE* f = fopen( gov, "w" );
-		if( !f )
-		{
-			LOG_ERROR( "Failed to open file for write %s\n", gov );
+	LOG_MSG("Setting governors to %s\n", value);
+	for (int i = 0; i < num; i++) {
+		const char *gov = governors[i];
+		FILE *f = fopen(gov, "w");
+		if (!f) {
+			LOG_ERROR("Failed to open file for write %s\n", gov);
 			continue;
 		}
 
-		fprintf( f, "%s\n", value );
-		fclose( f );
+		fprintf(f, "%s\n", value);
+		fclose(f);
 	}
 }
 
 // Main entry point
-int main( int argc, char *argv[] )
+int main(int argc, char *argv[])
 {
-	if( argc < 2 )
-	{
-		fprintf( stderr, "usage: cpugovctl [get] [set VALUE]\n" );
-		exit( EXIT_FAILURE );
+	if (argc < 2) {
+		fprintf(stderr, "usage: cpugovctl [get] [set VALUE]\n");
+		exit(EXIT_FAILURE);
 	}
 
-	if( strncmp( argv[1], "get", 3 ) == 0 )
-	{
-		printf( "%s", get_gov_state() );
-	}
-	else if( strncmp( argv[1], "set", 3 ) == 0 )
-	{
-		const char* value = argv[2];
-		set_gov_state( value );
-	}
-	else
-	{
-		exit( EXIT_FAILURE );
+	if (strncmp(argv[1], "get", 3) == 0) {
+		printf("%s", get_gov_state());
+	} else if (strncmp(argv[1], "set", 3) == 0) {
+		const char *value = argv[2];
+		set_gov_state(value);
+	} else {
+		exit(EXIT_FAILURE);
 	}
 }
-

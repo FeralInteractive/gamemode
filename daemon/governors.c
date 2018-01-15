@@ -31,48 +31,50 @@ POSSIBILITY OF SUCH DAMAGE.
 #include "governors.h"
 #include "logging.h"
 
+#include <linux/limits.h>
 #include <stdio.h>
 #include <unistd.h>
-#include <linux/limits.h>
 
 static char initial[32];
 
 // Store the initial governor state to be referenced later
 void update_initial_gov_state()
 {
-	static char* command = "cpugovctl get";
+	static char *command = "cpugovctl get";
 
-	FILE* f = popen( command, "r" );
-	if( !f )
-		FATAL_ERRORNO( "Failed to launch \"%s\" script", command );
+	FILE *f = popen(command, "r");
+	if (!f) {
+		FATAL_ERRORNO("Failed to launch \"%s\" script", command);
+	}
 
-	if( !fgets( initial, sizeof(initial)-1, f ) )
-		FATAL_ERROR( "Failed to get output from \"%s\"", command );
+	if (!fgets(initial, sizeof(initial) - 1, f)) {
+		FATAL_ERROR("Failed to get output from \"%s\"", command);
+	}
 
 	pclose(f);
 
-	strtok( initial, "\n" );
+	strtok(initial, "\n");
 }
 
 // Sets all governors to a value, if NULL argument provided, will reset them back
-void set_governors( const char* value )
+void set_governors(const char *value)
 {
-	const char* newval = value ? value : initial;
+	const char *newval = value ? value : initial;
 	LOG_MSG("Setting governors to %s\n", newval ? newval : "initial values");
 
 	char command[PATH_MAX] = {};
-	snprintf( command, sizeof(command), "cpugovctl set %s", newval );
+	snprintf(command, sizeof(command), "cpugovctl set %s", newval);
 
-	FILE* f = popen( command, "r" );
-	if( !f )
-		FATAL_ERRORNO( "Failed to launch %s script", command );
+	FILE *f = popen(command, "r");
+	if (!f) {
+		FATAL_ERRORNO("Failed to launch %s script", command);
+	}
 
 	pclose(f);
 }
 
 // Return the initial governor
-const char* get_initial_governor()
+const char *get_initial_governor()
 {
 	return initial;
 }
-

@@ -37,7 +37,7 @@ void term_game_mode();
 
 // Add or remove games to the tracker
 // Tracker will automatically start and stop game mode as appropriate
-void register_game( int pid );
-void unregister_game( int pid );
+void register_game(int pid);
+void unregister_game(int pid);
 
 #endif // _GAME_MODE_GAMEMODE_H_

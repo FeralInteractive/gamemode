@@ -35,6 +35,6 @@ POSSIBILITY OF SUCH DAMAGE.
 
 // Run the main dbus loop
 // Will not return until finished
-void run_dbus_main_loop( bool system_dbus );
+void run_dbus_main_loop(bool system_dbus);
 
 #endif // _DBUS_MESSAGING_GAMEMODE_H_

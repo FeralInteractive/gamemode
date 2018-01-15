@@ -37,33 +37,36 @@ POSSIBILITY OF SUCH DAMAGE.
 #include <unistd.h>
 
 // function to daemonize the process
-void daemonize( char* name )
+void daemonize(char *name)
 {
 	// Fork once
 	pid_t pid = fork();
-	if( pid < 0 )
-		FATAL_ERRORNO( "Failed to fork" );
+	if (pid < 0) {
+		FATAL_ERRORNO("Failed to fork");
+	}
 
-	if( pid != 0 )
-	{
-		LOG_MSG( "Daemon launched...\n" );
-		exit( EXIT_SUCCESS );
+	if (pid != 0) {
+		LOG_MSG("Daemon launched...\n");
+		exit(EXIT_SUCCESS);
 	}
 
 	// Fork a second time
 	pid = fork();
-	if( pid < 0 )
-		FATAL_ERRORNO( "Failed to fork" );
-	else if( pid > 0 )
-		exit( EXIT_SUCCESS );
+	if (pid < 0) {
+		FATAL_ERRORNO("Failed to fork");
+	} else if (pid > 0) {
+		exit(EXIT_SUCCESS);
+	}
 
 	// Continue to set up as a daemon
 	umask(0);
-	if ( setsid() < 0 )
-		FATAL_ERRORNO( "Failed to create process group\n" );
-	if ( chdir( "/" ) < 0 )
-		FATAL_ERRORNO( "Failed to change to root directory\n" );
-	close( STDIN_FILENO );
-	close( STDOUT_FILENO );
-	close( STDERR_FILENO );
+	if (setsid() < 0) {
+		FATAL_ERRORNO("Failed to create process group\n");
+	}
+	if (chdir("/") < 0) {
+		FATAL_ERRORNO("Failed to change to root directory\n");
+	}
+	close(STDIN_FILENO);
+	close(STDOUT_FILENO);
+	close(STDERR_FILENO);
 }

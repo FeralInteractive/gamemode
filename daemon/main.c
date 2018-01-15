@@ -29,71 +29,72 @@ POSSIBILITY OF SUCH DAMAGE.
 
  */
 // Simple daemon to allow user space programs to control the CPU governors
-#include "gamemode.h"
-#include "dbus_messaging.h"
-#include "logging.h"
 #include "daemonize.h"
+#include "dbus_messaging.h"
+#include "gamemode.h"
+#include "logging.h"
 
+#include <signal.h>
 #include <string.h>
 #include <unistd.h>
-#include <signal.h>
 
 static void sigint_handler(int signo)
 {
-	LOG_MSG( "Quitting by request...\n" );
+	LOG_MSG("Quitting by request...\n");
 
 	// Terminate the game mode
 	term_game_mode();
 
-	exit( EXIT_SUCCESS );
+	exit(EXIT_SUCCESS);
 }
 
 // Main entry point
-int main( int argc, char *argv[] )
+int main(int argc, char *argv[])
 {
 	// Gather command line options
 	bool daemon = false;
 	bool system_dbus = false;
 	bool use_syslog = false;
 	int opt = 0;
-	while( ( opt = getopt( argc, argv, "dsl") ) != -1 )
-	{
-		switch( opt )
-		{
-			case 'd':
-				daemon = true;
-				break;
-			case 's':
-				system_dbus = true;
-				break;
-			case 'l':
-				use_syslog = true;
-				break;
-			default:
-				fprintf( stderr, "Usage: %s [-d] [-s] [-l]\n", argv[0] );
-				exit( EXIT_FAILURE );
-				break;
+	while ((opt = getopt(argc, argv, "dsl")) != -1) {
+		switch (opt) {
+		case 'd':
+			daemon = true;
+			break;
+		case 's':
+			system_dbus = true;
+			break;
+		case 'l':
+			use_syslog = true;
+			break;
+		default:
+			fprintf(stderr, "Usage: %s [-d] [-s] [-l]\n", argv[0]);
+			exit(EXIT_FAILURE);
+			break;
 		}
 	}
 
 	// Use syslog if requested
-	if( use_syslog )
-		set_use_syslog( argv[0] );
+	if (use_syslog) {
+		set_use_syslog(argv[0]);
+	}
 
 	// Daemonize ourselves first if asked
-	if ( daemon )
-		daemonize( argv[0] );
+	if (daemon) {
+		daemonize(argv[0]);
+	}
 
 	// Set up the game mode
 	init_game_mode();
 
 	// Set up the SIGINT handler
-	if( signal( SIGINT, sigint_handler ) == SIG_ERR )
-		FATAL_ERRORNO( "Could not catch SIGINT" );
+	if (signal(SIGINT, sigint_handler) == SIG_ERR) {
+		FATAL_ERRORNO("Could not catch SIGINT");
+	}
 
 	// Run the main dbus message loop
-	run_dbus_main_loop( system_dbus );
+	run_dbus_main_loop(system_dbus);
 
 	// Log we're finished
-	LOG_MSG( "Quitting naturally...\n" );
+	LOG_MSG("Quitting naturally...\n");
 }

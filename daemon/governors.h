@@ -35,9 +35,9 @@ POSSIBILITY OF SUCH DAMAGE.
 void update_initial_gov_state();
 
 // Get the initial governor state
-const char* get_initial_governor();
+const char *get_initial_governor();
 
 // Sets all governors to a value, if null argument provided, will reset them back
-void set_governors( const char* value );
+void set_governors(const char *value);
 
 #endif // _GOVERNORS_GAMEMODE_H_
