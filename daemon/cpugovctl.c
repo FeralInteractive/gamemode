@@ -28,10 +28,14 @@ ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 POSSIBILITY OF SUCH DAMAGE.
 
  */
+
+#define _GNU_SOURCE
+
 #include "logging.h"
 
 #include <ctype.h>
 #include <dirent.h>
+#include <linux/limits.h>
 #include <sys/types.h>
 
 #define MAX_GOVERNORS 128

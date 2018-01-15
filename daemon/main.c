@@ -28,7 +28,11 @@ ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 POSSIBILITY OF SUCH DAMAGE.
 
  */
+
 // Simple daemon to allow user space programs to control the CPU governors
+
+#define _GNU_SOURCE
+
 #include "daemonize.h"
 #include "dbus_messaging.h"
 #include "gamemode.h"
