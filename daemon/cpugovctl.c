@@ -34,11 +34,11 @@ POSSIBILITY OF SUCH DAMAGE.
 #include <dirent.h>
 #include <ctype.h>
 
-static const int max_governors       = 128;
-static const int max_governor_length = PATH_MAX+1;
+#define MAX_GOVERNORS       128
+#define MAX_GOVERNOR_LENGTH PATH_MAX+1
 
 // Governers are located at /sys/devices/system/cpu/cpu*/cpufreq/scaling_governor
-static int fetch_governors( char governors[max_governors][max_governor_length] )
+static int fetch_governors( char governors[MAX_GOVERNORS][MAX_GOVERNOR_LENGTH] )
 {
 	const char* cpu_base_path = "/sys/devices/system/cpu/";
 	DIR* dir = opendir( cpu_base_path );
@@ -49,7 +49,7 @@ static int fetch_governors( char governors[max_governors][max_governor_length] )
 
 	// Explore the directory
 	struct dirent* ent;
-	while( ( ent = readdir(dir) ) && num_governors < max_governors )
+	while( ( ent = readdir(dir) ) && num_governors < MAX_GOVERNORS )
 	{
 		// CPU directories all start with "cpu"
 		if( strncmp( ent->d_name, "cpu", 3 ) == 0 )
@@ -74,11 +74,11 @@ static int fetch_governors( char governors[max_governors][max_governor_length] )
 				// Only add if unique
 				for( int i = 0; i < num_governors; i++ )
 				{
-					if( strncmp( fullpath, governors[i], max_governor_length ) == 0 )
+					if( strncmp( fullpath, governors[i], MAX_GOVERNOR_LENGTH ) == 0 )
 						continue;
 				}
 
-				strncpy( governors[num_governors], fullpath, max_governor_length );
+				strncpy( governors[num_governors], fullpath, MAX_GOVERNOR_LENGTH );
 				num_governors++;
 			}
 		}
@@ -92,12 +92,10 @@ static int fetch_governors( char governors[max_governors][max_governor_length] )
 const char* get_gov_state()
 {
 	// To be returned
-	static char governor[64];
-	memset( governor, 0, sizeof(governor) );
+	static char governor[64] = {0};
 
 	// State of all the overnors
-	char governors[max_governors][max_governor_length];
-	memset( governors, 0, sizeof(governors) );
+	char governors[MAX_GOVERNORS][MAX_GOVERNOR_LENGTH] = {{0}};
 	int num = fetch_governors( governors );
 
 	// Check the list
@@ -147,8 +145,7 @@ const char* get_gov_state()
 // Sets all governors to a value
 void set_gov_state( const char* value )
 {
-	char governors[max_governors][max_governor_length];
-	memset( governors, 0, sizeof(governors) );
+	char governors[MAX_GOVERNORS][MAX_GOVERNOR_LENGTH] = {{0}};
 	int num = fetch_governors( governors );
 
 	LOG_MSG( "Setting governors to %s\n", value );
