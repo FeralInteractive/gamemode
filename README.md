@@ -64,11 +64,11 @@ sudo ninja install
 
 After installing `libgamemodeauto.so` simple preload it into the program. Examples:
 ```bash
-LD_PRELOAD=/usr/lib/libgamemodeauto.so ./game
+LD_PRELOAD=/usr/\$LIB/libgamemodeauto.so ./game
 ```
 Or steam launch options
 ```bash
-LD_PRELOAD=/usr/lib/libgamemodeauto.so %command%
+LD_PRELOAD=/usr/\$LIB/libgamemodeauto.so %command%
 ```
 
 ---
