@@ -105,6 +105,13 @@ Add `-lgamemodeauto` to linker arguments and distribute `libgamemodeauto.so` wit
 Distribute `libgamemodeauto.so` with the game and add to LD\_PRELOAD in a launch script
 
 ---
+## Pull Requests
+Pull requests must match with the coding style found in the `.clang-format` file
+```
+clang-format -i $(find . -name '*.[ch]')
+```
+
+---
 ## TODO
 
 * Use polkit for cpugovctl (currently simply using chmod +4555)
