@@ -1,4 +1,5 @@
 project('gamemode', 'c',
+	default_options : ['c_std=c11'],
 	version : '0.2',
 	license : 'BSD' )
 cc = meson.get_compiler('c')
