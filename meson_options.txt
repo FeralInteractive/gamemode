@@ -1,3 +1,11 @@
+option('with-systemd', type: 'boolean', description: 'Use systemd support (unit, etc)', value: 'true')
+
+# systemd specific
+option('with-systemd-user-unit-dir', type: 'string', description: 'Explicitly set the systemd user unit directory')
+
+# Not using systemd
 option('with-dbus-service-dir', type: 'string', description: 'Explicitly set the D-BUS session directory')
+
+# General options
 option('with-examples', type: 'boolean', description: 'Build sample programs', value: 'true')
 option('with-daemon', type: 'boolean', description: 'Build the daemon', value: 'true')

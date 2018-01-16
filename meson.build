@@ -44,10 +44,21 @@ dep_threads = dependency('threads')
 # On non glibc systems this might be a stub, i.e. for musl
 libdl = cc.find_library('dl', required: false)
 
-# Set the dbus path as appropriate.
-path_dbus_service_dir = get_option('with-dbus-service-dir')
-if path_dbus_service_dir == ''
-    path_dbus_service_dir = join_paths(path_datadir, 'dbus-1', 'services')
+with_systemd = get_option('with-systemd')
+if with_systemd == true
+    # If the path isn't explicitly set, ask systemd for the systemd user unit directory
+    path_systemd_unit_dir = get_option('with-systemd-user-unit-dir')
+    if path_systemd_unit_dir == ''
+        message('Asking pkg-config for systemd\'s directories')
+        pkgconfig_systemd = dependency('systemd')
+        path_systemd_unit_dir = pkgconfig_systemd.get_pkgconfig_variable('systemduserunitdir')
+    endif
+else
+    # Set the dbus path as appropriate.
+    path_dbus_service_dir = get_option('with-dbus-service-dir')
+    if path_dbus_service_dir == ''
+        path_dbus_service_dir = join_paths(path_datadir, 'dbus-1', 'services')
+    endif
 endif
 
 path_polkit_action_dir = join_paths(path_datadir, 'polkit-1', 'actions')
@@ -92,7 +103,20 @@ report = [
     '    libdir:                                 @0@'.format(path_libdir),
     '    libexecdir:                             @0@'.format(path_libexecdir),
     '    includedir:                             @0@'.format(path_includedir),
+]
+
+if with_systemd == true
+report += [
+    '    systemd user unit directory:            @0@'.format(path_systemd_unit_dir),
+]
+else
+report += [
     '    D-BUS service directory:                @0@'.format(path_dbus_service_dir),
+]
+endif
+
+report += [
+
     '    PolKit Action Directory:                @0@'.format(path_polkit_action_dir),
     '',
     '    Options:',
@@ -100,6 +124,7 @@ report = [
     '',
     '    daemon:                                 @0@'.format(with_daemon),
     '    examples:                               @0@'.format(with_examples),
+    '    systemd:                                @0@'.format(with_systemd),
 ]
 
 # Output some stuff to validate the build config
