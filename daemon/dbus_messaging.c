@@ -46,7 +46,7 @@ static sd_bus_slot *slot = NULL;
 /**
  * Clean up our private dbus state
  */
-static void clean_up()
+static void clean_up(void)
 {
 	if (slot) {
 		sd_bus_slot_unref(slot);
@@ -61,7 +61,8 @@ static void clean_up()
 /**
  * Handles the RegisterGame D-BUS Method
  */
-static int method_register_game(sd_bus_message *m, void *userdata, sd_bus_error *ret_error)
+static int method_register_game(sd_bus_message *m, void *userdata,
+                                __attribute__((unused)) sd_bus_error *ret_error)
 {
 	int pid = 0;
 	GameModeContext *context = userdata;
@@ -80,7 +81,8 @@ static int method_register_game(sd_bus_message *m, void *userdata, sd_bus_error 
 /**
  * Handles the UnregisterGame D-BUS Method
  */
-static int method_unregister_game(sd_bus_message *m, void *userdata, sd_bus_error *ret_error)
+static int method_unregister_game(sd_bus_message *m, void *userdata,
+                                  __attribute__((unused)) sd_bus_error *ret_error)
 {
 	int pid = 0;
 	GameModeContext *context = userdata;

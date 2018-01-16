@@ -48,7 +48,7 @@ void daemonize(char *name)
 	}
 
 	if (pid != 0) {
-		LOG_MSG("Daemon launched...\n");
+		LOG_MSG("Daemon launched as %s...\n", name);
 		exit(EXIT_SUCCESS);
 	}
 

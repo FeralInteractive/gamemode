@@ -37,7 +37,7 @@ POSSIBILITY OF SUCH DAMAGE.
 #include <unistd.h>
 
 // Storage for error strings
-static char error_string[512] = {};
+static char error_string[512] = { 0 };
 
 // Simple requestor function for a gamemode
 static int gamemode_request(const char *function)
@@ -86,19 +86,19 @@ static int gamemode_request(const char *function)
 }
 
 // Get the error string
-extern const char *real_gamemode_error_string()
+extern const char *real_gamemode_error_string(void)
 {
 	return error_string;
 }
 
 // Wrapper to call RegisterGame
-extern int real_gamemode_request_start()
+extern int real_gamemode_request_start(void)
 {
 	return gamemode_request("RegisterGame");
 }
 
 // Wrapper to call UnregisterGame
-extern int real_gamemode_request_end()
+extern int real_gamemode_request_end(void)
 {
 	return gamemode_request("UnregisterGame");
 }

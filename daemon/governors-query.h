@@ -44,4 +44,4 @@ int fetch_governors(char governors[MAX_GOVERNORS][MAX_GOVERNOR_LENGTH]);
 /**
  * Get the current governor state
  */
-const char *get_gov_state();
+const char *get_gov_state(void);

@@ -58,7 +58,7 @@ POSSIBILITY OF SUCH DAMAGE.
 #include <string.h>
 #include <unistd.h>
 
-static void sigint_handler(int signo)
+static void sigint_handler(__attribute__((unused)) int signo)
 {
 	LOG_MSG("Quitting by request...\n");
 

@@ -116,12 +116,12 @@ const char *get_gov_state()
 
 		/* Grab the file length */
 		fseek(f, 0, SEEK_END);
-		int length = ftell(f);
+		long length = ftell(f);
 		fseek(f, 0, SEEK_SET);
 
 		char contents[length];
 
-		if (fread(contents, 1, length, f) > 0) {
+		if (fread(contents, 1, (size_t)length, f) > 0) {
 			/* Files have a newline */
 			strtok(contents, "\n");
 			if (strlen(governor) > 0 && strncmp(governor, contents, 64) != 0) {

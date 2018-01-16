@@ -6,6 +6,26 @@ project(
     license: 'BSD',
 )
 
+am_cflags = [
+    '-fstack-protector',
+    '-Wall',
+    '-pedantic',
+    '-Wstrict-prototypes',
+    '-Wundef',
+    '-fno-common',
+    '-Werror-implicit-function-declaration',
+    '-Wformat',
+    '-Wformat-security',
+    '-Werror=format-security',
+    '-Wconversion',
+    '-Wunused-variable',
+    '-Wunreachable-code',
+    '-W',
+]
+
+# Add our main flags
+add_global_arguments(am_cflags, language: 'c')
+
 cc = meson.get_compiler('c')
 
 path_prefix = get_option('prefix')

@@ -40,37 +40,37 @@ POSSIBILITY OF SUCH DAMAGE.
 #include <unistd.h>
 
 /* Macros to help with basic logging */
-#define PLOG_MSG(msg, ...) printf(msg, ##__VA_ARGS__)
-#define SYSLOG_MSG(msg, ...) syslog(LOG_INFO, msg, ##__VA_ARGS__)
-#define LOG_MSG(msg, ...)                                                                          \
+#define PLOG_MSG(...) printf(__VA_ARGS__)
+#define SYSLOG_MSG(...) syslog(LOG_INFO, __VA_ARGS__)
+#define LOG_MSG(...)                                                                               \
 	do {                                                                                           \
 		if (get_use_syslog()) {                                                                    \
-			SYSLOG_MSG(msg, ##__VA_ARGS__);                                                        \
+			SYSLOG_MSG(__VA_ARGS__);                                                               \
 		} else {                                                                                   \
-			PLOG_MSG(msg, ##__VA_ARGS__);                                                          \
+			PLOG_MSG(__VA_ARGS__);                                                                 \
 		}                                                                                          \
 	} while (0)
 
-#define PLOG_ERROR(msg, ...) fprintf(stderr, msg, ##__VA_ARGS__)
-#define SYSLOG_ERROR(msg, ...) syslog(LOG_ERR, msg, ##__VA_ARGS__)
-#define LOG_ERROR(msg, ...)                                                                        \
+#define PLOG_ERROR(...) fprintf(stderr, __VA_ARGS__)
+#define SYSLOG_ERROR(...) syslog(LOG_ERR, __VA_ARGS__)
+#define LOG_ERROR(...)                                                                             \
 	do {                                                                                           \
 		if (get_use_syslog()) {                                                                    \
-			SYSLOG_MSG(msg, ##__VA_ARGS__);                                                        \
+			SYSLOG_MSG(__VA_ARGS__);                                                               \
 		} else {                                                                                   \
-			PLOG_MSG(msg, ##__VA_ARGS__);                                                          \
+			PLOG_MSG(__VA_ARGS__);                                                                 \
 		}                                                                                          \
 	} while (0)
 
 /* Fatal warnings trigger an exit */
-#define FATAL_ERRORNO(msg, ...)                                                                    \
+#define FATAL_ERRORNO(msg)                                                                         \
 	do {                                                                                           \
-		LOG_ERROR(msg " (%s)\n", ##__VA_ARGS__, strerror(errno));                                  \
+		LOG_ERROR(msg " (%s)\n", strerror(errno));                                                 \
 		exit(EXIT_FAILURE);                                                                        \
 	} while (0)
-#define FATAL_ERROR(msg, ...)                                                                      \
+#define FATAL_ERROR(...)                                                                           \
 	do {                                                                                           \
-		LOG_ERROR(msg, ##__VA_ARGS__);                                                             \
+		LOG_ERROR(__VA_ARGS__);                                                                    \
 		exit(EXIT_FAILURE);                                                                        \
 	} while (0)
 
@@ -78,4 +78,4 @@ POSSIBILITY OF SUCH DAMAGE.
  * Control if and how how we use syslog
  */
 void set_use_syslog(const char *name);
-bool get_use_syslog();
+bool get_use_syslog(void);

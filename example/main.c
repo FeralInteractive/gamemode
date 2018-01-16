@@ -34,7 +34,7 @@ POSSIBILITY OF SUCH DAMAGE.
 #include <stdio.h>
 #include <unistd.h>
 
-int main()
+int main(__attribute__((unused)) int argc, __attribute__((unused)) char **argv)
 {
 	/* Request we start game mode */
 	if (gamemode_request_start() != 0) {
