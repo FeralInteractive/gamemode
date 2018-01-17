@@ -1,0 +1,11 @@
+0.2
+
+Updated meson build to improve compatibility, configuration and development
+cpugovctl now uses polkit
+Fixed potential threading issues
+Added option to use the system d-bus for the daemon rather than systemd
+Various code style and standards related improvements
+
+0.1
+
+Initial release

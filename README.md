@@ -45,7 +45,7 @@ Can also be included with `GAMEMODE_AUTO` defined to behave automatically.
 
 ```bash
 # Ubuntu
-apt install meson libsystemd-dev
+apt install meson libsystemd-dev pkg-config
 # Arch
 pacman -S meson systemd
 ```
@@ -53,10 +53,7 @@ pacman -S meson systemd
 ```bash
 git clone <git repo>
 cd gamemode
-meson --prefix=/usr build
-cd build
-ninja
-sudo ninja install
+./bootstrap.sh
 ```
 
 ---
@@ -112,7 +109,9 @@ clang-format -i $(find . -name '*.[ch]')
 ```
 
 ---
-## TODO
+## Planned Features
 
-* Use polkit for cpugovctl (currently simply using chmod +4555)
-* Implement some kind of user confuguration to allow for whitelists, extra behaviour, etc.
+* Additional mode-switch plugins
+* User confuguration with whitelist/blacklist for programs
+* User configuration for custom mode-switch plugins
+* Additional state tracking not based solely on PID
