@@ -1,3 +1,11 @@
+1.0
+
+Fixed and cleaned up README file
+Config file parsing
+Man page
+Example PKGBUILD file
+Bug fix for missing pthread_rwlock_init
+
 0.2
 
 Updated meson build to improve compatibility, configuration and development
