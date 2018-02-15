@@ -102,6 +102,7 @@ void game_mode_context_init(GameModeContext *self)
 	update_initial_gov_state();
 	LOG_MSG("governor is set to [%s]\n", get_initial_governor());
 
+	pthread_rwlock_init(&self->rwlock, NULL);
 	pthread_mutex_init(&self->reaper.mutex, NULL);
 	pthread_cond_init(&self->reaper.condition, NULL);
 
