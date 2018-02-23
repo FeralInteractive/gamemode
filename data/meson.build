@@ -27,3 +27,6 @@ configure_file(
     configuration: data_conf,
     install_dir: path_polkit_action_dir,
 )
+
+# Install the man page
+install_man('gamemoded.1')
