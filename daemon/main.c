@@ -49,6 +49,7 @@ POSSIBILITY OF SUCH DAMAGE.
 
 #define _GNU_SOURCE
 
+#include "config.h"
 #include "daemonize.h"
 #include "dbus_messaging.h"
 #include "gamemode.h"
@@ -57,6 +58,17 @@ POSSIBILITY OF SUCH DAMAGE.
 #include <signal.h>
 #include <string.h>
 #include <unistd.h>
+
+#define USAGE_TEXT                                                                                 \
+	"Usage: %s [-d] [-l] [-h] [-v]\n\n"                                                            \
+	"  -d  daemonize self after launch\n"                                                          \
+	"  -l  log to syslog\n"                                                                        \
+	"  -h  print this help\n"                                                                      \
+	"  -v  print version\n"                                                                        \
+	"\n"                                                                                           \
+	"See man page for more information.\n"
+
+#define VERSION_TEXT "gamemode version: v" GAMEMODE_VERSION "\n"
 
 static void sigint_handler(__attribute__((unused)) int signo)
 {
@@ -79,7 +91,7 @@ int main(int argc, char *argv[])
 	bool daemon = false;
 	bool use_syslog = false;
 	int opt = 0;
-	while ((opt = getopt(argc, argv, "dl")) != -1) {
+	while ((opt = getopt(argc, argv, "dlvh")) != -1) {
 		switch (opt) {
 		case 'd':
 			daemon = true;
@@ -87,8 +99,16 @@ int main(int argc, char *argv[])
 		case 'l':
 			use_syslog = true;
 			break;
+		case 'v':
+			fprintf(stdout, VERSION_TEXT);
+			exit(EXIT_SUCCESS);
+			break;
+		case 'h':
+			fprintf(stdout, USAGE_TEXT, argv[0]);
+			exit(EXIT_SUCCESS);
+			break;
 		default:
-			fprintf(stderr, "Usage: %s [-d] [-l]\n", argv[0]);
+			fprintf(stderr, USAGE_TEXT, argv[0]);
 			exit(EXIT_FAILURE);
 			break;
 		}

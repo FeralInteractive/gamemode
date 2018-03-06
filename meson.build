@@ -66,9 +66,10 @@ path_polkit_action_dir = join_paths(path_datadir, 'polkit-1', 'actions')
 with_daemon = get_option('with-daemon')
 with_examples = get_option('with-examples')
 
-# Provide config.h so the daemon knows where the helper is
+# Provide a config.h
 cdata = configuration_data()
 cdata.set_quoted('LIBEXECDIR', path_libexecdir)
+cdata.set_quoted('GAMEMODE_VERSION', meson.project_version())
 config_h = configure_file(
     configuration: cdata,
     output: 'config.h',

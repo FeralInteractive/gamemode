@@ -1,10 +1,10 @@
 .\" Manpage for gamemoded.
 .\" Contact linux-contact@feralinteractive.com to correct errors or typos.
-.TH gamemoded 1 "23 Feb 2018" "0.3" "gamemoded man page"
+.TH gamemoded 1 "6 March 2018" "0.3" "gamemoded man page"
 .SH NAME
 gamemoded \- optimises system performance on demand
 .SH SYNOPSIS
-\fBgamemoded\fR [\fB\-d\fR] [\fB\-l\fR]
+\fBgamemoded\fR [\fB\-d\fR] [\fB\-l\fR] [\fB\-h\fR] [\fB\-v\fR]
 .SH DESCRIPTION
 \fBGameMode\fR is a daemon/lib combo for Linux that allows games to request a set of optimisations be temporarily applied to the host OS.
 
@@ -15,10 +15,16 @@ The design has a clear cut abstraction between the host daemon and library (\fBg
 .TP 8
 .B \-d
 Run the daemon as a separate process (daemonize it)
-.TP
+.TP 8
 .B \-l
 Log to syslog
-.LP
+.TP 8
+.B \-h
+Print help text
+.TP 8
+.B \-v
+Print the version
+
 .SH USAGE
 \fBlibgamemodeauto.so\fR can be pre-loaded into any program to request \fBgamemoded\fR begin or end the mode, like so:
 
