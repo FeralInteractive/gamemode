@@ -102,6 +102,16 @@ Add `-lgamemodeauto` to linker arguments and distribute `libgamemodeauto.so` wit
 Distribute `libgamemodeauto.so` with the game and add to LD\_PRELOAD in a launch script
 
 ---
+## Configuration
+
+The daemon can currently be configured using a `gamemode.ini` file in `/usr/share/gamemode/`. It will load the file when starting up.
+
+An example of what the file could look like is found in the `example` directory.
+
+The file parsing uses [inih](https://github.com/benhoyt/inih).
+
+
+---
 ## Pull Requests
 Pull requests must match with the coding style found in the `.clang-format` file
 ```

@@ -66,6 +66,27 @@ Atlernatively developers can define \fBGAMEMODE_AUTO\fR to mimic the behaviour o
 
 Or, distribute \fBlibgamemodeauto.so\fR and either link with \fB\-lgamemodeauto\fR or inject it as above with \fBLD\_PRELOAD\fR.
 
+.SH CONFIG
+
+\fBgamemoded\fR can be configured with a \fBgamemode.ini\fR file found in \fB/usr/share/gamemode/\fR. The daemon will load the config file on start-up if it exists.
+
+Behaviour of the config file can be explained by presenting a commented example:
+
+.RS 4
+.nf
+[filter]
+; If "whitelist" entry has a value(s)
+; gamemode will reject anything not in the whitelist
+;whitelist=RiseOfTheTombRaider
+
+; Gamemode will always reject anything in the blacklist
+blacklist=HalfLife3
+    glxgears
+.fi
+.RE
+
+This config file will currently reject any games that match \fIHalfLife3\fR or \fIglxgears\fR, but can be modified to only accept \fIRiseOfTheTombRaider\fR by removing the semicolon preceding the fourth line.
+
 .SH SEE ALSO
 systemd(1)
 

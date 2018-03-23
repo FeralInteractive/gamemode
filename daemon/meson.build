@@ -21,6 +21,7 @@ daemon_sources = [
     'daemonize.c',
     'dbus_messaging.c',
     'governors.c',
+    'daemon_config.c',
 ]
 
 executable(
@@ -30,6 +31,7 @@ executable(
         link_daemon_common,
         dep_threads,
         dep_systemd,
+        inih_dependency,
     ],
     include_directories: [
         config_h_dir,

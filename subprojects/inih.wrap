@@ -1,0 +1,5 @@
+[wrap-git]
+directory=inih
+url=https://github.com/FeralInteractive/inih.git
+revision=head
+

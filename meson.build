@@ -82,6 +82,10 @@ subdir('lib')
 # The daemon can be disabled if necessary, allowing multilib builds of the
 # main library
 if with_daemon == true
+    # inih currently only needed by the daemon
+    inih = subproject('inih')
+    inih_dependency = inih.get_variable('inih_dependency')
+
     subdir('daemon')
 
     # All installed data is currently daemon specific

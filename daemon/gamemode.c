@@ -32,6 +32,7 @@ POSSIBILITY OF SUCH DAMAGE.
 #define _GNU_SOURCE
 
 #include "gamemode.h"
+#include "daemon_config.h"
 #include "governors.h"
 #include "logging.h"
 
@@ -55,6 +56,8 @@ struct GameModeContext {
 	pthread_rwlock_t rwlock; /**<Guard access to the client list */
 	_Atomic int refcount;    /**<Allow cycling the game mode */
 	GameModeClient *client;  /**<Pointer to first client */
+
+	GameModeConfig *config; /**<Pointer to config object */
 
 	bool performance_mode; /**<Only updates when we can */
 
@@ -98,6 +101,10 @@ void game_mode_context_init(GameModeContext *self)
 	had_context_init = true;
 	self->refcount = ATOMIC_VAR_INIT(0);
 
+	/* Initialise the config */
+	self->config = config_create();
+	config_init(self->config);
+
 	/* Read current governer state before setting up any message handling */
 	update_initial_gov_state();
 	LOG_MSG("governor is set to [%s]\n", get_initial_governor());
@@ -138,6 +145,9 @@ void game_mode_context_destroy(GameModeContext *self)
 
 	pthread_cond_destroy(&self->reaper.condition);
 	pthread_mutex_destroy(&self->reaper.mutex);
+
+	/* Destroy the config object */
+	config_destroy(self->config);
 
 	pthread_rwlock_destroy(&self->rwlock);
 }
@@ -250,6 +260,15 @@ bool game_mode_context_register(GameModeContext *self, pid_t client)
 	/* Cap the total number of active clients */
 	if (game_mode_context_num_clients(self) + 1 > MAX_GAMES) {
 		LOG_ERROR("Max games (%d) reached, not registering %d\n", MAX_GAMES, client);
+		return false;
+	}
+
+	/* Check our blacklist and whitelist */
+	if (!config_get_client_whitelisted(self->config, cl->executable)) {
+		LOG_MSG("Client [%s] was rejected (not in whitelist)\n", cl->executable);
+		return false;
+	} else if (config_get_client_blacklisted(self->config, cl->executable)) {
+		LOG_MSG("Client [%s] was rejected (in blacklist)\n", cl->executable);
 		return false;
 	}
 
