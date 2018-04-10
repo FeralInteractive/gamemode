@@ -19,6 +19,8 @@ GameMode depends on `meson` for building and `systemd` for internal communicatio
 apt install meson libsystemd-dev pkg-config ninja-build
 # Arch
 pacman -S meson systemd ninja
+# Fedora
+dnf install meson systemd-devel pkg-config
 
 git clone https://github.com/FeralInteractive/gamemode.git
 cd gamemode
