@@ -1,5 +1,11 @@
 #!/bin/bash
 # Simple bootstrap script to build and run the daemon
+
+if [ "$EUID" -eq 0 ]
+  then echo "Please don't run bootstrap.sh as root."
+  exit
+fi
+
 set -e
 
 # Echo the rest so it's obvious
