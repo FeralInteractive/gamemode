@@ -9,6 +9,9 @@ Issues with GameMode should be reported here in the issues section, and not repo
 
 ---
 ## Building and installing
+
+If your distribution already has GameMode packaged, it is preferable to install it directly from there. There are Solus and AUR packages already available.
+
 GameMode depends on `meson` for building and `systemd` for internal communication. This repo contains a `bootstrap.sh` script to allow for quick install to the user bus, but check `meson_options.txt` for custom settings.
 
 ```bash
