@@ -29,6 +29,8 @@ POSSIBILITY OF SUCH DAMAGE.
 
  */
 
+#define _GNU_SOURCE
+
 #include "dbus_messaging.h"
 #include "daemonize.h"
 #include "gamemode.h"
