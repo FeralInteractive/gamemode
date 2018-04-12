@@ -55,6 +55,7 @@ POSSIBILITY OF SUCH DAMAGE.
 #include "gamemode.h"
 #include "logging.h"
 
+#include <systemd/sd-daemon.h>
 #include <signal.h>
 #include <string.h>
 #include <unistd.h>
@@ -74,6 +75,7 @@ POSSIBILITY OF SUCH DAMAGE.
 static void sigint_handler(__attribute__((unused)) int signo)
 {
 	LOG_MSG("Quitting by request...\n");
+	sd_notify(0,"STATUS=GameMode is quitting by request...\n");
 
 	/* Clean up nicely */
 	game_mode_context_destroy(game_mode_context_instance());
@@ -141,4 +143,5 @@ int main(int argc, char *argv[])
 
 	/* Log we're finished */
 	LOG_MSG("Quitting naturally...\n");
+	sd_notify(0,"STATUS=GameMode is quitting naturally...\n");
 }
