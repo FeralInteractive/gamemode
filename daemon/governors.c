@@ -46,7 +46,7 @@ static const char *initial = NULL;
 /**
  * Cache the governor state as seen at startup
  */
-void update_initial_gov_state()
+void update_initial_gov_state(void)
 {
 	initial = get_gov_state();
 }
@@ -61,9 +61,9 @@ bool set_governors(const char *value)
 	int ret = 0;
 	int r = -1;
 
-	const char *govern = value ? value : initial;
-	char *exec_args[] = {
-		"/usr/bin/pkexec", LIBEXECDIR "/cpugovctl", "set", (char *)govern, NULL,
+	const char *const govern = value ? value : initial;
+	const char *const exec_args[] = {
+		"/usr/bin/pkexec", LIBEXECDIR "/cpugovctl", "set", govern, NULL,
 	};
 
 	LOG_MSG("Requesting update of governor policy to %s\n", govern);
@@ -73,7 +73,13 @@ bool set_governors(const char *value)
 		return false;
 	} else if (p == 0) {
 		/* Execute the command */
-		if ((r = execv(exec_args[0], exec_args)) != 0) {
+		/* Note about cast:
+		 *   The statement about argv[] and envp[] being constants is
+		 *   included to make explicit to future writers of language
+		 *   bindings that these objects are completely constant.
+		 * http://pubs.opengroup.org/onlinepubs/9699919799/functions/exec.html
+		 */
+		if ((r = execv(exec_args[0], (char *const *)exec_args)) != 0) {
 			LOG_ERROR("Failed to execute cpugovctl helper: %s %s\n", exec_args[1], strerror(errno));
 			exit(EXIT_FAILURE);
 		}
@@ -100,7 +106,7 @@ bool set_governors(const char *value)
 /**
  * Return the cached governor seen at startup
  */
-const char *get_initial_governor()
+const char *get_initial_governor(void)
 {
 	return initial;
 }

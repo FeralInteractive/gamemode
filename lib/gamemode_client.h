@@ -38,7 +38,7 @@ POSSIBILITY OF SUCH DAMAGE.
 #include <errno.h>
 #include <string.h>
 
-char _client_error_string[512] = { 0 };
+static char _client_error_string[512] = { 0 };
 
 /**
  * Load libgamemode dynamically to dislodge us from most dependencies.
@@ -46,7 +46,7 @@ char _client_error_string[512] = { 0 };
  * See SDL2 for an example of the reasoning behind this in terms of
  * dynamic versioning as well.
  */
-volatile int _libgamemode_loaded = 1;
+volatile static int _libgamemode_loaded = 1;
 
 /* Typedefs for the functions to load */
 typedef int (*_gamemode_request_start)(void);
@@ -54,18 +54,19 @@ typedef int (*_gamemode_request_end)(void);
 typedef const char *(*_gamemode_error_string)(void);
 
 /* Storage for functors */
-_gamemode_request_start _REAL_gamemode_request_start = NULL;
-_gamemode_request_end _REAL_gamemode_request_end = NULL;
-_gamemode_error_string _REAL_gamemode_error_string = NULL;
+static _gamemode_request_start _REAL_gamemode_request_start = NULL;
+static _gamemode_request_end _REAL_gamemode_request_end = NULL;
+static _gamemode_error_string _REAL_gamemode_error_string = NULL;
 
 /**
  * Internal helper to perform the symbol binding safely.
  *
  * Returns 0 on success and -1 on failure
  */
-__attribute__((always_inline)) inline int _bind_libgamemode_symbol(void *handle, const char *name,
-                                                                   void **out_func,
-                                                                   size_t func_size)
+__attribute__((always_inline)) static inline int _bind_libgamemode_symbol(void *handle,
+                                                                          const char *name,
+                                                                          void **out_func,
+                                                                          size_t func_size)
 {
 	void *symbol_lookup = NULL;
 	char *dl_error = NULL;
@@ -88,7 +89,7 @@ __attribute__((always_inline)) inline int _bind_libgamemode_symbol(void *handle,
  *
  * Returns 0 on success and -1 on failure
  */
-__attribute__((always_inline)) inline int _load_libgamemode(void)
+__attribute__((always_inline)) static inline int _load_libgamemode(void)
 {
 	/* We start at 1, 0 is a success and -1 is a fail */
 	if (_libgamemode_loaded != 1) {
@@ -146,7 +147,7 @@ __attribute__((always_inline)) inline int _load_libgamemode(void)
 /**
  * Redirect to the real libgamemode
  */
-__attribute__((always_inline)) inline const char *gamemode_error_string(void)
+__attribute__((always_inline)) static inline const char *gamemode_error_string(void)
 {
 	/* If we fail to load the system gamemode, return our error string */
 	if (_load_libgamemode() < 0) {
@@ -164,7 +165,7 @@ __attribute__((always_inline)) inline const char *gamemode_error_string(void)
 #ifdef GAMEMODE_AUTO
 __attribute__((constructor))
 #else
-__attribute__((always_inline)) inline
+__attribute__((always_inline)) static inline
 #endif
 int gamemode_request_start(void)
 {
@@ -190,7 +191,7 @@ int gamemode_request_start(void)
 #ifdef GAMEMODE_AUTO
 __attribute__((destructor))
 #else
-__attribute__((always_inline)) inline
+__attribute__((always_inline)) static inline
 #endif
 int gamemode_request_end(void)
 {

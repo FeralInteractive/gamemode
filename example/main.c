@@ -34,11 +34,11 @@ POSSIBILITY OF SUCH DAMAGE.
 #include <stdio.h>
 #include <unistd.h>
 
-int main(__attribute__((unused)) int argc, __attribute__((unused)) char **argv)
+int main(void)
 {
 	/* Request we start game mode */
 	if (gamemode_request_start() != 0) {
-		printf("Failed to request gamemode start: %s...\n", gamemode_error_string());
+		fprintf(stderr, "Failed to request gamemode start: %s...\n", gamemode_error_string());
 	}
 
 	/* Simulate running a game */
@@ -46,6 +46,6 @@ int main(__attribute__((unused)) int argc, __attribute__((unused)) char **argv)
 
 	/* Request we end game mode (optional) */
 	if (gamemode_request_end() != 0) {
-		printf("Failed to request gamemode end: %s...\n", gamemode_error_string());
+		fprintf(stderr, "Failed to request gamemode end: %s...\n", gamemode_error_string());
 	}
 }
