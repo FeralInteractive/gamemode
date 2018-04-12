@@ -28,8 +28,8 @@ ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 POSSIBILITY OF SUCH DAMAGE.
 
  */
-#ifndef _CLIENT_GAMEMODE_H_
-#define _CLIENT_GAMEMODE_H_
+#ifndef CLIENT_GAMEMODE_H
+#define CLIENT_GAMEMODE_H
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -212,4 +212,4 @@ int gamemode_request_end(void)
 	return 0;
 }
 
-#endif // _CLIENT_GAMEMODE_H_
+#endif // CLIENT_GAMEMODE_H

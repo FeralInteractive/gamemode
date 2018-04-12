@@ -58,6 +58,7 @@ POSSIBILITY OF SUCH DAMAGE.
 #include <signal.h>
 #include <string.h>
 #include <unistd.h>
+#include <stdlib.h>
 
 #define USAGE_TEXT                                                                                 \
 	"Usage: %s [-d] [-l] [-h] [-v]\n\n"                                                            \
@@ -77,7 +78,7 @@ static void sigint_handler(__attribute__((unused)) int signo)
 	/* Clean up nicely */
 	game_mode_context_destroy(game_mode_context_instance());
 
-	exit(EXIT_SUCCESS);
+	_Exit(EXIT_SUCCESS);
 }
 
 /**
