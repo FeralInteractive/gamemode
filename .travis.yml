@@ -1,0 +1,11 @@
+language: c
+compiler: gcc
+sudo: false
+
+addons:
+  apt:
+    packages:
+      - clang-format-3.4
+
+script:
+  - ./scripts/format-check.sh

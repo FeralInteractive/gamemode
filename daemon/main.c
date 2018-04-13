@@ -57,9 +57,9 @@ POSSIBILITY OF SUCH DAMAGE.
 
 #include <systemd/sd-daemon.h>
 #include <signal.h>
+#include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
-#include <stdlib.h>
 
 #define USAGE_TEXT                                                                                 \
 	"Usage: %s [-d] [-l] [-h] [-v]\n\n"                                                            \
