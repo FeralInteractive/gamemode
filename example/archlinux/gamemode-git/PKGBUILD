@@ -7,7 +7,7 @@ arch=('x86_64')
 url="https://github.com/FeralInteractive/gamemode.git"
 license=('MIT')
 depends=('systemd' 'polkit')
-makedepends=('meson' 'ninja' 'pkg-config')
+makedepends=('meson' 'pkg-config')
 provides=('gamemode')
 source=("git+https://github.com/FeralInteractive/gamemode.git")
 sha256sums=('SKIP')
@@ -19,7 +19,7 @@ pkgver() {
 
 build() {
   cd gamemode
-  meson --prefix=/usr build -Dwithsystemd-user-unit-dir=/etc/systemd/user
+  arch-meson build
   cd build
   ninja
 }
