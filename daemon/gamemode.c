@@ -162,7 +162,7 @@ void game_mode_context_destroy(GameModeContext *self)
 static void game_mode_context_enter(GameModeContext *self)
 {
 	LOG_MSG("Entering Game Mode...\n");
-	sd_notifyf(0,"STATUS=%sGameMode is now active.\n", "\x1B[1;32m");
+	sd_notifyf(0,"STATUS=%sGameMode is now active.%s\n", "\x1B[1;32m", "\x1B[0m");
 
 	if (!self->performance_mode && set_governors("performance")) {
 		self->performance_mode = true;
@@ -178,7 +178,7 @@ static void game_mode_context_enter(GameModeContext *self)
 static void game_mode_context_leave(GameModeContext *self)
 {
 	LOG_MSG("Leaving Game Mode...\n");
-	sd_notifyf(0,"STATUS=%sGameMode is currently deactivated.\n", "\x1B[1;36m");
+	sd_notifyf(0,"STATUS=%sGameMode is currently deactivated.%s\n", "\x1B[1;36m", "\x1B[0m");
 	
 	if (self->performance_mode && set_governors(NULL)) {
 		self->performance_mode = false;
