@@ -22,8 +22,8 @@ pacman -S meson systemd ninja
 # Fedora
 dnf install meson systemd-devel pkg-config
 
-git clone https://github.com/FeralInteractive/gamemode.git
-cd gamemode
+wget https://github.com/FeralInteractive/gamemode/archive/1.0.tar.gz && tar -xvf 1.0.tar.gz
+cd gamemode-1.0
 ./bootstrap.sh
 ```
 
@@ -43,8 +43,8 @@ LD_PRELOAD=$LD_PRELOAD:/usr/\$LIB/libgamemodeauto.so %command%
 ### Developers
 You may want to build the request directly into an app. Note that none of these client methods force your users to have the daemon installed or running - they will safely no-op if the host is missing.
 
-#### Explicit requests
 ```C
+// Manually with error checking
 #include "gamemode_client.h"
 
 	if( gamemode_request_start() < 0 ) {
@@ -56,9 +56,8 @@ You may want to build the request directly into an app. Note that none of these 
 	gamemode_request_end(); // Not required, gamemoded can clean up after game exits
 ```
 
-#### Implicit requests
-Simply use the header, but with `GAMEMODE_AUTO` defined.
 ```C
+// Automatically on program start and finish
 #define GAMEMODE_AUTO
 #include "gamemode_client.h"
 ```
@@ -68,32 +67,18 @@ Or, distribute `libgamemodeauto.so` and either add `-lgamemodeauto` to your link
 ---
 ## Components
 
-### Host
-#### gamemoded
-Runs in the background, activates game mode on request, refcounts and also checks caller PID lifetime.
+**gamemoded** runs in the background, activates game mode on request, refcounts and also checks caller PID lifetime. Accepts `-d` (daemonize) and `-l` (log to syslog).
 
-Accepts `-d` (daemonize) and `-l` (log to syslog).
+**libgamemode** is an internal library used to dispatch requests to the daemon. Note: `libgamemode` should never be linked with directly.
 
-#### libgamemode
-Internal library used to dispatch requests to the daemon.
+**libgamemodeauto** is a simple dynamic library that automatically requests game mode when loaded. Useful to `LD_PRELOAD` into any game as needed.
 
-Note: `libgamemode` should never be linked with directly.
-
-### Client
-#### libgamemodeauto
-Simple dynamic library that automatically requests game mode when loaded.
-
-Useful to `LD_PRELOAD` into any game as needed.
-
-#### gamemode\_client.h
-Single header lib that lets a game request game mode and handle errors.
+**gamemode\_client.h** is as single header lib that lets a game request game mode and handle errors.
 
 ---
 ## Configuration
 
-The daemon can currently be configured using a `gamemode.ini` file in `/usr/share/gamemode/`. It will load the file when starting up.
-
-An example of what the file could look like is found in the `example` directory.
+The daemon can currently be configured using a `gamemode.ini` file in `/usr/share/gamemode/`. It will load the file when starting up. An example of what the file could look like is found in the `example` directory.
 
 The file parsing uses [inih](https://github.com/benhoyt/inih).
 
@@ -115,8 +100,7 @@ clang-format -i $(find . -name '*.[ch]')
 ### Maintained by
 Marc Di Luzio (Feral Interactive)
 
-### Contributions by
-Ikey Doherty (Solus Project), Minze Zwerver (Ysblokje)
+See the [contributors](https://github.com/FeralInteractive/gamemode/graphs/contributors) section for an extended list of contributors.
 
 ---
 ## License
