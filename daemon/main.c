@@ -133,6 +133,9 @@ int main(int argc, char *argv[])
 	if (signal(SIGINT, sigint_handler) == SIG_ERR) {
 		FATAL_ERRORNO("Could not catch SIGINT");
 	}
+	if (signal(SIGTERM, sigint_handler) == SIG_ERR) {
+		FATAL_ERRORNO("Could not catch SIGTERM");
+	}
 
 	/* Run the main dbus message loop */
 	game_mode_context_loop(context);
