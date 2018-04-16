@@ -47,7 +47,7 @@ void set_use_syslog(const char *name)
 /**
  *  Simple getter for the syslog var
  */
-bool get_use_syslog()
+bool get_use_syslog(void)
 {
 	return use_syslog;
 }

@@ -39,7 +39,7 @@ POSSIBILITY OF SUCH DAMAGE.
 /**
  * Helper to perform standard UNIX daemonization
  */
-void daemonize(char *name)
+void daemonize(const char *name)
 {
 	/* Initial fork */
 	pid_t pid = fork();
