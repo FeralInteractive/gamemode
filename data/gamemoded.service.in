@@ -4,6 +4,7 @@ Description=gamemoded
 [Service]
 Type=dbus
 BusName=com.feralinteractive.GameMode
+NotifyAccess=main
 ExecStart=@BINDIR@/gamemoded -l
 
 [Install]
