@@ -46,7 +46,7 @@ static char _client_error_string[512] = { 0 };
  * See SDL2 for an example of the reasoning behind this in terms of
  * dynamic versioning as well.
  */
-volatile static int _libgamemode_loaded = 1;
+static volatile int _libgamemode_loaded = 1;
 
 /* Typedefs for the functions to load */
 typedef int (*_gamemode_request_start)(void);
