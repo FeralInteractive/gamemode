@@ -38,7 +38,7 @@ POSSIBILITY OF SUCH DAMAGE.
 #include <errno.h>
 #include <string.h>
 
-static char _client_error_string[512] = { 0 };
+static char internal_gamemode_client_error_string[512] = { 0 };
 
 /**
  * Load libgamemode dynamically to dislodge us from most dependencies.
@@ -46,27 +46,27 @@ static char _client_error_string[512] = { 0 };
  * See SDL2 for an example of the reasoning behind this in terms of
  * dynamic versioning as well.
  */
-static volatile int _libgamemode_loaded = 1;
+static volatile int internal_libgamemode_loaded = 1;
 
 /* Typedefs for the functions to load */
-typedef int (*_gamemode_request_start)(void);
-typedef int (*_gamemode_request_end)(void);
-typedef const char *(*_gamemode_error_string)(void);
+typedef int (*internal_gamemode_request_start)(void);
+typedef int (*internal_gamemode_request_end)(void);
+typedef const char *(*internal_gamemode_error_string)(void);
 
 /* Storage for functors */
-static _gamemode_request_start _REAL_gamemode_request_start = NULL;
-static _gamemode_request_end _REAL_gamemode_request_end = NULL;
-static _gamemode_error_string _REAL_gamemode_error_string = NULL;
+static internal_gamemode_request_start REAL_internal_gamemode_request_start = NULL;
+static internal_gamemode_request_end REAL_internal_gamemode_request_end = NULL;
+static internal_gamemode_error_string REAL_internal_gamemode_error_string = NULL;
 
 /**
  * Internal helper to perform the symbol binding safely.
  *
  * Returns 0 on success and -1 on failure
  */
-__attribute__((always_inline)) static inline int _bind_libgamemode_symbol(void *handle,
-                                                                          const char *name,
-                                                                          void **out_func,
-                                                                          size_t func_size)
+__attribute__((always_inline)) static inline int internal_bind_libgamemode_symbol(void *handle,
+                                                                                  const char *name,
+                                                                                  void **out_func,
+                                                                                  size_t func_size)
 {
 	void *symbol_lookup = NULL;
 	char *dl_error = NULL;
@@ -75,7 +75,10 @@ __attribute__((always_inline)) static inline int _bind_libgamemode_symbol(void *
 	symbol_lookup = dlsym(handle, name);
 	dl_error = dlerror();
 	if (dl_error || !symbol_lookup) {
-		snprintf(_client_error_string, sizeof(_client_error_string), "dlsym failed - %s", dl_error);
+		snprintf(internal_gamemode_client_error_string,
+		         sizeof(internal_gamemode_client_error_string),
+		         "dlsym failed - %s",
+		         dl_error);
 		return -1;
 	}
 
@@ -89,11 +92,11 @@ __attribute__((always_inline)) static inline int _bind_libgamemode_symbol(void *
  *
  * Returns 0 on success and -1 on failure
  */
-__attribute__((always_inline)) static inline int _load_libgamemode(void)
+__attribute__((always_inline)) static inline int internal_load_libgamemode(void)
 {
 	/* We start at 1, 0 is a success and -1 is a fail */
-	if (_libgamemode_loaded != 1) {
-		return _libgamemode_loaded;
+	if (internal_libgamemode_loaded != 1) {
+		return internal_libgamemode_loaded;
 	}
 
 	/* Anonymous struct type to define our bindings */
@@ -103,14 +106,14 @@ __attribute__((always_inline)) static inline int _load_libgamemode(void)
 		size_t func_size;
 	} bindings[] = {
 		{ "real_gamemode_request_start",
-		  (void **)&_REAL_gamemode_request_start,
-		  sizeof(_REAL_gamemode_request_start) },
+		  (void **)&REAL_internal_gamemode_request_start,
+		  sizeof(REAL_internal_gamemode_request_start) },
 		{ "real_gamemode_request_end",
-		  (void **)&_REAL_gamemode_request_end,
-		  sizeof(_REAL_gamemode_request_end) },
+		  (void **)&REAL_internal_gamemode_request_end,
+		  sizeof(REAL_internal_gamemode_request_end) },
 		{ "real_gamemode_error_string",
-		  (void **)&_REAL_gamemode_error_string,
-		  sizeof(_REAL_gamemode_error_string) },
+		  (void **)&REAL_internal_gamemode_error_string,
+		  sizeof(REAL_internal_gamemode_error_string) },
 	};
 
 	void *libgamemode = NULL;
@@ -118,11 +121,11 @@ __attribute__((always_inline)) static inline int _load_libgamemode(void)
 	/* Try and load libgamemode */
 	libgamemode = dlopen("libgamemode.so", RTLD_NOW);
 	if (!libgamemode) {
-		snprintf(_client_error_string,
-		         sizeof(_client_error_string),
+		snprintf(internal_gamemode_client_error_string,
+		         sizeof(internal_gamemode_client_error_string),
 		         "dylopen failed - %s",
 		         dlerror());
-		_libgamemode_loaded = -1;
+		internal_libgamemode_loaded = -1;
 		return -1;
 	}
 
@@ -130,17 +133,17 @@ __attribute__((always_inline)) static inline int _load_libgamemode(void)
 	for (size_t i = 0; i < sizeof(bindings) / sizeof(bindings[0]); i++) {
 		struct binding *binder = &bindings[i];
 
-		if (_bind_libgamemode_symbol(libgamemode,
-		                             binder->name,
-		                             binder->functor,
-		                             binder->func_size) != 0) {
-			_libgamemode_loaded = -1;
+		if (internal_bind_libgamemode_symbol(libgamemode,
+		                                     binder->name,
+		                                     binder->functor,
+		                                     binder->func_size) != 0) {
+			internal_libgamemode_loaded = -1;
 			return -1;
 		};
 	}
 
 	/* Success */
-	_libgamemode_loaded = 0;
+	internal_libgamemode_loaded = 0;
 	return 0;
 }
 
@@ -150,11 +153,11 @@ __attribute__((always_inline)) static inline int _load_libgamemode(void)
 __attribute__((always_inline)) static inline const char *gamemode_error_string(void)
 {
 	/* If we fail to load the system gamemode, return our error string */
-	if (_load_libgamemode() < 0) {
-		return _client_error_string;
+	if (internal_load_libgamemode() < 0) {
+		return internal_gamemode_client_error_string;
 	}
 
-	return _REAL_gamemode_error_string();
+	return REAL_internal_gamemode_error_string();
 }
 
 /**
@@ -170,14 +173,14 @@ __attribute__((always_inline)) static inline
 int gamemode_request_start(void)
 {
 	/* Need to load gamemode */
-	if (_load_libgamemode() < 0) {
+	if (internal_load_libgamemode() < 0) {
 #ifdef GAMEMODE_AUTO
 		fprintf(stderr, "gamemodeauto: %s\n", gamemode_error_string());
 #endif
 		return -1;
 	}
 
-	if (_REAL_gamemode_request_start() < 0) {
+	if (REAL_internal_gamemode_request_start() < 0) {
 #ifdef GAMEMODE_AUTO
 		fprintf(stderr, "gamemodeauto: %s\n", gamemode_error_string());
 #endif
@@ -196,14 +199,14 @@ __attribute__((always_inline)) static inline
 int gamemode_request_end(void)
 {
 	/* Need to load gamemode */
-	if (_load_libgamemode() < 0) {
+	if (internal_load_libgamemode() < 0) {
 #ifdef GAMEMODE_AUTO
 		fprintf(stderr, "gamemodeauto: %s\n", gamemode_error_string());
 #endif
 		return -1;
 	}
 
-	if (_REAL_gamemode_request_end() < 0) {
+	if (REAL_internal_gamemode_request_end() < 0) {
 #ifdef GAMEMODE_AUTO
 		fprintf(stderr, "gamemodeauto: %s\n", gamemode_error_string());
 #endif
