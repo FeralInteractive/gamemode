@@ -35,4 +35,4 @@ POSSIBILITY OF SUCH DAMAGE.
  * Attempt daemonization of the process.
  * If this fails, the process will exit
  */
-void daemonize(char *name);
+void daemonize(const char *name);

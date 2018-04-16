@@ -77,7 +77,7 @@ int fetch_governors(char governors[MAX_GOVERNORS][MAX_GOVERNOR_LENGTH])
 		}
 
 		/* Only add this governor if it is unique */
-		for (int i = 0; i < num_governors; i++) {
+		for (int j = 0; j < num_governors; j++) {
 			if (strncmp(fullpath, governors[i], MAX_GOVERNOR_LENGTH) == 0) {
 				continue;
 			}
@@ -95,7 +95,7 @@ int fetch_governors(char governors[MAX_GOVERNORS][MAX_GOVERNOR_LENGTH])
 /**
  * Return the current governor state
  */
-const char *get_gov_state()
+const char *get_gov_state(void)
 {
 	/* Cached primary governor state */
 	static char governor[64] = { 0 };

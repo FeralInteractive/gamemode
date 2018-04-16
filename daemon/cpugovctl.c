@@ -40,7 +40,7 @@ POSSIBILITY OF SUCH DAMAGE.
 /**
  * Sets all governors to a value
  */
-void set_gov_state(const char *value)
+static void set_gov_state(const char *value)
 {
 	char governors[MAX_GOVERNORS][MAX_GOVERNOR_LENGTH] = { { 0 } };
 	int num = fetch_governors(governors);
