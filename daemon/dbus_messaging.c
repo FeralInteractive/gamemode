@@ -145,7 +145,7 @@ void game_mode_context_loop(GameModeContext *context)
 	}
 
 	LOG_MSG("Successfully initialised bus with name [%s]...\n", "com.feralinteractive.GameMode");
-	sd_notifyf(0,"STATUS=%sGameMode is ready to be activated.%s\n", "\x1B[1;36m", "\x1B[0m");
+	sd_notifyf(0, "STATUS=%sGameMode is ready to be activated.%s\n", "\x1B[1;36m", "\x1B[0m");
 
 	/* Now loop, waiting for callbacks */
 	for (;;) {
