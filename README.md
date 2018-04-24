@@ -78,7 +78,7 @@ Or, distribute `libgamemodeauto.so` and either add `-lgamemodeauto` to your link
 ---
 ## Configuration
 
-The daemon can currently be configured using a `gamemode.ini` file in `/usr/share/gamemode/`. It will load the file when starting up. An example of what the file could look like is found in the `example` directory.
+The daemon can currently be configured using a `gamemode.ini` file in `/usr/share/gamemode/`. It will load the file when starting up. An example of what the file could look like is found in the `example` directory and the man page contains details on entries.
 
 The file parsing uses [inih](https://github.com/benhoyt/inih).
 

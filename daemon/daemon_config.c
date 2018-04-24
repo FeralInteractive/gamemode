@@ -51,6 +51,9 @@ POSSIBILITY OF SUCH DAMAGE.
 /* Maximum length of values in the whilelist or blacklist */
 #define MAX_LIST_VALUE_LENGTH 256
 
+/* Default value for the reaper frequency */
+#define DEFAULT_REAPER_FREQ 5
+
 /**
  * The config holds various details as needed
  * and a rwlock to allow config_reload to be called
@@ -62,6 +65,8 @@ struct GameModeConfig {
 
 	char whitelist[MAX_LIST_VALUES][MAX_LIST_VALUE_LENGTH];
 	char blacklist[MAX_LIST_VALUES][MAX_LIST_VALUE_LENGTH];
+
+	long reaper_frequency;
 };
 
 /*
@@ -103,6 +108,21 @@ static int inih_handler(void *user, const char *section, const char *name, const
 				        MAX_LIST_VALUES);
 			}
 		}
+	} else if (strcmp(section, "general") == 0) {
+		if (strcmp(name, "reaper_freq") == 0) {
+			valid = true;
+
+			char *end = NULL;
+			long chosen_freq = strtol(value, &end, 10);
+
+			if (errno == ERANGE) {
+				LOG_MSG("reaper_freq value overflowed, given [%s]\n", value);
+			} else if (chosen_freq <= 0 || !(*value != '\0' && end && *end == '\0')) {
+				LOG_MSG("reaper_freq value was invalid, given [%s]\n", value);
+			} else {
+				self->reaper_frequency = chosen_freq;
+			}
+		}
 	}
 
 	if (!valid) {
@@ -124,6 +144,7 @@ static void load_config_file(GameModeConfig *self)
 	/* Clear our config values */
 	memset(self->whitelist, 0, sizeof(self->whitelist));
 	memset(self->blacklist, 0, sizeof(self->blacklist));
+	self->reaper_frequency = DEFAULT_REAPER_FREQ;
 
 	/* try locally first */
 	FILE *f = fopen(CONFIG_NAME, "r");
@@ -242,4 +263,20 @@ bool config_get_client_blacklisted(GameModeConfig *self, const char *client)
 	/* release the lock */
 	pthread_rwlock_unlock(&self->rwlock);
 	return found;
+}
+
+/*
+ * Gets the reaper frequency
+ */
+long config_get_reaper_thread_frequency(GameModeConfig *self)
+{
+	long value;
+	/* Take the read lock */
+	pthread_rwlock_rdlock(&self->rwlock);
+
+	value = self->reaper_frequency;
+
+	/* release the lock */
+	pthread_rwlock_unlock(&self->rwlock);
+	return value;
 }

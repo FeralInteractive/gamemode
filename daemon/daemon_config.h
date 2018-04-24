@@ -70,3 +70,8 @@ bool config_get_client_whitelisted(GameModeConfig *self, const char *client);
  * Get if the client is in the blacklist
  */
 bool config_get_client_blacklisted(GameModeConfig *self, const char *client);
+
+/*
+ * Get the frequency (in seconds) for the reaper thread
+ */
+long config_get_reaper_thread_frequency(GameModeConfig *self);
