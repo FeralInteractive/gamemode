@@ -33,6 +33,13 @@ POSSIBILITY OF SUCH DAMAGE.
 #include <stdbool.h>
 
 /*
+ * Maximum sizes values in a config list
+ * In practice inih has a INI_MAX_LINE value of 200 so the length is just a safeguard
+ */
+#define CONFIG_LIST_MAX 32
+#define CONFIG_VALUE_MAX 256
+
+/*
  * Opaque config context type
  */
 typedef struct GameModeConfig GameModeConfig;
@@ -75,3 +82,14 @@ bool config_get_client_blacklisted(GameModeConfig *self, const char *client);
  * Get the frequency (in seconds) for the reaper thread
  */
 long config_get_reaper_thread_frequency(GameModeConfig *self);
+
+/*
+ * Get a set of scripts to call when gamemode starts
+ */
+void config_get_gamemode_start_scripts(GameModeConfig *self,
+                                       char scripts[CONFIG_LIST_MAX][CONFIG_VALUE_MAX]);
+/*
+ * Get a set of scripts to call when gamemode ends
+ */
+void config_get_gamemode_end_scripts(GameModeConfig *self,
+                                     char scripts[CONFIG_LIST_MAX][CONFIG_VALUE_MAX]);
