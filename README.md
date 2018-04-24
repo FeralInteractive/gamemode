@@ -16,11 +16,11 @@ GameMode depends on `meson` for building and `systemd` for internal communicatio
 
 ```bash
 # Ubuntu
-apt install meson libsystemd-dev pkg-config ninja-build
+apt install meson libsystemd-dev pkg-config ninja-build git
 # Arch
-pacman -S meson systemd
+pacman -S meson systemd git
 # Fedora
-dnf install meson systemd-devel pkg-config
+dnf install meson systemd-devel pkg-config git
 
 wget https://github.com/FeralInteractive/gamemode/archive/1.0.tar.gz && tar -xvf 1.0.tar.gz
 cd gamemode-1.0
