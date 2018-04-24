@@ -93,7 +93,6 @@ clang-format -i $(find . -name '*.[ch]')
 
 ### Planned Features
 * Additional mode-switch plugins
-* User configuration for local mode-switch plugins
 * Improved client state tracking (PID is unreliable)
 * API to query if game mode is active
 

@@ -161,6 +161,21 @@ static void game_mode_context_enter(GameModeContext *self)
 	LOG_MSG("Entering Game Mode...\n");
 	sd_notifyf(0, "STATUS=%sGameMode is now active.%s\n", "\x1B[1;32m", "\x1B[0m");
 
+	char scripts[CONFIG_LIST_MAX][CONFIG_VALUE_MAX];
+	memset(scripts, 0, sizeof(scripts));
+	config_get_gamemode_start_scripts(self->config, scripts);
+
+	unsigned int i = 0;
+	while (*scripts[i] != '\0' && i < CONFIG_LIST_MAX) {
+		LOG_MSG("Executing script [%s]\n", scripts[i]);
+		int err;
+		if ((err = system(scripts[i])) != 0) {
+			/* Log the failure, but this is not fatal */
+			LOG_ERROR("Script [%s] failed with error %d\n", scripts[i], err);
+		}
+		i++;
+	}
+
 	if (!self->performance_mode && set_governors("performance")) {
 		self->performance_mode = true;
 	}
@@ -179,6 +194,21 @@ static void game_mode_context_leave(GameModeContext *self)
 
 	if (self->performance_mode && set_governors(NULL)) {
 		self->performance_mode = false;
+	}
+
+	char scripts[CONFIG_LIST_MAX][CONFIG_VALUE_MAX];
+	memset(scripts, 0, sizeof(scripts));
+	config_get_gamemode_end_scripts(self->config, scripts);
+
+	unsigned int i = 0;
+	while (*scripts[i] != '\0' && i < CONFIG_LIST_MAX) {
+		LOG_MSG("Executing script [%s]\n", scripts[i]);
+		int err;
+		if ((err = system(scripts[i])) != 0) {
+			/* Log the failure, but this is not fatal */
+			LOG_ERROR("Script [%s] failed with error %d\n", scripts[i], err);
+		}
+		i++;
 	}
 }
 

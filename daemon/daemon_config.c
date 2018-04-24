@@ -45,15 +45,6 @@ POSSIBILITY OF SUCH DAMAGE.
 #define CONFIG_NAME "gamemode.ini"
 #define CONFIG_DIR "/usr/share/gamemode/"
 
-/* Maximum values in a config list */
-#define MAX_LIST_VALUES 32
-
-/*
- * Maximum length of values in a config list
- * In practice inih has a INI_MAX_LINE value of 200, so this should never get hit
- */
-#define MAX_LIST_VALUE_LENGTH 256
-
 /* Default value for the reaper frequency */
 #define DEFAULT_REAPER_FREQ 5
 
@@ -66,8 +57,11 @@ struct GameModeConfig {
 	int inotfd;
 	int inotwd;
 
-	char whitelist[MAX_LIST_VALUES][MAX_LIST_VALUE_LENGTH];
-	char blacklist[MAX_LIST_VALUES][MAX_LIST_VALUE_LENGTH];
+	char whitelist[CONFIG_LIST_MAX][CONFIG_VALUE_MAX];
+	char blacklist[CONFIG_LIST_MAX][CONFIG_VALUE_MAX];
+
+	char startscripts[CONFIG_LIST_MAX][CONFIG_VALUE_MAX];
+	char endscripts[CONFIG_LIST_MAX][CONFIG_VALUE_MAX];
 
 	long reaper_frequency;
 };
@@ -76,20 +70,20 @@ struct GameModeConfig {
  * Add values to a char list
  */
 static bool append_value_to_list(const char *list_name, const char *value,
-                                 char list[MAX_LIST_VALUES][MAX_LIST_VALUE_LENGTH])
+                                 char list[CONFIG_LIST_MAX][CONFIG_VALUE_MAX])
 {
 	unsigned int i = 0;
-	while (*list[i] && ++i < MAX_LIST_VALUES)
+	while (*list[i] && ++i < CONFIG_LIST_MAX)
 		;
 
-	if (i < MAX_LIST_VALUES) {
-		strncpy(list[i], value, MAX_LIST_VALUE_LENGTH);
+	if (i < CONFIG_LIST_MAX) {
+		strncpy(list[i], value, CONFIG_VALUE_MAX);
 
-		if (list[i][MAX_LIST_VALUE_LENGTH - 1] != '\0') {
+		if (list[i][CONFIG_VALUE_MAX - 1] != '\0') {
 			LOG_ERROR("Config: Could not add [%s] to [%s], exceeds length limit of %d\n",
 			          value,
 			          list_name,
-			          MAX_LIST_VALUE_LENGTH);
+			          CONFIG_VALUE_MAX);
 
 			memset(list[i], 0, sizeof(list[i]));
 			return false;
@@ -98,7 +92,7 @@ static bool append_value_to_list(const char *list_name, const char *value,
 		LOG_ERROR("Config: Could not add [%s] to [%s], exceeds number of %d\n",
 		          value,
 		          list_name,
-		          MAX_LIST_VALUES);
+		          CONFIG_LIST_MAX);
 		return false;
 	}
 
@@ -146,6 +140,13 @@ static int inih_handler(void *user, const char *section, const char *name, const
 		if (strcmp(name, "reaper_freq") == 0) {
 			valid = get_long_value(name, value, &self->reaper_frequency);
 		}
+	} else if (strcmp(section, "custom") == 0) {
+		/* Custom subsection */
+		if (strcmp(name, "start") == 0) {
+			valid = append_value_to_list(name, value, self->startscripts);
+		} else if (strcmp(name, "end") == 0) {
+			valid = append_value_to_list(name, value, self->endscripts);
+		}
 	}
 
 	if (!valid) {
@@ -167,6 +168,8 @@ static void load_config_file(GameModeConfig *self)
 	/* Clear our config values */
 	memset(self->whitelist, 0, sizeof(self->whitelist));
 	memset(self->blacklist, 0, sizeof(self->blacklist));
+	memset(self->startscripts, 0, sizeof(self->startscripts));
+	memset(self->endscripts, 0, sizeof(self->endscripts));
 	self->reaper_frequency = DEFAULT_REAPER_FREQ;
 
 	/* try locally first */
@@ -252,7 +255,7 @@ bool config_get_client_whitelisted(GameModeConfig *self, const char *client)
 		 * Currently is a simple strstr check, but could be modified for wildcards etc.
 		 */
 		found = false;
-		for (unsigned int i = 0; i < MAX_LIST_VALUES && self->whitelist[i][0]; i++) {
+		for (unsigned int i = 0; i < CONFIG_LIST_MAX && self->whitelist[i][0]; i++) {
 			if (strstr(client, self->whitelist[i])) {
 				found = true;
 			}
@@ -277,7 +280,7 @@ bool config_get_client_blacklisted(GameModeConfig *self, const char *client)
 	 * Currently is a simple strstr check, but could be modified for wildcards etc.
 	 */
 	bool found = false;
-	for (unsigned int i = 0; i < MAX_LIST_VALUES && self->blacklist[i][0]; i++) {
+	for (unsigned int i = 0; i < CONFIG_LIST_MAX && self->blacklist[i][0]; i++) {
 		if (strstr(client, self->blacklist[i])) {
 			found = true;
 		}
@@ -302,4 +305,34 @@ long config_get_reaper_thread_frequency(GameModeConfig *self)
 	/* release the lock */
 	pthread_rwlock_unlock(&self->rwlock);
 	return value;
+}
+
+/*
+ * Get a set of scripts to call when gamemode starts
+ */
+void config_get_gamemode_start_scripts(GameModeConfig *self,
+                                       char scripts[CONFIG_LIST_MAX][CONFIG_VALUE_MAX])
+{
+	/* Take the read lock */
+	pthread_rwlock_rdlock(&self->rwlock);
+
+	memcpy(scripts, self->startscripts, sizeof(self->startscripts));
+
+	/* release the lock */
+	pthread_rwlock_unlock(&self->rwlock);
+}
+
+/*
+ * Get a set of scripts to call when gamemode ends
+ */
+void config_get_gamemode_end_scripts(GameModeConfig *self,
+                                     char scripts[CONFIG_LIST_MAX][CONFIG_VALUE_MAX])
+{
+	/* Take the read lock */
+	pthread_rwlock_rdlock(&self->rwlock);
+
+	memcpy(scripts, self->endscripts, sizeof(self->startscripts));
+
+	/* release the lock */
+	pthread_rwlock_unlock(&self->rwlock);
 }

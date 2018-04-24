@@ -86,6 +86,14 @@ reaper_freq=10
 ; Gamemode will always reject anything in the blacklist
 blacklist=HalfLife3
     glxgears
+
+[custom]
+; Custom scripts (executed using the shell) when gamemode starts and ends
+start=notify-send "GameMode started"
+    /home/me/bin/stop_ethmining.sh
+
+end=notify-send "GameMode ended"
+    /home/me/bin/start_ethmining.sh
 .fi
 .RE
 
