@@ -45,10 +45,13 @@ POSSIBILITY OF SUCH DAMAGE.
 #define CONFIG_NAME "gamemode.ini"
 #define CONFIG_DIR "/usr/share/gamemode/"
 
-/* Maximum values in the whilelist and blacklist */
+/* Maximum values in a config list */
 #define MAX_LIST_VALUES 32
 
-/* Maximum length of values in the whilelist or blacklist */
+/*
+ * Maximum length of values in a config list
+ * In practice inih has a INI_MAX_LINE value of 200, so this should never get hit
+ */
 #define MAX_LIST_VALUE_LENGTH 256
 
 /* Default value for the reaper frequency */
@@ -70,6 +73,60 @@ struct GameModeConfig {
 };
 
 /*
+ * Add values to a char list
+ */
+static bool append_value_to_list(const char *list_name, const char *value,
+                                 char list[MAX_LIST_VALUES][MAX_LIST_VALUE_LENGTH])
+{
+	unsigned int i = 0;
+	while (*list[i] && ++i < MAX_LIST_VALUES)
+		;
+
+	if (i < MAX_LIST_VALUES) {
+		strncpy(list[i], value, MAX_LIST_VALUE_LENGTH);
+
+		if (list[i][MAX_LIST_VALUE_LENGTH - 1] != '\0') {
+			LOG_ERROR("Config: Could not add [%s] to [%s], exceeds length limit of %d\n",
+			          value,
+			          list_name,
+			          MAX_LIST_VALUE_LENGTH);
+
+			memset(list[i], 0, sizeof(list[i]));
+			return false;
+		}
+	} else {
+		LOG_ERROR("Config: Could not add [%s] to [%s], exceeds number of %d\n",
+		          value,
+		          list_name,
+		          MAX_LIST_VALUES);
+		return false;
+	}
+
+	return true;
+}
+
+/*
+ * Get a positive long value from a string
+ */
+static bool get_long_value(const char *value_name, const char *value, long *output)
+{
+	char *end = NULL;
+	long config_value = strtol(value, &end, 10);
+
+	if (errno == ERANGE) {
+		LOG_ERROR("Config: %s overflowed, given [%s]\n", value_name, value);
+		return false;
+	} else if (config_value <= 0 || !(*value != '\0' && end && *end == '\0')) {
+		LOG_ERROR("Config: %s was invalid, given [%s]\n", value_name, value);
+		return false;
+	} else {
+		*output = config_value;
+	}
+
+	return true;
+}
+
+/*
  * Handler for the inih callback
  */
 static int inih_handler(void *user, const char *section, const char *name, const char *value)
@@ -77,57 +134,23 @@ static int inih_handler(void *user, const char *section, const char *name, const
 	GameModeConfig *self = (GameModeConfig *)user;
 	bool valid = false;
 
-	/* Filter subsection */
 	if (strcmp(section, "filter") == 0) {
+		/* Filter subsection */
 		if (strcmp(name, "whitelist") == 0) {
-			valid = true;
-
-			unsigned int i = 0;
-			while (*self->whitelist[i] && ++i < MAX_LIST_VALUES)
-				;
-
-			if (i < MAX_LIST_VALUES) {
-				strncpy(self->whitelist[i], value, MAX_LIST_VALUE_LENGTH);
-			} else {
-				LOG_MSG("Could not add [%s] to the whitelist, exceeds limit of %d\n",
-				        value,
-				        MAX_LIST_VALUES);
-			}
+			valid = append_value_to_list(name, value, self->whitelist);
 		} else if (strcmp(name, "blacklist") == 0) {
-			valid = true;
-
-			unsigned int i = 0;
-			while (*self->blacklist[i] && ++i < MAX_LIST_VALUES)
-				;
-
-			if (i < MAX_LIST_VALUES) {
-				strncpy(self->blacklist[i], value, MAX_LIST_VALUE_LENGTH);
-			} else {
-				LOG_MSG("Could not add [%s] to the blacklist, exceeds limit of %d\n",
-				        value,
-				        MAX_LIST_VALUES);
-			}
+			valid = append_value_to_list(name, value, self->blacklist);
 		}
 	} else if (strcmp(section, "general") == 0) {
+		/* General subsection */
 		if (strcmp(name, "reaper_freq") == 0) {
-			valid = true;
-
-			char *end = NULL;
-			long chosen_freq = strtol(value, &end, 10);
-
-			if (errno == ERANGE) {
-				LOG_MSG("reaper_freq value overflowed, given [%s]\n", value);
-			} else if (chosen_freq <= 0 || !(*value != '\0' && end && *end == '\0')) {
-				LOG_MSG("reaper_freq value was invalid, given [%s]\n", value);
-			} else {
-				self->reaper_frequency = chosen_freq;
-			}
+			valid = get_long_value(name, value, &self->reaper_frequency);
 		}
 	}
 
 	if (!valid) {
-		/* We hit an unknown section succeed but with a log */
-		LOG_MSG("Unknown value in config file [%s] %s=%s\n", section, name, value);
+		/* Simply ignore the value, but with a log */
+		LOG_MSG("Config: Value ignored [%s] %s=%s\n", section, name, value);
 	}
 
 	return 1;
