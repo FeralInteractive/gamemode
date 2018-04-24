@@ -3,7 +3,7 @@
 
 The design has a clear-cut abstraction between the host daemon and library (`gamemoded` and `libgamemode`), and the client loaders (`libgamemodeauto` and `gamemode_client.h`) that allows for safe use without worrying about whether the daemon is installed or running. This design also means that while the host library currently relies on `systemd` for exchanging messages with the daemon, it's entirely possible to implement other internals that still work with the same clients.
 
-GameMode was designed primarily as a stop-gap solution to problems with the Intel and AMD CPU powersave or ondemand governors, but is intended to be expanded beyond just CPU governor states, as there are a wealth of automation tasks one might want to apply.
+GameMode was designed primarily as a stop-gap solution to problems with the Intel and AMD CPU powersave or ondemand governors, but is now able to launch custom user defined plugins, and is intended to be expanded further, as there are a wealth of automation tasks one might want to apply.
 
 Issues with GameMode should be reported here in the issues section, and not reported to Feral directly.
 
@@ -39,9 +39,10 @@ Or edit the steam launch options:
 ```
 LD_PRELOAD=$LD_PRELOAD:/usr/\$LIB/libgamemodeauto.so %command%
 ```
+Please note the backslash here in `\$LIB` is required.
 
 ### Developers
-You may want to build the request directly into an app. Note that none of these client methods force your users to have the daemon installed or running - they will safely no-op if the host is missing.
+Developers can build the request directly into an app. Note that none of these client methods force your users to have the daemon installed or running - they will safely no-op if the host is missing.
 
 ```C
 // Manually with error checking
@@ -78,7 +79,7 @@ Or, distribute `libgamemodeauto.so` and either add `-lgamemodeauto` to your link
 ---
 ## Configuration
 
-The daemon can currently be configured using a `gamemode.ini` file in `/usr/share/gamemode/`. It will load the file when starting up. An example of what the file could look like is found in the `example` directory and the man page contains details on entries.
+The daemon can currently be configured using a `gamemode.ini` file in `/usr/share/gamemode/`. [gamemode.ini](https://github.com/FeralInteractive/gamemode/blob/master/example/gamemode.ini) is an example of what this file would look like, with explanations for all the variables.
 
 The file parsing uses [inih](https://github.com/benhoyt/inih).
 
@@ -97,7 +98,7 @@ clang-format -i $(find . -name '*.[ch]')
 * API to query if game mode is active
 
 ### Maintained by
-Marc Di Luzio (Feral Interactive)
+Feral Interactive
 
 See the [contributors](https://github.com/FeralInteractive/gamemode/graphs/contributors) section for an extended list of contributors.
 
