@@ -76,9 +76,6 @@ static GameModeContext instance = { 0 };
 /* Maximum number of concurrent processes we'll sanely support */
 #define MAX_GAMES 256
 
-/* How often our reaper thread will run */
-#define SLEEP_INTERVAL 5
-
 /**
  * Protect against signals
  */
@@ -384,8 +381,11 @@ static void *game_mode_context_reaper(void *userdata)
 {
 	/* Stack, not allocated, won't disappear. */
 	GameModeContext *self = userdata;
+
+	long reaper_interval = config_get_reaper_thread_frequency(self->config);
+
 	struct timespec ts = { 0, 0 };
-	ts.tv_sec = time(NULL) + SLEEP_INTERVAL;
+	ts.tv_sec = time(NULL) + reaper_interval;
 
 	while (self->reaper.running) {
 		/* Wait for condition */
@@ -401,7 +401,7 @@ static void *game_mode_context_reaper(void *userdata)
 		/* Expire remaining entries */
 		game_mode_context_auto_expire(self);
 
-		ts.tv_sec = time(NULL) + SLEEP_INTERVAL;
+		ts.tv_sec = time(NULL) + reaper_interval;
 	}
 
 	return NULL;

@@ -74,6 +74,10 @@ Behaviour of the config file can be explained by presenting a commented example:
 
 .RS 4
 .nf
+[general]
+; The reaper thread will check every 10 seconds for exited clients
+reaper_freq=10
+
 [filter]
 ; If "whitelist" entry has a value(s)
 ; gamemode will reject anything not in the whitelist
