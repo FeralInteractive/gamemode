@@ -30,6 +30,28 @@ POSSIBILITY OF SUCH DAMAGE.
  */
 #ifndef CLIENT_GAMEMODE_H
 #define CLIENT_GAMEMODE_H
+/*
+ * GameMode supports the following client functions
+ * Requests are refcounted in the daemon
+ *
+ * int gamemode_request_start() - Request gamemode starts
+ *   0 if the request was sent successfully
+ *   -1 if the request failed
+ *
+ * int gamemode_request_end() - Request gamemode ends
+ *   0 if the request was sent successfully
+ *   -1 if the request failed
+ *
+ * int gamemode_query_status() - Query the current status of gamemode
+ *   0 if gamemode is inactive
+ *   1 if gamemode is active
+ *   2 if gamemode is active and this client is registered
+ *   -1 if the query failed
+ *
+ * const char* gamemode_error_string() - Get an error string
+ *   returns a string describing any of the above errors
+ */
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -51,11 +73,13 @@ static volatile int internal_libgamemode_loaded = 1;
 /* Typedefs for the functions to load */
 typedef int (*internal_gamemode_request_start)(void);
 typedef int (*internal_gamemode_request_end)(void);
+typedef int (*internal_gamemode_query_status)(void);
 typedef const char *(*internal_gamemode_error_string)(void);
 
 /* Storage for functors */
 static internal_gamemode_request_start REAL_internal_gamemode_request_start = NULL;
 static internal_gamemode_request_end REAL_internal_gamemode_request_end = NULL;
+static internal_gamemode_query_status REAL_internal_gamemode_query_status = NULL;
 static internal_gamemode_error_string REAL_internal_gamemode_error_string = NULL;
 
 /**
@@ -111,6 +135,9 @@ __attribute__((always_inline)) static inline int internal_load_libgamemode(void)
 		{ "real_gamemode_request_end",
 		  (void **)&REAL_internal_gamemode_request_end,
 		  sizeof(REAL_internal_gamemode_request_end) },
+		{ "real_gamemode_query_status",
+		  (void **)&REAL_internal_gamemode_query_status,
+		  sizeof(REAL_internal_gamemode_query_status) },
 		{ "real_gamemode_error_string",
 		  (void **)&REAL_internal_gamemode_error_string,
 		  sizeof(REAL_internal_gamemode_error_string) },
@@ -214,6 +241,17 @@ int gamemode_request_end(void)
 	}
 
 	return 0;
+}
+
+/* Redirect to the real libgamemode */
+__attribute__((always_inline)) static inline int gamemode_query_status(void)
+{
+	/* Need to load gamemode */
+	if (internal_load_libgamemode() < 0) {
+		return -1;
+	}
+
+	return REAL_internal_gamemode_query_status();
 }
 
 #endif // CLIENT_GAMEMODE_H

@@ -73,3 +73,13 @@ bool game_mode_context_register(GameModeContext *self, pid_t pid);
  * @returns True if the client was removed, and existed.
  */
 bool game_mode_context_unregister(GameModeContext *self, pid_t pid);
+
+/**
+ * Query the current status of gamemode
+ *
+ * @param pid Process ID for the remote client
+ * @returns Positive if gamemode is active
+ *          1 if gamemode is active but the client is not registered
+ *          2 if gamemode is active and the client is registered
+ */
+int game_mode_context_query_status(GameModeContext *self, pid_t pid);

@@ -105,3 +105,9 @@ extern int real_gamemode_request_end(void)
 {
 	return gamemode_request("UnregisterGame");
 }
+
+// Wrapper to call UnregisterGame
+extern int real_gamemode_query_status(void)
+{
+	return gamemode_request("QueryStatus");
+}
