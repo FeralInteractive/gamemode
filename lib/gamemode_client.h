@@ -52,6 +52,7 @@ POSSIBILITY OF SUCH DAMAGE.
  *   returns a string describing any of the above errors
  */
 
+#include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -128,19 +129,24 @@ __attribute__((always_inline)) static inline int internal_load_libgamemode(void)
 		const char *name;
 		void **functor;
 		size_t func_size;
+		bool required;
 	} bindings[] = {
 		{ "real_gamemode_request_start",
 		  (void **)&REAL_internal_gamemode_request_start,
-		  sizeof(REAL_internal_gamemode_request_start) },
+		  sizeof(REAL_internal_gamemode_request_start),
+		  true },
 		{ "real_gamemode_request_end",
 		  (void **)&REAL_internal_gamemode_request_end,
-		  sizeof(REAL_internal_gamemode_request_end) },
+		  sizeof(REAL_internal_gamemode_request_end),
+		  true },
 		{ "real_gamemode_query_status",
 		  (void **)&REAL_internal_gamemode_query_status,
-		  sizeof(REAL_internal_gamemode_query_status) },
+		  sizeof(REAL_internal_gamemode_query_status),
+		  false },
 		{ "real_gamemode_error_string",
 		  (void **)&REAL_internal_gamemode_error_string,
-		  sizeof(REAL_internal_gamemode_error_string) },
+		  sizeof(REAL_internal_gamemode_error_string),
+		  true },
 	};
 
 	void *libgamemode = NULL;
@@ -163,7 +169,8 @@ __attribute__((always_inline)) static inline int internal_load_libgamemode(void)
 		if (internal_bind_libgamemode_symbol(libgamemode,
 		                                     binder->name,
 		                                     binder->functor,
-		                                     binder->func_size) != 0) {
+		                                     binder->func_size) != 0 &&
+		    binder->required) {
 			internal_libgamemode_loaded = -1;
 			return -1;
 		};
@@ -179,8 +186,9 @@ __attribute__((always_inline)) static inline int internal_load_libgamemode(void)
  */
 __attribute__((always_inline)) static inline const char *gamemode_error_string(void)
 {
-	/* If we fail to load the system gamemode, return our error string */
-	if (internal_load_libgamemode() < 0) {
+	/* If we fail to load the system gamemode, or we have an error string already, return our error
+	 * string instead of diverting to the system version */
+	if (internal_load_libgamemode() < 0 || internal_gamemode_client_error_string[0] != '\0') {
 		return internal_gamemode_client_error_string;
 	}
 
@@ -248,6 +256,13 @@ __attribute__((always_inline)) static inline int gamemode_query_status(void)
 {
 	/* Need to load gamemode */
 	if (internal_load_libgamemode() < 0) {
+		return -1;
+	}
+
+	if (REAL_internal_gamemode_query_status == NULL) {
+		snprintf(internal_gamemode_client_error_string,
+		         sizeof(internal_gamemode_client_error_string),
+		         "gamemode_query_status missing (older host?)");
 		return -1;
 	}
 
