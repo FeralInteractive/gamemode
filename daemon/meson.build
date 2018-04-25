@@ -32,9 +32,11 @@ executable(
         dep_threads,
         dep_systemd,
         inih_dependency,
+        libdl,
     ],
     include_directories: [
         config_h_dir,
+        libgamemode_includes,
     ],
     install: true,
 )
