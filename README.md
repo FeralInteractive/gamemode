@@ -89,7 +89,7 @@ The file parsing uses [inih](https://github.com/benhoyt/inih).
 ### Pull Requests
 Pull requests must match with the coding style found in the `.clang-format` file, please run this before commiting:
 ```
-clang-format -i $(find . -name '*.[ch]')
+clang-format -i $(find . -name '*.[ch]' -not -path "*subprojects/*")
 ```
 
 ### Planned Features
