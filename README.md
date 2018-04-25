@@ -22,8 +22,9 @@ pacman -S meson systemd git
 # Fedora
 dnf install meson systemd-devel pkg-config git
 
-wget https://github.com/FeralInteractive/gamemode/archive/1.0.tar.gz && tar -xvf 1.0.tar.gz
-cd gamemode-1.0
+git clone https://github.com/FeralInteractive/gamemode.git
+cd gamemode
+git checkout 1.1
 ./bootstrap.sh
 ```
 
