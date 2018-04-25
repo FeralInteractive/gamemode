@@ -366,6 +366,40 @@ bool game_mode_context_unregister(GameModeContext *self, pid_t client)
 	return true;
 }
 
+int game_mode_context_query_status(GameModeContext *self, pid_t client)
+{
+	GameModeClient *cl = NULL;
+	int ret = 0;
+
+	/*
+	 * Check the current refcount on gamemode, this equates to whether gamemode is active or not,
+	 * see game_mode_context_register and game_mode_context_unregister
+	 */
+	if (atomic_load_explicit(&self->refcount, memory_order_seq_cst)) {
+		ret++;
+
+		/* Check if the current client is registered */
+
+		/* Requires locking. */
+		pthread_rwlock_rdlock(&self->rwlock);
+
+		for (cl = self->client; cl; cl = cl->next) {
+			if (cl->pid != client) {
+				continue;
+			}
+
+			/* Found it */
+			ret++;
+			break;
+		}
+
+		/* Unlock here, potentially yielding */
+		pthread_rwlock_unlock(&self->rwlock);
+	}
+
+	return ret;
+}
+
 /**
  * Construct a new GameModeClient for the given process ID
  *

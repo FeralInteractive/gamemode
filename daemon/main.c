@@ -96,7 +96,7 @@ int main(int argc, char *argv[])
 	bool daemon = false;
 	bool use_syslog = false;
 	int opt = 0;
-	while ((opt = getopt(argc, argv, "dlrvh")) != -1) {
+	while ((opt = getopt(argc, argv, "dlsrvh")) != -1) {
 		switch (opt) {
 		case 'd':
 			daemon = true;
@@ -104,13 +104,38 @@ int main(int argc, char *argv[])
 		case 'l':
 			use_syslog = true;
 			break;
+		case 's': {
+			int status;
+
+			if ((status = gamemode_query_status()) < 0) {
+				fprintf(stderr, "gamemode status request failed: %s\n", gamemode_error_string());
+				exit(EXIT_FAILURE);
+			} else if (status > 0) {
+				fprintf(stdout, "gamemode is active\n");
+			} else {
+				fprintf(stdout, "gamemode is inactive\n");
+			}
+
+			exit(EXIT_SUCCESS);
+			break;
+		}
 		case 'r':
 			if (gamemode_request_start() < 0) {
 				fprintf(stderr, "gamemode request failed: %s\n", gamemode_error_string());
 				exit(EXIT_FAILURE);
 			}
 
-			fprintf(stdout, "gamemode request succeeded...\n");
+			int status = gamemode_query_status();
+			if (status == 2) {
+				fprintf(stdout, "gamemode request succeeded and is active\n");
+			} else if (status == 1) {
+				fprintf(stderr,
+				        "gamemode request succeeded and is active but registration failed\n");
+				exit(EXIT_FAILURE);
+			} else {
+				fprintf(stderr, "gamemode request succeeded but is not active\n");
+				exit(EXIT_FAILURE);
+			}
 
 			// Simply pause and wait for any signal
 			pause();

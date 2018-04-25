@@ -68,7 +68,7 @@ Or, distribute `libgamemodeauto.so` and either add `-lgamemodeauto` to your link
 ---
 ## Components
 
-**gamemoded** runs in the background, activates game mode on request, refcounts and also checks caller PID lifetime. Accepts `-d` (daemonize) and `-l` (log to syslog).
+**gamemoded** runs in the background, activates game mode on request, refcounts and also checks caller PID lifetime. Run `man gamemoded` for command line options.
 
 **libgamemode** is an internal library used to dispatch requests to the daemon. Note: `libgamemode` should never be linked with directly.
 
@@ -95,7 +95,6 @@ clang-format -i $(find . -name '*.[ch]' -not -path "*subprojects/*")
 ### Planned Features
 * Additional mode-switch plugins
 * Improved client state tracking (PID is unreliable)
-* API to query if game mode is active
 
 ### Maintained by
 Feral Interactive
