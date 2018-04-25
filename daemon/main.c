@@ -53,6 +53,7 @@ POSSIBILITY OF SUCH DAMAGE.
 #include "daemonize.h"
 #include "dbus_messaging.h"
 #include "gamemode.h"
+#include "gamemode_client.h"
 #include "logging.h"
 
 #include <signal.h>
@@ -65,6 +66,7 @@ POSSIBILITY OF SUCH DAMAGE.
 	"Usage: %s [-d] [-l] [-h] [-v]\n\n"                                                            \
 	"  -d  daemonize self after launch\n"                                                          \
 	"  -l  log to syslog\n"                                                                        \
+	"  -r  request gamemode and pause\n"                                                           \
 	"  -h  print this help\n"                                                                      \
 	"  -v  print version\n"                                                                        \
 	"\n"                                                                                           \
@@ -94,13 +96,26 @@ int main(int argc, char *argv[])
 	bool daemon = false;
 	bool use_syslog = false;
 	int opt = 0;
-	while ((opt = getopt(argc, argv, "dlvh")) != -1) {
+	while ((opt = getopt(argc, argv, "dlrvh")) != -1) {
 		switch (opt) {
 		case 'd':
 			daemon = true;
 			break;
 		case 'l':
 			use_syslog = true;
+			break;
+		case 'r':
+			if (gamemode_request_start() < 0) {
+				fprintf(stderr, "gamemode request failed: %s\n", gamemode_error_string());
+				exit(EXIT_FAILURE);
+			}
+
+			fprintf(stdout, "gamemode request succeeded...\n");
+
+			// Simply pause and wait for any signal
+			pause();
+
+			exit(EXIT_SUCCESS);
 			break;
 		case 'v':
 			fprintf(stdout, VERSION_TEXT);
