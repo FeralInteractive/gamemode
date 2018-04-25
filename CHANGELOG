@@ -1,3 +1,14 @@
+1.1
+
+gamemode_query_status function
+'-r' (request) and '-s' (status) for gamemoded
+User defined script plugins in the config file
+User defined reaper thread frequency
+Various code refactors and fixes
+systemd status messages
+release management scripts
+inih moved to a git submodule
+
 1.0
 
 Fixed and cleaned up README file
