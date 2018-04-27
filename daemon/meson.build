@@ -24,6 +24,9 @@ daemon_sources = [
     'daemon_config.c',
 ]
 
+gamemoded_includes = libgamemode_includes
+gamemoded_includes += config_h_dir
+
 executable(
     'gamemoded',
     sources: daemon_sources,
@@ -34,10 +37,7 @@ executable(
         inih_dependency,
         libdl,
     ],
-    include_directories: [
-        config_h_dir,
-        libgamemode_includes,
-    ],
+    include_directories: gamemoded_includes,
     install: true,
 )
 
