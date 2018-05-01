@@ -74,7 +74,20 @@ Or, distribute \fBlibgamemodeauto.so\fR and either link with \fB\-lgamemodeauto\
 
 .SH CONFIG
 
-\fBgamemoded\fR can be configured with a \fBgamemode.ini\fR file found in \fB/usr/share/gamemode/\fR. The daemon will load the config file on start-up if it exists.
+\fBgamemoded\fR will load and merge \fBgamemode.ini\fR config files from these directories in the following order:
+
+.RS 4
+/usr/share/gamemode/
+.RE
+.RS 4
+/etc/
+.RE
+.RS 4
+$XDG_CONFIG_HOME or $HOME/.config/
+.RE
+.RS 4
+$PWD
+.RE
 
 Behaviour of the config file can be explained by presenting a commented example:
 
