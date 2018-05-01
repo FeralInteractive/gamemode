@@ -1,5 +1,6 @@
 1.1
 
+Cascaded config file loading
 gamemode_query_status function
 '-r' (request) and '-s' (status) for gamemoded
 User defined script plugins in the config file
