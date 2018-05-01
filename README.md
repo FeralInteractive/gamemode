@@ -80,7 +80,13 @@ Or, distribute `libgamemodeauto.so` and either add `-lgamemodeauto` to your link
 ---
 ## Configuration
 
-The daemon can currently be configured using a `gamemode.ini` file in `/usr/share/gamemode/`. [gamemode.ini](https://github.com/FeralInteractive/gamemode/blob/master/example/gamemode.ini) is an example of what this file would look like, with explanations for all the variables.
+The daemon can currently be configured using a `gamemode.ini` file. [gamemode.ini](https://github.com/FeralInteractive/gamemode/blob/master/example/gamemode.ini) is an example of what this file would look like, with explanations for all the variables.
+
+Config files are loaded and merged from the following directories, in order:
+1. `/usr/share/gamemode/`
+2. `/etc/`
+3. `$XDG_CONFIG_HOME` or `$HOME/.config/`
+4. `$PWD`
 
 The file parsing uses [inih](https://github.com/benhoyt/inih).
 
