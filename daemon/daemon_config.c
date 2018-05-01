@@ -38,12 +38,13 @@ POSSIBILITY OF SUCH DAMAGE.
 
 #include <linux/limits.h>
 #include <pthread.h>
+#include <pwd.h>
 #include <stdio.h>
 #include <string.h>
+#include <sys/types.h>
 
 /* Name and possible location of the config file */
 #define CONFIG_NAME "gamemode.ini"
-#define CONFIG_DIR "/usr/share/gamemode/"
 
 /* Default value for the reaper frequency */
 #define DEFAULT_REAPER_FREQ 5
@@ -160,8 +161,32 @@ static int inih_handler(void *user, const char *section, const char *name, const
 /*
  * Load the config file
  */
-static void load_config_file(GameModeConfig *self)
+static void load_config_files(GameModeConfig *self)
 {
+	/* grab the current dir */
+	char *config_location_local = get_current_dir_name();
+
+	/* Get home config location */
+	char *config_location_home = NULL;
+	const char *cfg = getenv("XDG_CONFIG_HOME");
+	if (cfg) {
+		config_location_home = realpath(cfg, NULL);
+	} else {
+		cfg = getenv("HOME");
+		if (cfg) {
+			char *cfg_full = NULL;
+			if (asprintf(&cfg_full, "%s/.config", cfg) > 0) {
+				config_location_home = realpath(cfg_full, NULL);
+				free(cfg_full);
+			}
+		} else {
+			struct passwd *p = getpwuid(getuid());
+			if (p) {
+				config_location_home = realpath(p->pw_dir, NULL);
+			}
+		}
+	}
+
 	/* Take the write lock for the internal data */
 	pthread_rwlock_wrlock(&self->rwlock);
 
@@ -172,28 +197,38 @@ static void load_config_file(GameModeConfig *self)
 	memset(self->endscripts, 0, sizeof(self->endscripts));
 	self->reaper_frequency = DEFAULT_REAPER_FREQ;
 
-	/* try locally first */
-	FILE *f = fopen(CONFIG_NAME, "r");
-	if (!f) {
-		f = fopen(CONFIG_DIR CONFIG_NAME, "r");
-		if (!f) {
-			/* Failure here isn't fatal */
-			LOG_ERROR("Note: No config file found [%s] in working directory or in [%s]\n",
-			          CONFIG_NAME,
-			          CONFIG_DIR);
+	/*
+	 * Locations to load, in order
+	 * Arrays merge and values overwrite
+	 */
+	const char *locations[] = {
+		"/usr/share/gamemode", /* shipped default config */
+		"/etc",                /* administrator config */
+		config_location_home,  /* user defined config eg. $XDG_CONFIG_HOME or $HOME/.config/ */
+		config_location_local  /* local data eg. $PWD */
+	};
+
+	/* Load each file in order and overwrite values */
+	for (unsigned int i = 0; i < sizeof(locations) / sizeof(locations[0]); i++) {
+		char *path = NULL;
+		if (locations[i] && asprintf(&path, "%s/" CONFIG_NAME, locations[i]) > 0) {
+			FILE *f = fopen(path, "r");
+			if (f) {
+				LOG_MSG("Loading config file [%s]\n", path);
+				int error = ini_parse_file(f, inih_handler, (void *)self);
+
+				/* Failure here isn't fatal */
+				if (error) {
+					LOG_MSG("Failed to parse config file - error on line %d!\n", error);
+				}
+			}
+			free(path);
 		}
 	}
 
-	if (f) {
-		int error = ini_parse_file(f, inih_handler, (void *)self);
-
-		/* Failure here isn't fatal */
-		if (error) {
-			LOG_MSG("Failed to parse config file - error on line %d!\n", error);
-		}
-
-		fclose(f);
-	}
+	/* clean up memory */
+	free(config_location_home);
+	free(config_location_local);
 
 	/* Release the lock */
 	pthread_rwlock_unlock(&self->rwlock);
@@ -217,7 +252,7 @@ void config_init(GameModeConfig *self)
 	pthread_rwlock_init(&self->rwlock, NULL);
 
 	/* load the initial config */
-	load_config_file(self);
+	load_config_files(self);
 }
 
 /*
@@ -225,7 +260,7 @@ void config_init(GameModeConfig *self)
  */
 void config_reload(GameModeConfig *self)
 {
-	load_config_file(self);
+	load_config_files(self);
 }
 
 /*
