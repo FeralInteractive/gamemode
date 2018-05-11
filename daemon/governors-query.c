@@ -50,12 +50,14 @@ int fetch_governors(char governors[MAX_GOVERNORS][MAX_GOVERNOR_LENGTH])
 
 	/* Assert some sanity on this glob */
 	if (glob(path, GLOB_NOSORT, NULL, &glo) != 0) {
-		FATAL_ERRORNO("Broken glob implementation");
+		LOG_ERROR("glob failed for cpu governors: (%s)\n", strerror(errno));
+		return 0;
 	}
 
 	if (glo.gl_pathc < 1) {
 		globfree(&glo);
-		FATAL_ERROR("cpu device path not found");
+		LOG_ERROR("no cpu governors found\n");
+		return 0;
 	}
 
 	int num_governors = 0;
