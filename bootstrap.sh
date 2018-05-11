@@ -14,7 +14,7 @@ if [ ! -f "/sys/devices/system/cpu/cpu0/cpufreq/scaling_governor" ]; then
 	echo "This probably means that you have disabled processor scheduling features in your BIOS. See README.md (or GitHub issue #44) for more information."
 	echo "This means GameMode's CPU governor control feature will not work (other features will still work)."
 
-	# In the future, when gamemode can handle the lack of governor control on its own
+	# Allow to continue the install, as gamemode has other useful features
 	read -p "Would you like to continue anyway [Y/N]? " -r
 	[[ $REPLY =~ ^[Yy]$ ]]
 fi
