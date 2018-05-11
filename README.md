@@ -7,13 +7,6 @@ GameMode was designed primarily as a stop-gap solution to problems with the Inte
 
 Issues with GameMode should be reported here in the issues section, and not reported to Feral directly.
 
-# For those with overclocked CPUs
-If you have an AMD CPU and have disabled Cool'n'Quiet, or you have an Intel CPU and have disabled SpeedStep, then GameMode's governor settings will not work, as your CPU is not running with a governor. You are already getting maximum performance.
-
-If you are unsure, `bootstrap.sh` will warn you if your system lacks CPU governor control.
-
-Scripts and other features will still work.
-
 ---
 ## Building and installing
 
@@ -104,6 +97,14 @@ Config files are loaded and merged from the following directories, in order:
 4. `$PWD`
 
 The file parsing uses [inih](https://github.com/benhoyt/inih).
+
+---
+## For those with overclocked CPUs
+If you have an AMD CPU and have disabled Cool'n'Quiet, or you have an Intel CPU and have disabled SpeedStep, then GameMode's governor settings will not work, as your CPU is not running with a governor. You are already getting maximum performance.
+
+If you are unsure, `bootstrap.sh` will warn you if your system lacks CPU governor control.
+
+Scripts and other features will still work.
 
 ---
 ## Contributions
