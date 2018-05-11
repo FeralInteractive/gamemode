@@ -15,7 +15,7 @@ If your distribution already has GameMode packaged, it is preferable to install 
 GameMode depends on `meson` for building and `systemd` for internal communication. This repo contains a `bootstrap.sh` script to allow for quick install to the user bus, but check `meson_options.txt` for custom settings.
 
 ```bash
-# Ubuntu
+# Ubuntu/Debian (you may also need dbus-user-session)
 apt install meson libsystemd-dev pkg-config ninja-build git
 # Arch
 pacman -S meson systemd git
