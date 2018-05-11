@@ -14,14 +14,22 @@ If your distribution already has GameMode packaged, it is preferable to install 
 
 GameMode depends on `meson` for building and `systemd` for internal communication. This repo contains a `bootstrap.sh` script to allow for quick install to the user bus, but check `meson_options.txt` for custom settings.
 
+#### Ubuntu/Debian (you may also need `dbus-user-session`)
 ```bash
-# Ubuntu/Debian (you may also need dbus-user-session)
 apt install meson libsystemd-dev pkg-config ninja-build git
-# Arch
+```
+#### Arch
+```bash
 pacman -S meson systemd git
-# Fedora
+```
+#### Fedora
+```bash
 dnf install meson systemd-devel pkg-config git
+```
 
+Then clone, build and install GameMode:
+
+```bash
 git clone https://github.com/FeralInteractive/gamemode.git
 cd gamemode
 git checkout 1.1
@@ -37,7 +45,7 @@ After installing `libgamemodeauto.so` simply preload it into the game:
 LD_PRELOAD=/usr/\$LIB/libgamemodeauto.so ./game
 ```
 Or edit the steam launch options:
-```
+```bash
 LD_PRELOAD=$LD_PRELOAD:/usr/\$LIB/libgamemodeauto.so %command%
 ```
 Please note the backslash here in `\$LIB` is required.
@@ -91,10 +99,18 @@ Config files are loaded and merged from the following directories, in order:
 The file parsing uses [inih](https://github.com/benhoyt/inih).
 
 ---
+## For those with overclocked CPUs
+If you have an AMD CPU and have disabled Cool'n'Quiet, or you have an Intel CPU and have disabled SpeedStep, then GameMode's governor settings will not work, as your CPU is not running with a governor. You are already getting maximum performance.
+
+If you are unsure, `bootstrap.sh` will warn you if your system lacks CPU governor control.
+
+Scripts and other features will still work.
+
+---
 ## Contributions
 
 ### Pull Requests
-Pull requests must match with the coding style found in the `.clang-format` file, please run this before commiting:
+Pull requests must match with the coding style found in the `.clang-format` file, please run this before committing:
 ```
 clang-format -i $(find . -name '*.[ch]' -not -path "*subprojects/*")
 ```
