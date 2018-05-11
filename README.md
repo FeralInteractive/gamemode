@@ -21,20 +21,20 @@ If your distribution already has GameMode packaged, it is preferable to install 
 
 GameMode depends on `meson` for building and `systemd` for internal communication. This repo contains a `bootstrap.sh` script to allow for quick install to the user bus, but check `meson_options.txt` for custom settings.
 
-### Ubuntu/Debian (you may also need `dbus-user-session`)
+#### Ubuntu/Debian (you may also need `dbus-user-session`)
 ```bash
 apt install meson libsystemd-dev pkg-config ninja-build git
 ```
-### Arch
+#### Arch
 ```bash
 pacman -S meson systemd git
 ```
-### Fedora
+#### Fedora
 ```bash
 dnf install meson systemd-devel pkg-config git
 ```
 
-Then clone the repository:
+Then clone, build and install GameMode:
 
 ```bash
 git clone https://github.com/FeralInteractive/gamemode.git
