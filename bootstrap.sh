@@ -8,6 +8,17 @@ fi
 
 set -e
 
+# Check for scaling governor support and warn about it
+if [ ! -f "/sys/devices/system/cpu/cpu0/cpufreq/scaling_governor" ]; then
+	echo "WARNING: CPUFreq scaling governor device file was not found at \"/sys/devices/system/cpu/cpu0/cpufreq/scaling_governor\"."
+	echo "This probably means that you have disabled processor scheduling features in your BIOS. See README.md (or GitHub issue #44) for more information."
+	echo "This means GameMode's CPU governor control feature will not work (other features will still work)."
+
+	# In the future, when gamemode can handle the lack of governor control on its own
+	read -p "Would you like to continue anyway [Y/N]? " -r
+	[[ $REPLY =~ ^[Yy]$ ]]
+fi
+
 # Echo the rest so it's obvious
 set -x
 meson --prefix=/usr build -Dwith-systemd-user-unit-dir=/etc/systemd/user
