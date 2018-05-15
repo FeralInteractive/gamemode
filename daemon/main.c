@@ -167,6 +167,9 @@ int main(int argc, char *argv[])
 		daemonize(argv[0]);
 	}
 
+	/* Log a version message on startup */
+	LOG_MSG("v%s\n", GAMEMODE_VERSION);
+
 	/* Set up the game mode context */
 	context = game_mode_context_instance();
 	game_mode_context_init(context);
