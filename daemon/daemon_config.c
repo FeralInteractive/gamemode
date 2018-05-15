@@ -64,6 +64,9 @@ struct GameModeConfig {
 	char startscripts[CONFIG_LIST_MAX][CONFIG_VALUE_MAX];
 	char endscripts[CONFIG_LIST_MAX][CONFIG_VALUE_MAX];
 
+	char defaultgov[CONFIG_VALUE_MAX];
+	char desiredgov[CONFIG_VALUE_MAX];
+
 	long reaper_frequency;
 };
 
@@ -122,6 +125,16 @@ static bool get_long_value(const char *value_name, const char *value, long *outp
 }
 
 /*
+ * Get a string value
+ */
+static bool get_string_value(const char *value, char output[CONFIG_VALUE_MAX])
+{
+	strncpy(output, value, CONFIG_VALUE_MAX - 1);
+	output[CONFIG_VALUE_MAX - 1] = '\0';
+	return true;
+}
+
+/*
  * Handler for the inih callback
  */
 static int inih_handler(void *user, const char *section, const char *name, const char *value)
@@ -140,6 +153,10 @@ static int inih_handler(void *user, const char *section, const char *name, const
 		/* General subsection */
 		if (strcmp(name, "reaper_freq") == 0) {
 			valid = get_long_value(name, value, &self->reaper_frequency);
+		} else if (strcmp(name, "defaultgov") == 0) {
+			valid = get_string_value(value, self->defaultgov);
+		} else if (strcmp(name, "desiredgov") == 0) {
+			valid = get_string_value(value, self->desiredgov);
 		}
 	} else if (strcmp(section, "custom") == 0) {
 		/* Custom subsection */
@@ -195,6 +212,8 @@ static void load_config_files(GameModeConfig *self)
 	memset(self->blacklist, 0, sizeof(self->blacklist));
 	memset(self->startscripts, 0, sizeof(self->startscripts));
 	memset(self->endscripts, 0, sizeof(self->endscripts));
+	memset(self->defaultgov, 0, sizeof(self->defaultgov));
+	memset(self->desiredgov, 0, sizeof(self->desiredgov));
 	self->reaper_frequency = DEFAULT_REAPER_FREQ;
 
 	/*
@@ -231,6 +250,21 @@ static void load_config_files(GameModeConfig *self)
 	free(config_location_local);
 
 	/* Release the lock */
+	pthread_rwlock_unlock(&self->rwlock);
+}
+
+/*
+ * Copy a config parameter with a lock
+ */
+static void memcpy_locked_config(GameModeConfig *self, void *dst, void *src, size_t n)
+{
+	/* Take the read lock */
+	pthread_rwlock_rdlock(&self->rwlock);
+
+	/* copy the data */
+	memcpy(dst, src, n);
+
+	/* release the lock */
 	pthread_rwlock_unlock(&self->rwlock);
 }
 
@@ -329,17 +363,9 @@ bool config_get_client_blacklisted(GameModeConfig *self, const char *client)
 /*
  * Gets the reaper frequency
  */
-long config_get_reaper_thread_frequency(GameModeConfig *self)
+void config_get_reaper_thread_frequency(GameModeConfig *self, long *value)
 {
-	long value;
-	/* Take the read lock */
-	pthread_rwlock_rdlock(&self->rwlock);
-
-	value = self->reaper_frequency;
-
-	/* release the lock */
-	pthread_rwlock_unlock(&self->rwlock);
-	return value;
+	memcpy_locked_config(self, value, &self->reaper_frequency, sizeof(long));
 }
 
 /*
@@ -348,13 +374,7 @@ long config_get_reaper_thread_frequency(GameModeConfig *self)
 void config_get_gamemode_start_scripts(GameModeConfig *self,
                                        char scripts[CONFIG_LIST_MAX][CONFIG_VALUE_MAX])
 {
-	/* Take the read lock */
-	pthread_rwlock_rdlock(&self->rwlock);
-
-	memcpy(scripts, self->startscripts, sizeof(self->startscripts));
-
-	/* release the lock */
-	pthread_rwlock_unlock(&self->rwlock);
+	memcpy_locked_config(self, scripts, self->startscripts, sizeof(self->startscripts));
 }
 
 /*
@@ -363,11 +383,21 @@ void config_get_gamemode_start_scripts(GameModeConfig *self,
 void config_get_gamemode_end_scripts(GameModeConfig *self,
                                      char scripts[CONFIG_LIST_MAX][CONFIG_VALUE_MAX])
 {
-	/* Take the read lock */
-	pthread_rwlock_rdlock(&self->rwlock);
+	memcpy_locked_config(self, scripts, self->endscripts, sizeof(self->startscripts));
+}
 
-	memcpy(scripts, self->endscripts, sizeof(self->startscripts));
+/*
+ * Get the chosen default governor
+ */
+void config_get_default_governor(GameModeConfig *self, char governor[CONFIG_VALUE_MAX])
+{
+	memcpy_locked_config(self, governor, self->defaultgov, sizeof(self->defaultgov));
+}
 
-	/* release the lock */
-	pthread_rwlock_unlock(&self->rwlock);
+/*
+ * Get the chosen desired governor
+ */
+void config_get_desired_governor(GameModeConfig *self, char governor[CONFIG_VALUE_MAX])
+{
+	memcpy_locked_config(self, governor, self->desiredgov, sizeof(self->desiredgov));
 }

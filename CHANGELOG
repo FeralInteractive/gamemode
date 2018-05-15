@@ -1,6 +1,7 @@
 1.2
 
 Store the initial governor state on mode enter
+Config now supports defaultgov and desiredgov
 
 1.1
 
