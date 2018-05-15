@@ -34,16 +34,6 @@ POSSIBILITY OF SUCH DAMAGE.
 #include <stdbool.h>
 
 /**
- * Store initial governor so we can use it again
- */
-void update_initial_gov_state(void);
-
-/**
- * Return the governer set in update_initial_gov_state
- */
-const char *get_initial_governor(void);
-
-/**
  * Update all governors to the given value. If this is NULL, restore the
  * initial governor.
  */
