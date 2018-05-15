@@ -184,8 +184,13 @@ static void game_mode_context_enter(GameModeContext *self)
 		self->initial_cpu_mode[sizeof(self->initial_cpu_mode) - 1] = '\0';
 		LOG_MSG("governor was initially set to [%s]\n", initial_state);
 
+		/* Choose the desired governor */
+		char desired[CONFIG_VALUE_MAX] = { 0 };
+		config_get_desired_governor(self->config, desired);
+		const char *desiredGov = desired[0] != '\0' ? desired : "performance";
+
 		/* set the governor to performance */
-		if (!set_governors("performance")) {
+		if (!set_governors(desiredGov)) {
 			/* if the set fails, clear the initial mode so we don't try and reset it back and fail
 			 * again, presumably */
 			memset(self->initial_cpu_mode, 0, sizeof(self->initial_cpu_mode));
@@ -206,7 +211,12 @@ static void game_mode_context_leave(GameModeContext *self)
 
 	/* Reset the governer state back to initial */
 	if (self->initial_cpu_mode[0] != '\0') {
-		set_governors(self->initial_cpu_mode);
+		/* Choose the governor to reset to, using the config to override */
+		char defaultgov[CONFIG_VALUE_MAX] = { 0 };
+		config_get_default_governor(self->config, defaultgov);
+		const char *gov_mode = defaultgov[0] != '\0' ? defaultgov : self->initial_cpu_mode;
+
+		set_governors(gov_mode);
 		memset(self->initial_cpu_mode, 0, sizeof(self->initial_cpu_mode));
 	}
 

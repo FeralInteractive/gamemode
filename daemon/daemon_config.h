@@ -93,3 +93,13 @@ void config_get_gamemode_start_scripts(GameModeConfig *self,
  */
 void config_get_gamemode_end_scripts(GameModeConfig *self,
                                      char scripts[CONFIG_LIST_MAX][CONFIG_VALUE_MAX]);
+
+/*
+ * Get the chosen default governor
+ */
+void config_get_default_governor(GameModeConfig *self, char governor[CONFIG_VALUE_MAX]);
+
+/*
+ * Get the chosen desired governor
+ */
+void config_get_desired_governor(GameModeConfig *self, char governor[CONFIG_VALUE_MAX]);
