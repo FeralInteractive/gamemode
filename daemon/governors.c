@@ -41,16 +41,6 @@ POSSIBILITY OF SUCH DAMAGE.
 #include <sys/wait.h>
 #include <unistd.h>
 
-static const char *initial = NULL;
-
-/**
- * Cache the governor state as seen at startup
- */
-void update_initial_gov_state(void)
-{
-	initial = get_gov_state();
-}
-
 /**
  * Update the governors to the given argument, via pkexec
  */
@@ -61,12 +51,11 @@ bool set_governors(const char *value)
 	int ret = 0;
 	int r = -1;
 
-	const char *const govern = value ? value : initial;
 	const char *const exec_args[] = {
-		"/usr/bin/pkexec", LIBEXECDIR "/cpugovctl", "set", govern, NULL,
+		"/usr/bin/pkexec", LIBEXECDIR "/cpugovctl", "set", value, NULL,
 	};
 
-	LOG_MSG("Requesting update of governor policy to %s\n", govern);
+	LOG_MSG("Requesting update of governor policy to %s\n", value);
 
 	if ((p = fork()) < 0) {
 		LOG_ERROR("Failed to fork(): %s\n", strerror(errno));
@@ -101,12 +90,4 @@ bool set_governors(const char *value)
 	}
 
 	return true;
-}
-
-/**
- * Return the cached governor seen at startup
- */
-const char *get_initial_governor(void)
-{
-	return initial;
 }

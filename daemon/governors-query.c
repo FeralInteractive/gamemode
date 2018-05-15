@@ -99,8 +99,9 @@ int fetch_governors(char governors[MAX_GOVERNORS][MAX_GOVERNOR_LENGTH])
  */
 const char *get_gov_state(void)
 {
-	/* Cached primary governor state */
+	/* Persistent governor state */
 	static char governor[64] = { 0 };
+	memset(governor, 0, sizeof(governor));
 
 	/* State for all governors */
 	char governors[MAX_GOVERNORS][MAX_GOVERNOR_LENGTH] = { { 0 } };

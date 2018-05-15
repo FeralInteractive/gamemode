@@ -33,6 +33,7 @@ POSSIBILITY OF SUCH DAMAGE.
 
 #include "gamemode.h"
 #include "daemon_config.h"
+#include "governors-query.h"
 #include "governors.h"
 #include "logging.h"
 
@@ -60,7 +61,7 @@ struct GameModeContext {
 
 	GameModeConfig *config; /**<Pointer to config object */
 
-	bool performance_mode; /**<Only updates when we can */
+	char initial_cpu_mode[64]; /**<Only updates when we can */
 
 	/* Reaper control */
 	struct {
@@ -99,13 +100,12 @@ void game_mode_context_init(GameModeContext *self)
 	had_context_init = true;
 	self->refcount = ATOMIC_VAR_INIT(0);
 
+	/* clear the initial string */
+	memset(self->initial_cpu_mode, 0, sizeof(self->initial_cpu_mode));
+
 	/* Initialise the config */
 	self->config = config_create();
 	config_init(self->config);
-
-	/* Read current governer state before setting up any message handling */
-	update_initial_gov_state();
-	LOG_MSG("governor is set to [%s]\n", get_initial_governor());
 
 	pthread_rwlock_init(&self->rwlock, NULL);
 	pthread_mutex_init(&self->reaper.mutex, NULL);
@@ -176,8 +176,20 @@ static void game_mode_context_enter(GameModeContext *self)
 		i++;
 	}
 
-	if (!self->performance_mode && set_governors("performance")) {
-		self->performance_mode = true;
+	/* Read the initial governor state so we can revert it correctly */
+	const char *initial_state = get_gov_state();
+	if (initial_state) {
+		/* store the initial cpu governor mode */
+		strncpy(self->initial_cpu_mode, initial_state, sizeof(self->initial_cpu_mode) - 1);
+		self->initial_cpu_mode[sizeof(self->initial_cpu_mode) - 1] = '\0';
+		LOG_MSG("governor was initially set to [%s]\n", initial_state);
+
+		/* set the governor to performance */
+		if (!set_governors("performance")) {
+			/* if the set fails, clear the initial mode so we don't try and reset it back and fail
+			 * again, presumably */
+			memset(self->initial_cpu_mode, 0, sizeof(self->initial_cpu_mode));
+		}
 	}
 }
 
@@ -192,8 +204,10 @@ static void game_mode_context_leave(GameModeContext *self)
 	LOG_MSG("Leaving Game Mode...\n");
 	sd_notifyf(0, "STATUS=%sGameMode is currently deactivated.%s\n", "\x1B[1;36m", "\x1B[0m");
 
-	if (self->performance_mode && set_governors(NULL)) {
-		self->performance_mode = false;
+	/* Reset the governer state back to initial */
+	if (self->initial_cpu_mode[0] != '\0') {
+		set_governors(self->initial_cpu_mode);
+		memset(self->initial_cpu_mode, 0, sizeof(self->initial_cpu_mode));
 	}
 
 	char scripts[CONFIG_LIST_MAX][CONFIG_VALUE_MAX];
