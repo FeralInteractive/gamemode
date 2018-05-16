@@ -41,5 +41,5 @@ set -x
 
 systemctl --user daemon-reload
 systemctl --user enable gamemoded
-systemctl --user start gamemoded
+systemctl --user restart gamemoded
 systemctl --user status gamemoded
