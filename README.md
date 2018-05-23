@@ -5,6 +5,10 @@ The design has a clear-cut abstraction between the host daemon and library (`gam
 
 GameMode was designed primarily as a stop-gap solution to problems with the Intel and AMD CPU powersave or ondemand governors, but is now able to launch custom user defined plugins, and is intended to be expanded further, as there are a wealth of automation tasks one might want to apply.
 
+GameMode can leverage support for soft real time mode if the running kernel supports `SCHED_ISO`. This adjusts the scheduling of the game to real time without sacrificing system stability by starving other processes.
+
+GameMode adjusts the nice priority of games to -4 to give it a slight IO and CPU priority over other background processes. This only works if your user is permitted to adjust priorities within the limits configured by PAM.
+
 Issues with GameMode should be reported here in the issues section, and not reported to Feral directly.
 
 ---

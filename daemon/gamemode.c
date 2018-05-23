@@ -38,11 +38,25 @@ POSSIBILITY OF SUCH DAMAGE.
 #include "logging.h"
 
 #include <linux/limits.h>
+#include <linux/sched.h>
 #include <pthread.h>
+#include <sched.h>
 #include <signal.h>
 #include <stdatomic.h>
 #include <string.h>
+#include <sys/resource.h>
 #include <systemd/sd-daemon.h>
+
+/* SCHED_ISO may not be defined as it is a reserved value not yet
+ * implemented in official kernel sources, see linux/sched.h.
+ */
+#ifndef SCHED_ISO
+#define SCHED_ISO 4
+#endif
+
+/* Priority to renice the process to.
+ */
+#define NICE_PRIORITY -4
 
 /**
  * The GameModeClient encapsulates the remote connection, providing a list
@@ -148,6 +162,33 @@ void game_mode_context_destroy(GameModeContext *self)
 	config_destroy(self->config);
 
 	pthread_rwlock_destroy(&self->rwlock);
+}
+
+/**
+ * Apply scheduling policies
+ *
+ * This tries to change the scheduler of the client to soft realtime mode
+ * available in some kernels as SCHED_ISO. It also tries to adjust the nice
+ * level. If some of each fail, ignore this and log a warning.
+ *
+ * We don't need to store the current values because when the client exits,
+ * everything will be good: Scheduling is only applied to the client and
+ * its children.
+ */
+static void game_mode_apply_scheduler(pid_t client)
+{
+	LOG_MSG("Setting scheduling policies...\n");
+
+	if (setpriority(PRIO_PROCESS, (id_t)client, NICE_PRIORITY)) {
+		LOG_ERROR("Renicing client [%d] failed with error %d, ignoring.\n", client, errno);
+	}
+
+	const struct sched_param p = { .sched_priority = 0 };
+	if (sched_setscheduler(client, SCHED_ISO, &p)) {
+		LOG_ERROR("Setting client [%d] to SCHED_ISO failed with error %d, ignoring.\n",
+		          client,
+		          errno);
+	}
 }
 
 /**
@@ -342,6 +383,9 @@ bool game_mode_context_register(GameModeContext *self, pid_t client)
 	if (atomic_fetch_add_explicit(&self->refcount, 1, memory_order_seq_cst) == 0) {
 		game_mode_context_enter(self);
 	}
+
+	/* Apply scheduler policies */
+	game_mode_apply_scheduler(client);
 
 	return true;
 }
