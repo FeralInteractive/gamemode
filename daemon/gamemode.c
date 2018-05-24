@@ -45,6 +45,7 @@ POSSIBILITY OF SUCH DAMAGE.
 #include <stdatomic.h>
 #include <string.h>
 #include <sys/resource.h>
+#include <sys/sysinfo.h>
 #include <systemd/sd-daemon.h>
 
 /* SCHED_ISO may not be defined as it is a reserved value not yet
@@ -175,7 +176,7 @@ void game_mode_context_destroy(GameModeContext *self)
  * everything will be good: Scheduling is only applied to the client and
  * its children.
  */
-static void game_mode_apply_scheduler(pid_t client)
+static void game_mode_apply_scheduler(GameModeContext *self, pid_t client)
 {
 	LOG_MSG("Setting scheduling policies...\n");
 
@@ -188,11 +189,32 @@ static void game_mode_apply_scheduler(pid_t client)
 		LOG_ERROR("Renicing client [%d] failed with error %d, ignoring.\n", client, errno);
 	}
 
-	const struct sched_param p = { .sched_priority = 0 };
-	if (sched_setscheduler(client, SCHED_ISO, &p)) {
-		LOG_ERROR("Setting client [%d] to SCHED_ISO failed with error %d, ignoring.\n",
-		          client,
-		          errno);
+	/*
+	 * read configuration "softrealtime" (on, off, auto)
+	 */
+	char softrealtime[CONFIG_VALUE_MAX] = { 0 };
+	config_get_soft_realtime(self->config, softrealtime);
+
+	/*
+	 * Enable unconditionally or auto-detect soft realtime usage,
+	 * auto detection is based on observations where dual-core CPU suffered
+	 * priority inversion problems with the graphics driver thus running
+	 * slower as a result, so enable only with more than 3 cores.
+	 */
+	bool enable_softrealtime = (strcmp(softrealtime, "on") == 0) || (get_nprocs() > 3);
+
+	/*
+	 * Actually apply the scheduler policy if not explicitly turned off
+	 */
+	if (!(strcmp(softrealtime, "off") == 0) && (enable_softrealtime)) {
+		const struct sched_param p = { .sched_priority = 0 };
+		if (sched_setscheduler(client, SCHED_ISO, &p)) {
+			LOG_ERROR("Setting client [%d] to SCHED_ISO failed with error %d, ignoring.\n",
+			          client,
+			          errno);
+		}
+	} else {
+		LOG_ERROR("Not using softrealtime, setting is '%s'.\n", softrealtime);
 	}
 }
 
@@ -390,7 +412,7 @@ bool game_mode_context_register(GameModeContext *self, pid_t client)
 	}
 
 	/* Apply scheduler policies */
-	game_mode_apply_scheduler(client);
+	game_mode_apply_scheduler(self, client);
 
 	return true;
 }
