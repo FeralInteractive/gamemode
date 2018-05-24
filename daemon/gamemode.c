@@ -179,7 +179,12 @@ static void game_mode_apply_scheduler(pid_t client)
 {
 	LOG_MSG("Setting scheduling policies...\n");
 
-	if (setpriority(PRIO_PROCESS, (id_t)client, NICE_PRIORITY)) {
+	/*
+	 * don't adjust priority if it was already adjusted
+	 */
+	if (getpriority(PRIO_PROCESS, (id_t)client) != 0) {
+		LOG_ERROR("Client [%d] already reniced, ignoring.\n", client);
+	} else if (setpriority(PRIO_PROCESS, (id_t)client, NICE_PRIORITY)) {
 		LOG_ERROR("Renicing client [%d] failed with error %d, ignoring.\n", client, errno);
 	}
 
