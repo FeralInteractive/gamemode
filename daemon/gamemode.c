@@ -57,7 +57,7 @@ POSSIBILITY OF SUCH DAMAGE.
 
 /* Priority to renice the process to.
  */
-#define NICE_PRIORITY -4
+#define NICE_DEFAULT_PRIORITY -4
 
 /**
  * The GameModeClient encapsulates the remote connection, providing a list
@@ -181,11 +181,23 @@ static void game_mode_apply_scheduler(GameModeContext *self, pid_t client)
 	LOG_MSG("Setting scheduling policies...\n");
 
 	/*
+	 * read configuration "renice" (1..20)
+	 */
+	long int renice = 0;
+	config_get_renice_value(self->config, &renice);
+	if ((renice < 1) || (renice > 20)) {
+		LOG_ERROR("Renice value [%ld] defaulted to [%d].\n", renice, -NICE_DEFAULT_PRIORITY);
+		renice = NICE_DEFAULT_PRIORITY;
+	} else {
+		renice = -renice;
+	}
+
+	/*
 	 * don't adjust priority if it was already adjusted
 	 */
 	if (getpriority(PRIO_PROCESS, (id_t)client) != 0) {
 		LOG_ERROR("Client [%d] already reniced, ignoring.\n", client);
-	} else if (setpriority(PRIO_PROCESS, (id_t)client, NICE_PRIORITY)) {
+	} else if (setpriority(PRIO_PROCESS, (id_t)client, (int)renice)) {
 		LOG_ERROR("Renicing client [%d] failed with error %d, ignoring.\n", client, errno);
 	}
 
