@@ -7,7 +7,7 @@ GameMode was designed primarily as a stop-gap solution to problems with the Inte
 
 GameMode can leverage support for soft real time mode if the running kernel supports `SCHED_ISO`. This adjusts the scheduling of the game to real time without sacrificing system stability by starving other processes.
 
-GameMode adjusts the nice priority of games to -4 to give it a slight IO and CPU priority over other background processes. This only works if your user is permitted to adjust priorities within the limits configured by PAM.
+GameMode adjusts the nice priority of games to -4 by default to give it a slight IO and CPU priority over other background processes. This only works if your user is permitted to adjust priorities within the limits configured by PAM. See `/etc/security/limits.conf`.
 
 Issues with GameMode should be reported here in the issues section, and not reported to Feral directly.
 
