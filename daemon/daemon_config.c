@@ -68,6 +68,7 @@ struct GameModeConfig {
 	char desiredgov[CONFIG_VALUE_MAX];
 
 	char softrealtime[CONFIG_VALUE_MAX];
+	long renice;
 
 	long reaper_frequency;
 };
@@ -161,6 +162,8 @@ static int inih_handler(void *user, const char *section, const char *name, const
 			valid = get_string_value(value, self->desiredgov);
 		} else if (strcmp(name, "softrealtime") == 0) {
 			valid = get_string_value(value, self->softrealtime);
+		} else if (strcmp(name, "renice") == 0) {
+			valid = get_long_value(name, value, &self->renice);
 		}
 	} else if (strcmp(section, "custom") == 0) {
 		/* Custom subsection */
@@ -412,4 +415,12 @@ void config_get_desired_governor(GameModeConfig *self, char governor[CONFIG_VALU
 void config_get_soft_realtime(GameModeConfig *self, char softrealtime[CONFIG_VALUE_MAX])
 {
 	memcpy_locked_config(self, softrealtime, self->softrealtime, sizeof(self->softrealtime));
+}
+
+/*
+ * Get the renice value
+ */
+void config_get_renice_value(GameModeConfig *self, long *value)
+{
+	memcpy_locked_config(self, value, &self->renice, sizeof(long));
 }

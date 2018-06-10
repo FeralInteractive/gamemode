@@ -108,3 +108,8 @@ void config_get_desired_governor(GameModeConfig *self, char governor[CONFIG_VALU
  * Get the chosen soft realtime behavior
  */
 void config_get_soft_realtime(GameModeConfig *self, char softrealtime[CONFIG_VALUE_MAX]);
+
+/*
+ * Get the renice value
+ */
+void config_get_renice_value(GameModeConfig *self, long *value);
