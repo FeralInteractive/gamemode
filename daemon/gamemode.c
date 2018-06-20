@@ -38,11 +38,26 @@ POSSIBILITY OF SUCH DAMAGE.
 #include "logging.h"
 
 #include <linux/limits.h>
+#include <linux/sched.h>
 #include <pthread.h>
+#include <sched.h>
 #include <signal.h>
 #include <stdatomic.h>
 #include <string.h>
+#include <sys/resource.h>
+#include <sys/sysinfo.h>
 #include <systemd/sd-daemon.h>
+
+/* SCHED_ISO may not be defined as it is a reserved value not yet
+ * implemented in official kernel sources, see linux/sched.h.
+ */
+#ifndef SCHED_ISO
+#define SCHED_ISO 4
+#endif
+
+/* Priority to renice the process to.
+ */
+#define NICE_DEFAULT_PRIORITY -4
 
 /**
  * The GameModeClient encapsulates the remote connection, providing a list
@@ -148,6 +163,71 @@ void game_mode_context_destroy(GameModeContext *self)
 	config_destroy(self->config);
 
 	pthread_rwlock_destroy(&self->rwlock);
+}
+
+/**
+ * Apply scheduling policies
+ *
+ * This tries to change the scheduler of the client to soft realtime mode
+ * available in some kernels as SCHED_ISO. It also tries to adjust the nice
+ * level. If some of each fail, ignore this and log a warning.
+ *
+ * We don't need to store the current values because when the client exits,
+ * everything will be good: Scheduling is only applied to the client and
+ * its children.
+ */
+static void game_mode_apply_scheduler(GameModeContext *self, pid_t client)
+{
+	LOG_MSG("Setting scheduling policies...\n");
+
+	/*
+	 * read configuration "renice" (1..20)
+	 */
+	long int renice = 0;
+	config_get_renice_value(self->config, &renice);
+	if ((renice < 1) || (renice > 20)) {
+		LOG_ERROR("Renice value [%ld] defaulted to [%d].\n", renice, -NICE_DEFAULT_PRIORITY);
+		renice = NICE_DEFAULT_PRIORITY;
+	} else {
+		renice = -renice;
+	}
+
+	/*
+	 * don't adjust priority if it was already adjusted
+	 */
+	if (getpriority(PRIO_PROCESS, (id_t)client) != 0) {
+		LOG_ERROR("Client [%d] already reniced, ignoring.\n", client);
+	} else if (setpriority(PRIO_PROCESS, (id_t)client, (int)renice)) {
+		LOG_ERROR("Renicing client [%d] failed with error %d, ignoring.\n", client, errno);
+	}
+
+	/*
+	 * read configuration "softrealtime" (on, off, auto)
+	 */
+	char softrealtime[CONFIG_VALUE_MAX] = { 0 };
+	config_get_soft_realtime(self->config, softrealtime);
+
+	/*
+	 * Enable unconditionally or auto-detect soft realtime usage,
+	 * auto detection is based on observations where dual-core CPU suffered
+	 * priority inversion problems with the graphics driver thus running
+	 * slower as a result, so enable only with more than 3 cores.
+	 */
+	bool enable_softrealtime = (strcmp(softrealtime, "on") == 0) || (get_nprocs() > 3);
+
+	/*
+	 * Actually apply the scheduler policy if not explicitly turned off
+	 */
+	if (!(strcmp(softrealtime, "off") == 0) && (enable_softrealtime)) {
+		const struct sched_param p = { .sched_priority = 0 };
+		if (sched_setscheduler(client, SCHED_ISO, &p)) {
+			LOG_ERROR("Setting client [%d] to SCHED_ISO failed with error %d, ignoring.\n",
+			          client,
+			          errno);
+		}
+	} else {
+		LOG_ERROR("Not using softrealtime, setting is '%s'.\n", softrealtime);
+	}
 }
 
 /**
@@ -342,6 +422,9 @@ bool game_mode_context_register(GameModeContext *self, pid_t client)
 	if (atomic_fetch_add_explicit(&self->refcount, 1, memory_order_seq_cst) == 0) {
 		game_mode_context_enter(self);
 	}
+
+	/* Apply scheduler policies */
+	game_mode_apply_scheduler(self, client);
 
 	return true;
 }
