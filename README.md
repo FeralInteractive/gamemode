@@ -33,7 +33,7 @@ pacman -S meson systemd git
 dnf install meson systemd-devel pkg-config git
 ```
 
-Then clone, build and install GameMode:
+Then clone, build and install a release version of GameMode at 1.1:
 
 ```bash
 git clone https://github.com/FeralInteractive/gamemode.git
@@ -41,6 +41,17 @@ cd gamemode
 git checkout 1.1
 ./bootstrap.sh
 ```
+
+To build the master branch:
+
+```bash
+git clone https://github.com/FeralInteractive/gamemode.git
+cd gamemode
+git submodule update --init --recursive
+./bootstrap.sh
+```
+
+This will also satisfy the build requirement `inih` by pulling it in as a git submodule.
 
 ---
 ## Requesting GameMode
