@@ -53,12 +53,12 @@ if with_systemd == true
         pkgconfig_systemd = dependency('systemd')
         path_systemd_unit_dir = pkgconfig_systemd.get_pkgconfig_variable('systemduserunitdir')
     endif
-else
-    # Set the dbus path as appropriate.
-    path_dbus_service_dir = get_option('with-dbus-service-dir')
-    if path_dbus_service_dir == ''
-        path_dbus_service_dir = join_paths(path_datadir, 'dbus-1', 'services')
-    endif
+endif
+
+# Set the dbus path as appropriate.
+path_dbus_service_dir = get_option('with-dbus-service-dir')
+if path_dbus_service_dir == ''
+  path_dbus_service_dir = join_paths(path_datadir, 'dbus-1', 'services')
 endif
 
 path_polkit_action_dir = join_paths(path_datadir, 'polkit-1', 'actions')
@@ -114,11 +114,10 @@ if with_systemd == true
 report += [
     '    systemd user unit directory:            @0@'.format(path_systemd_unit_dir),
 ]
-else
+endif
 report += [
     '    D-BUS service directory:                @0@'.format(path_dbus_service_dir),
 ]
-endif
 
 report += [
 
