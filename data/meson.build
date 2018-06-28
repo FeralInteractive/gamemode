@@ -10,15 +10,16 @@ if with_systemd == true
         configuration: data_conf,
         install_dir: path_systemd_unit_dir,
     )
-else
-    # Install the D-BUS service file
-    configure_file(
-        input: 'com.feralinteractive.GameMode.service.in',
-        output: 'com.feralinteractive.GameMode.service',
-        configuration: data_conf,
-        install_dir: path_dbus_service_dir,
-    )
 endif
+
+# Install the D-BUS service file
+configure_file(
+  input: 'com.feralinteractive.GameMode.service.in',
+  output: 'com.feralinteractive.GameMode.service',
+  configuration: data_conf,
+  install_dir: path_dbus_service_dir,
+)
+
 
 # Install the Polkit action file in all cases
 configure_file(
