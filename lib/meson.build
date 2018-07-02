@@ -1,5 +1,5 @@
 # Main client library to message the daemon
-shared_library(
+gamemode = shared_library(
     'gamemode',
     sources: [
         'client_impl.c',
@@ -15,7 +15,7 @@ libgamemode_includes = [
 ]
 
 # Small library to automatically use gamemode
-shared_library(
+gamemodeauto = shared_library(
     'gamemodeauto',
     sources: [
         'client_loader.c',
@@ -32,3 +32,28 @@ gamemode_headers = [
 ]
 
 install_headers(gamemode_headers)
+
+# Generate a pkg-config files
+pkg = import('pkgconfig')
+desc = 'GameMode temporarily applies game specific optimisations to the host OS.'
+pkg.generate(
+  name: 'gamemode',
+  description: desc,
+  filebase: 'gamemode',
+  version: meson.project_version(),
+  libraries: [
+    libdl
+  ],
+)
+
+pkg.generate(
+  name: 'gamemode',
+  description: desc,
+  filebase: 'gamemode-auto',
+  libraries: gamemodeauto,
+  version: meson.project_version(),
+  libraries_private: [
+    libdl
+  ],
+)
+
