@@ -33,13 +33,5 @@ set -x
 
 sudo ninja install
 
-# Verify user wants to run the daemon
-set +x
-read -p "Enable and run the daemon? [Yy] " -r
-[[ $REPLY =~ ^[Yy]$ ]]
-set -x
-
+# Reload systemd configuration so that it picks up the new service.
 systemctl --user daemon-reload
-systemctl --user enable gamemoded
-systemctl --user restart gamemoded
-systemctl --user status gamemoded
