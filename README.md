@@ -57,13 +57,13 @@ This will also satisfy the build requirement `inih` by pulling it in as a git su
 ## Requesting GameMode
 
 ### Users
-After installing `libgamemodeauto.so` simply preload it into the game:
+After installing `libgamemodeauto.so.0` simply preload it into the game:
 ```bash
-LD_PRELOAD=/usr/\$LIB/libgamemodeauto.so ./game
+LD_PRELOAD=/usr/\$LIB/libgamemodeauto.so.0 ./game
 ```
 Or edit the steam launch options:
 ```bash
-LD_PRELOAD=$LD_PRELOAD:/usr/\$LIB/libgamemodeauto.so %command%
+LD_PRELOAD=$LD_PRELOAD:/usr/\$LIB/libgamemodeauto.so.0 %command%
 ```
 Please note the backslash here in `\$LIB` is required.
 
