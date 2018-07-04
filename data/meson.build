@@ -29,4 +29,4 @@ configure_file(
 )
 
 # Install the man page
-install_man('gamemoded.1')
+install_man('gamemoded.8')
