@@ -152,7 +152,7 @@ __attribute__((always_inline)) static inline int internal_load_libgamemode(void)
 	void *libgamemode = NULL;
 
 	/* Try and load libgamemode */
-	libgamemode = dlopen("libgamemode.so", RTLD_NOW);
+	libgamemode = dlopen("libgamemode.so.0", RTLD_NOW);
 	if (!libgamemode) {
 		snprintf(internal_gamemode_client_error_string,
 		         sizeof(internal_gamemode_client_error_string),
