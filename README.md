@@ -56,7 +56,8 @@ This will also satisfy the build requirement `inih` by pulling it in as a git su
 To uninstall:
 ```systemctl --user stop gamemoded.service
 cd build/
-ninja uninstall```
+ninja uninstall
+```
 
 ---
 ## Requesting GameMode
