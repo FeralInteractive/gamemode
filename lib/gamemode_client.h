@@ -154,12 +154,18 @@ __attribute__((always_inline)) static inline int internal_load_libgamemode(void)
 	/* Try and load libgamemode */
 	libgamemode = dlopen("libgamemode.so.0", RTLD_NOW);
 	if (!libgamemode) {
-		snprintf(internal_gamemode_client_error_string,
-		         sizeof(internal_gamemode_client_error_string),
-		         "dylopen failed - %s",
-		         dlerror());
-		internal_libgamemode_loaded = -1;
-		return -1;
+		/* Attempt to load unversioned library for compatibility with older
+		 * versions (as of writing, there are no ABI changes between the two -
+		 * this may need to change if ever ABI-breaking changes are made) */
+		libgamemode = dlopen("libgamemode.so", RTLD_NOW);
+		if (!libgamemode) {
+			snprintf(internal_gamemode_client_error_string,
+			         sizeof(internal_gamemode_client_error_string),
+			         "dlopen failed - %s",
+			         dlerror());
+			internal_libgamemode_loaded = -1;
+			return -1;
+		}
 	}
 
 	/* Attempt to bind all symbols */
