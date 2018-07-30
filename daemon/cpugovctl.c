@@ -64,14 +64,9 @@ static void set_gov_state(const char *value)
  */
 int main(int argc, char *argv[])
 {
-	if (argc < 2) {
-		fprintf(stderr, "usage: cpugovctl [get] [set VALUE]\n");
-		return EXIT_FAILURE;
-	}
-
-	if (strncmp(argv[1], "get", 3) == 0) {
+	if (argc == 2 && strncmp(argv[1], "get", 3) == 0) {
 		printf("%s", get_gov_state());
-	} else if (strncmp(argv[1], "set", 3) == 0) {
+	} else if (argc == 3 && strncmp(argv[1], "set", 3) == 0) {
 		const char *value = argv[2];
 
 		/* Must be root to set the state */
@@ -82,6 +77,7 @@ int main(int argc, char *argv[])
 
 		set_gov_state(value);
 	} else {
+		fprintf(stderr, "usage: cpugovctl [get] [set VALUE]\n");
 		return EXIT_FAILURE;
 	}
 
