@@ -61,7 +61,7 @@ void daemonize(const char *name)
 	}
 
 	/* Now continue execution */
-	umask(0);
+	umask(0022);
 	if (setsid() < 0) {
 		FATAL_ERRORNO("Failed to create process group\n");
 	}
