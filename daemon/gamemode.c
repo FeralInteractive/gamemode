@@ -381,6 +381,12 @@ bool game_mode_context_register(GameModeContext *self, pid_t client)
 	/* Construct a new client if we can */
 	GameModeClient *cl = NULL;
 
+	/* Cap the total number of active clients */
+	if (game_mode_context_num_clients(self) + 1 > MAX_GAMES) {
+		LOG_ERROR("Max games (%d) reached, not registering %d\n", MAX_GAMES, client);
+		return false;
+	}
+
 	cl = game_mode_client_new(client);
 	if (!cl) {
 		fputs("OOM\n", stderr);
@@ -390,22 +396,16 @@ bool game_mode_context_register(GameModeContext *self, pid_t client)
 
 	if (game_mode_context_has_client(self, client)) {
 		LOG_ERROR("Addition requested for already known process [%d]\n", client);
-		return false;
-	}
-
-	/* Cap the total number of active clients */
-	if (game_mode_context_num_clients(self) + 1 > MAX_GAMES) {
-		LOG_ERROR("Max games (%d) reached, not registering %d\n", MAX_GAMES, client);
-		return false;
+		goto error_cleanup;
 	}
 
 	/* Check our blacklist and whitelist */
 	if (!config_get_client_whitelisted(self->config, cl->executable)) {
 		LOG_MSG("Client [%s] was rejected (not in whitelist)\n", cl->executable);
-		return false;
+		goto error_cleanup;
 	} else if (config_get_client_blacklisted(self->config, cl->executable)) {
 		LOG_MSG("Client [%s] was rejected (in blacklist)\n", cl->executable);
-		return false;
+		goto error_cleanup;
 	}
 
 	/* Begin a write lock now to insert our new client at list start */
@@ -427,6 +427,9 @@ bool game_mode_context_register(GameModeContext *self, pid_t client)
 	game_mode_apply_scheduler(self, client);
 
 	return true;
+error_cleanup:
+	game_mode_client_free(cl);
+	return false;
 }
 
 bool game_mode_context_unregister(GameModeContext *self, pid_t client)

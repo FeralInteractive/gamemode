@@ -31,6 +31,7 @@ POSSIBILITY OF SUCH DAMAGE.
 #include "daemonize.h"
 #include "logging.h"
 
+#include <fcntl.h>
 #include <stdlib.h>
 #include <sys/stat.h>
 #include <sys/types.h>
@@ -61,14 +62,20 @@ void daemonize(const char *name)
 	}
 
 	/* Now continue execution */
-	umask(0);
+	umask(0022);
 	if (setsid() < 0) {
 		FATAL_ERRORNO("Failed to create process group\n");
 	}
 	if (chdir("/") < 0) {
 		FATAL_ERRORNO("Failed to change to root directory\n");
 	}
-	close(STDIN_FILENO);
-	close(STDOUT_FILENO);
-	close(STDERR_FILENO);
+
+	/* replace standard file descriptors by /dev/null */
+	int devnull_r = open("/dev/null", O_RDONLY);
+	int devnull_w = open("/dev/null", O_WRONLY);
+	dup2(devnull_r, STDIN_FILENO);
+	dup2(devnull_w, STDOUT_FILENO);
+	dup2(devnull_w, STDERR_FILENO);
+	close(devnull_r);
+	close(devnull_w);
 }

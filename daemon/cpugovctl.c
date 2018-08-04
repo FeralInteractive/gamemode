@@ -35,15 +35,18 @@ POSSIBILITY OF SUCH DAMAGE.
 #include "logging.h"
 
 #include <ctype.h>
+#include <errno.h>
 #include <sys/types.h>
 
 /**
  * Sets all governors to a value
  */
-static void set_gov_state(const char *value)
+static int set_gov_state(const char *value)
 {
 	char governors[MAX_GOVERNORS][MAX_GOVERNOR_LENGTH] = { { 0 } };
 	int num = fetch_governors(governors);
+	int retval = EXIT_SUCCESS;
+	int res = 0;
 
 	LOG_MSG("Setting governors to %s\n", value);
 	for (int i = 0; i < num; i++) {
@@ -54,9 +57,15 @@ static void set_gov_state(const char *value)
 			continue;
 		}
 
-		fprintf(f, "%s\n", value);
+		res = fprintf(f, "%s\n", value);
+		if (res < 0) {
+			LOG_ERROR("Failed to set governor %s to %s: %s", gov, value, strerror(errno));
+			retval = EXIT_FAILURE;
+		}
 		fclose(f);
 	}
+
+	return retval;
 }
 
 /**
@@ -64,14 +73,9 @@ static void set_gov_state(const char *value)
  */
 int main(int argc, char *argv[])
 {
-	if (argc < 2) {
-		fprintf(stderr, "usage: cpugovctl [get] [set VALUE]\n");
-		return EXIT_FAILURE;
-	}
-
-	if (strncmp(argv[1], "get", 3) == 0) {
+	if (argc == 2 && strncmp(argv[1], "get", 3) == 0) {
 		printf("%s", get_gov_state());
-	} else if (strncmp(argv[1], "set", 3) == 0) {
+	} else if (argc == 3 && strncmp(argv[1], "set", 3) == 0) {
 		const char *value = argv[2];
 
 		/* Must be root to set the state */
@@ -80,8 +84,9 @@ int main(int argc, char *argv[])
 			return EXIT_FAILURE;
 		}
 
-		set_gov_state(value);
+		return set_gov_state(value);
 	} else {
+		fprintf(stderr, "usage: cpugovctl [get] [set VALUE]\n");
 		return EXIT_FAILURE;
 	}
 
