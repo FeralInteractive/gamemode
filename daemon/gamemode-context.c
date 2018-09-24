@@ -580,6 +580,13 @@ int game_mode_context_register(GameModeContext *self, pid_t client, pid_t reques
 	if (!executable)
 		goto error_cleanup;
 
+	/* Check for forced exceptions */
+	if (strstr(executable, "/wineserver") != NULL) {
+		/* wineserver from wine-staging has its own means of setting priorities */
+		LOG_MSG("Client [%s] was rejected (forced to ignore wineserver)\n", executable);
+		goto error_cleanup;
+	}
+
 	/* Check our blacklist and whitelist */
 	if (!config_get_client_whitelisted(self->config, executable)) {
 		LOG_MSG("Client [%s] was rejected (not in whitelist)\n", executable);
