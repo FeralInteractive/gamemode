@@ -224,7 +224,7 @@ static void game_mode_apply_scheduler(GameModeContext *self, pid_t client)
 	 */
 	if (!(strcmp(softrealtime, "off") == 0) && (enable_softrealtime)) {
 		const struct sched_param p = { .sched_priority = 0 };
-		if (sched_setscheduler(client, SCHED_ISO, &p)) {
+		if (sched_setscheduler(client, SCHED_ISO | SCHED_RESET_ON_FORK, &p)) {
 			LOG_ERROR(
 			    "Setting client [%d] to SCHED_ISO failed with error %d, ignoring (your "
 			    "kernel may not support this).\n",
