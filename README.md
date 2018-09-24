@@ -16,7 +16,7 @@ Issues with GameMode should be reported here in the issues section, and not repo
 ---
 ## Building and installing
 
-If your distribution already has GameMode packaged, it is preferable to install it directly from there. There are Solus and AUR packages already available.
+If your distribution already has GameMode packaged, it is preferable to install it directly from there. There are Solus, AUR, and Gentoo packages already available.
 
 GameMode depends on `meson` for building and `systemd` for internal communication. This repo contains a `bootstrap.sh` script to allow for quick install to the user bus, but check `meson_options.txt` for custom settings.
 
@@ -31,6 +31,11 @@ pacman -S meson systemd git
 #### Fedora
 ```bash
 dnf install meson systemd-devel pkg-config git
+```
+#### Gentoo
+Gentoo has a bleeding-edge ebuild which builds from sources. It will also pull in all the dependencies so you can work on the source code.
+```bash
+ACCEPT_KEYWORDS="**" emerge --ask ~games-util/gamemode-9999
 ```
 
 Then clone, build and install a release version of GameMode at 1.2:
