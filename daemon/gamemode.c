@@ -859,7 +859,7 @@ fail_proc:
 static char *game_mode_context_find_exe(pid_t pid)
 {
 	char buffer[PATH_MAX];
-	char *proc_path = NULL;
+	char *proc_path = NULL, *wine_exe = NULL;
 
 	if (!(proc_path = safe_snprintf(buffer, "/proc/%d/exe", pid)))
 		goto fail;
@@ -870,9 +870,34 @@ static char *game_mode_context_find_exe(pid_t pid)
 	if (!exe)
 		goto fail;
 
+	/* Detect if the process is a wine loader process */
+	if (strtail(exe, "/wine-preloader") || strtail(exe, "/wine64-preloader")) {
+		LOG_MSG("Detected wine preloader for client %d [%s].\n", pid, exe);
+		goto wine_preloader;
+	}
+	if (strtail(exe, "/wine") || strtail(exe, "/wine64")) {
+		LOG_MSG("Detected wine loader for client %d [%s].\n", pid, exe);
+		goto wine_preloader;
+	}
+
 	return exe;
 
+wine_preloader:
+
+	wine_exe = game_mode_resolve_wine_preloader(pid);
+	if (wine_exe) {
+		free(exe);
+		exe = wine_exe;
+		return exe;
+	}
+
+	/* We have to ignore this because the wine process is in some sort
+	 * of respawn mode
+	 */
+	free(exe);
+
 fail:
-	LOG_ERROR("Unable to find executable for PID %d: %s\n", pid, strerror(errno));
+	if (errno != 0) // otherwise a proper message was logged before
+		LOG_ERROR("Unable to find executable for PID %d: %s\n", pid, strerror(errno));
 	return NULL;
 }
