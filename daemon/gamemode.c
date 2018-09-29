@@ -75,6 +75,17 @@ POSSIBILITY OF SUCH DAMAGE.
 	(snprintf(b, sizeof(b), s, __VA_ARGS__) < (ssize_t)sizeof(b) ? strndup(b, sizeof(b)) : NULL)
 
 /**
+ * Helper function: Test, if haystack ends with needle.
+ */
+static inline const char *strtail(const char *haystack, const char *needle)
+{
+	char *pos = strstr(haystack, needle);
+	if (pos && (strlen(pos) == strlen(needle)))
+		return pos;
+	return NULL;
+}
+
+/**
  * The GameModeClient encapsulates the remote connection, providing a list
  * form to contain the pid and credentials.
  */
