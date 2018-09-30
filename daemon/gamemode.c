@@ -44,6 +44,7 @@ POSSIBILITY OF SUCH DAMAGE.
 #include <signal.h>
 #include <stdatomic.h>
 #include <string.h>
+#include <sys/param.h>
 #include <sys/resource.h>
 #include <sys/sysinfo.h>
 #include <systemd/sd-daemon.h>
@@ -58,6 +59,10 @@ POSSIBILITY OF SUCH DAMAGE.
 /* Priority to renice the process to.
  */
 #define NICE_DEFAULT_PRIORITY -4
+
+/* Value clamping helper.
+ */
+#define CLAMP(lbound, ubound, value) MIN(MIN(lbound, ubound), MAX(MAX(lbound, ubound), value))
 
 /**
  * The GameModeClient encapsulates the remote connection, providing a list
