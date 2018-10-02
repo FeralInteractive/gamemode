@@ -677,13 +677,21 @@ GameModeContext *game_mode_context_instance()
  */
 static char *game_mode_context_find_exe(pid_t pid)
 {
-	static char proc_path[PATH_MAX] = { 0 };
+	char buffer[PATH_MAX];
+	char *proc_path = NULL;
 
-	if (snprintf(proc_path, sizeof(proc_path), "/proc/%d/exe", pid) < 0) {
-		LOG_ERROR("Unable to find executable for PID %d: %s\n", pid, strerror(errno));
-		return NULL;
-	}
+	if (!(proc_path = safe_snprintf(buffer, "/proc/%d/exe", pid)))
+		goto fail;
 
 	/* Allocate the realpath if possible */
-	return realpath(proc_path, NULL);
+	char *exe = realpath(proc_path, NULL);
+	free(proc_path);
+	if (!exe)
+		goto fail;
+
+	return exe;
+
+fail:
+	LOG_ERROR("Unable to find executable for PID %d: %s\n", pid, strerror(errno));
+	return NULL;
 }
