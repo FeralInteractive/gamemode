@@ -65,6 +65,11 @@ POSSIBILITY OF SUCH DAMAGE.
  */
 #define CLAMP(lbound, ubound, value) MIN(MIN(lbound, ubound), MAX(MAX(lbound, ubound), value))
 
+/* Little helper to safely print into a buffer, returns a newly allocated string
+ */
+#define safe_snprintf(b, s, ...)                                                                   \
+	(snprintf(b, sizeof(b), s, __VA_ARGS__) < (ssize_t)sizeof(b) ? strndup(b, sizeof(b)) : NULL)
+
 /**
  * The GameModeClient encapsulates the remote connection, providing a list
  * form to contain the pid and credentials.
