@@ -41,6 +41,7 @@ POSSIBILITY OF SUCH DAMAGE.
 #include <linux/limits.h>
 #include <linux/sched.h>
 #include <pthread.h>
+#include <pwd.h>
 #include <sched.h>
 #include <signal.h>
 #include <stdatomic.h>
@@ -48,6 +49,7 @@ POSSIBILITY OF SUCH DAMAGE.
 #include <sys/param.h>
 #include <sys/resource.h>
 #include <sys/sysinfo.h>
+#include <sys/types.h>
 #include <systemd/sd-daemon.h>
 
 /* SCHED_ISO may not be defined as it is a reserved value not yet
@@ -669,6 +671,25 @@ static void *game_mode_context_reaper(void *userdata)
 GameModeContext *game_mode_context_instance()
 {
 	return &instance;
+}
+
+/**
+ * Lookup the home directory of the user in a safe way.
+ */
+static char *game_mode_lookup_user_home(void)
+{
+	/* Try loading env HOME first */
+	const char *home = secure_getenv("HOME");
+	if (!home) {
+		/* If HOME is not defined (or out of context), fall back to passwd */
+		struct passwd *pw = getpwuid(getuid());
+		if (!pw)
+			return NULL;
+		home = pw->pw_dir;
+	}
+
+	/* Try to allocate into our heap */
+	return home ? strdup(home) : NULL;
 }
 
 /**
