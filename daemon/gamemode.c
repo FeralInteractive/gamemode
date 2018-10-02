@@ -38,6 +38,7 @@ POSSIBILITY OF SUCH DAMAGE.
 #include "ioprio.h"
 #include "logging.h"
 
+#include <fcntl.h>
 #include <linux/limits.h>
 #include <linux/sched.h>
 #include <pthread.h>
@@ -45,6 +46,7 @@ POSSIBILITY OF SUCH DAMAGE.
 #include <sched.h>
 #include <signal.h>
 #include <stdatomic.h>
+#include <stdio.h>
 #include <string.h>
 #include <sys/param.h>
 #include <sys/resource.h>
@@ -671,6 +673,42 @@ static void *game_mode_context_reaper(void *userdata)
 GameModeContext *game_mode_context_instance()
 {
 	return &instance;
+}
+
+/**
+ * Lookup the process environment for a specific variable or return NULL.
+ * Requires an open directory FD from /proc/PID.
+ */
+static char *game_mode_lookup_proc_env(int proc_fd, const char *var)
+{
+	char *environ = NULL;
+
+	int fd = openat(proc_fd, "environ", O_RDONLY | O_CLOEXEC);
+	if (fd != -1) {
+		FILE *stream = fdopen(fd, "r");
+		if (stream) {
+			/* Read every \0 terminated line from the environment */
+			char *line = NULL;
+			size_t len = 0;
+			size_t pos = strlen(var) + 1;
+			while (!environ && (getdelim(&line, &len, 0, stream) != -1)) {
+				/* Find a match including the "=" suffix */
+				if ((len > pos) && (strncmp(line, var, strlen(var)) == 0) && (line[pos - 1] == '='))
+					environ = strndup(line + pos, len - pos);
+			}
+			free(line);
+			fclose(stream);
+		} else
+			close(fd);
+	}
+
+	/* If found variable is empty, skip it */
+	if (environ && !strlen(environ)) {
+		free(environ);
+		environ = NULL;
+	}
+
+	return environ;
 }
 
 /**
