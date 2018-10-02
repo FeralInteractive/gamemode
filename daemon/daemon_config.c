@@ -221,6 +221,8 @@ static void load_config_files(GameModeConfig *self)
 	memset(self->endscripts, 0, sizeof(self->endscripts));
 	memset(self->defaultgov, 0, sizeof(self->defaultgov));
 	memset(self->desiredgov, 0, sizeof(self->desiredgov));
+	memset(self->softrealtime, 0, sizeof(self->softrealtime));
+	self->renice = 0; /* 0 = use default */
 	self->reaper_frequency = DEFAULT_REAPER_FREQ;
 
 	/*
