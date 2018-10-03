@@ -70,6 +70,11 @@ POSSIBILITY OF SUCH DAMAGE.
  */
 #define CLAMP(lbound, ubound, value) MIN(MIN(lbound, ubound), MAX(MAX(lbound, ubound), value))
 
+/* Little helper to safely print into a buffer, returns a pointer into the buffer
+ */
+#define buffered_snprintf(b, s, ...)                                                               \
+	(snprintf(b, sizeof(b), s, __VA_ARGS__) < (ssize_t)sizeof(b) ? b : NULL)
+
 /* Little helper to safely print into a buffer, returns a newly allocated string
  */
 #define safe_snprintf(b, s, ...)                                                                   \
@@ -753,6 +758,11 @@ static char *game_mode_resolve_wine_preloader(pid_t pid)
 	char *proc_path = NULL, *wine_exe = NULL, *wineprefix = NULL;
 	int proc_fd = -1;
 
+	/* We could use the buffered_snprintf() helper here but it may potentially
+	 * overwrite proc_path when the buffer is re-used later and usage of
+	 * proc_path has not been discarded yet (i.e., it's used in the fail path).
+	 * Let's not introduce this non-obvious pitfall.
+	 */
 	if (!(proc_path = safe_snprintf(buffer, "/proc/%d", pid)))
 		goto fail;
 
@@ -818,10 +828,9 @@ static char *game_mode_resolve_wine_preloader(pid_t pid)
 	wine_exe[0] = (char)tolower(wine_exe[0]);
 
 	/* Convert relative wine exe path to full unix path */
-	char *wine_path = safe_snprintf(buffer, "%s/dosdevices/%s", wineprefix, wine_exe);
+	char *wine_path = buffered_snprintf(buffer, "%s/dosdevices/%s", wineprefix, wine_exe);
 	free(wine_exe);
 	wine_exe = wine_path ? realpath(wine_path, NULL) : NULL;
-	free(wine_path);
 
 	/* Fine? Successo? Fortuna! */
 	if (wine_exe)
@@ -861,12 +870,11 @@ static char *game_mode_context_find_exe(pid_t pid)
 	char buffer[PATH_MAX];
 	char *proc_path = NULL, *wine_exe = NULL;
 
-	if (!(proc_path = safe_snprintf(buffer, "/proc/%d/exe", pid)))
+	if (!(proc_path = buffered_snprintf(buffer, "/proc/%d/exe", pid)))
 		goto fail;
 
 	/* Allocate the realpath if possible */
 	char *exe = realpath(proc_path, NULL);
-	free(proc_path);
 	if (!exe)
 		goto fail;
 
