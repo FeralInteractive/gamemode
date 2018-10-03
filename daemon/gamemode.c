@@ -103,7 +103,7 @@ static GameModeContext instance = { 0 };
  */
 static volatile bool had_context_init = false;
 
-static GameModeClient *game_mode_client_new(pid_t pid);
+static GameModeClient *game_mode_client_new(pid_t pid, char *exe);
 static void game_mode_client_free(GameModeClient *client);
 static bool game_mode_context_has_client(GameModeContext *self, pid_t client);
 static int game_mode_context_num_clients(GameModeContext *self);
@@ -442,6 +442,7 @@ bool game_mode_context_register(GameModeContext *self, pid_t client)
 {
 	/* Construct a new client if we can */
 	GameModeClient *cl = NULL;
+	char *executable = NULL;
 
 	/* Cap the total number of active clients */
 	if (game_mode_context_num_clients(self) + 1 > MAX_GAMES) {
@@ -449,11 +450,7 @@ bool game_mode_context_register(GameModeContext *self, pid_t client)
 		return false;
 	}
 
-	cl = game_mode_client_new(client);
-	if (!cl) {
-		fputs("OOM\n", stderr);
-		return false;
-	}
+	errno = 0;
 
 	/* Check the PID first to spare a potentially expensive lookup for the exe */
 	if (game_mode_context_has_client(self, client)) {
@@ -461,19 +458,26 @@ bool game_mode_context_register(GameModeContext *self, pid_t client)
 		goto error_cleanup;
 	}
 
-	/* Lookup the executable */
-	cl->executable = game_mode_context_find_exe(client);
-	if (!cl->executable)
+	/* Lookup the executable first */
+	executable = game_mode_context_find_exe(client);
+	if (!executable)
 		goto error_cleanup;
 
 	/* Check our blacklist and whitelist */
-	if (!config_get_client_whitelisted(self->config, cl->executable)) {
-		LOG_MSG("Client [%s] was rejected (not in whitelist)\n", cl->executable);
+	if (!config_get_client_whitelisted(self->config, executable)) {
+		LOG_MSG("Client [%s] was rejected (not in whitelist)\n", executable);
 		goto error_cleanup;
-	} else if (config_get_client_blacklisted(self->config, cl->executable)) {
-		LOG_MSG("Client [%s] was rejected (in blacklist)\n", cl->executable);
+	} else if (config_get_client_blacklisted(self->config, executable)) {
+		LOG_MSG("Client [%s] was rejected (in blacklist)\n", executable);
 		goto error_cleanup;
 	}
+
+	/* From now on we depend on the client, initialize it */
+	cl = game_mode_client_new(client, executable);
+	if (cl)
+		executable = NULL; // ownership has been delegated
+	else
+		goto error_cleanup;
 
 	/* Begin a write lock now to insert our new client at list start */
 	pthread_rwlock_wrlock(&self->rwlock);
@@ -497,7 +501,11 @@ bool game_mode_context_register(GameModeContext *self, pid_t client)
 	game_mode_apply_ioprio(self, client);
 
 	return true;
+
 error_cleanup:
+	if (errno != 0)
+		LOG_ERROR("Failed to register client [%d]: %s\n", client, strerror(errno));
+	free(executable);
 	game_mode_client_free(cl);
 	return false;
 }
@@ -585,9 +593,10 @@ int game_mode_context_query_status(GameModeContext *self, pid_t client)
  *
  * This is deliberately OOM safe
  */
-static GameModeClient *game_mode_client_new(pid_t pid)
+static GameModeClient *game_mode_client_new(pid_t pid, char *executable)
 {
 	GameModeClient c = {
+		.executable = executable,
 		.next = NULL,
 		.pid = pid,
 	};
