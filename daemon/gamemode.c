@@ -433,6 +433,9 @@ static void game_mode_context_auto_expire(GameModeContext *self)
 			pthread_rwlock_unlock(&self->rwlock);
 			break;
 		}
+
+		if (game_mode_context_num_clients(self) == 0)
+			LOG_MSG("Properly cleaned up all expired games.\n");
 	}
 }
 
@@ -479,10 +482,23 @@ bool game_mode_context_register(GameModeContext *self, pid_t client)
 	errno = 0;
 
 	/* Check the PID first to spare a potentially expensive lookup for the exe */
-	if (game_mode_context_has_client(self, client)) {
-		LOG_ERROR("Addition requested for already known process [%d]\n", client);
+	pthread_rwlock_rdlock(&self->rwlock); // ensure our pointer is sane
+	const GameModeClient *existing = game_mode_context_has_client(self, client);
+	if (existing) {
+		static int once = 0;
+		const char *additional_message =
+		    (once++
+		         ? ""
+		         : "    -- This may happen due to using exec or shell wrappers. You may want to\n"
+		           "    -- blacklist this client so GameMode can see its final name here.\n");
+		LOG_ERROR("Addition requested for already known client %d [%s].\n%s",
+		          existing->pid,
+		          existing->executable,
+		          additional_message);
+		pthread_rwlock_unlock(&self->rwlock);
 		goto error_cleanup;
 	}
+	pthread_rwlock_unlock(&self->rwlock);
 
 	/* Lookup the executable first */
 	executable = game_mode_context_find_exe(client);
@@ -568,7 +584,15 @@ bool game_mode_context_unregister(GameModeContext *self, pid_t client)
 	pthread_rwlock_unlock(&self->rwlock);
 
 	if (!found) {
-		LOG_ERROR("Removal requested for unknown process [%d]\n", client);
+		static int once = 0;
+		const char *additional_message =
+		    (once++
+		         ? ""
+		         : "    -- The parent process probably forked and tries to unregister from the\n"
+		           "    -- wrong process now. We cannot work around this. This message will\n"
+		           "    -- likely be paired with a nearby 'Removing expired game' which means we\n"
+		           "    -- cleaned up properly (we will log this event).\n");
+		LOG_ERROR("Removal requested for unknown process [%d].\n%s", client, additional_message);
 		return false;
 	}
 
