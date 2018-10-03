@@ -131,7 +131,7 @@ static volatile bool had_context_init = false;
 
 static GameModeClient *game_mode_client_new(pid_t pid, char *exe);
 static void game_mode_client_free(GameModeClient *client);
-static bool game_mode_context_has_client(GameModeContext *self, pid_t client);
+static const GameModeClient *game_mode_context_has_client(GameModeContext *self, pid_t client);
 static int game_mode_context_num_clients(GameModeContext *self);
 static void *game_mode_context_reaper(void *userdata);
 static void game_mode_context_enter(GameModeContext *self);
@@ -439,15 +439,15 @@ static void game_mode_context_auto_expire(GameModeContext *self)
 /**
  * Determine if the client is already known to the context
  */
-static bool game_mode_context_has_client(GameModeContext *self, pid_t client)
+static const GameModeClient *game_mode_context_has_client(GameModeContext *self, pid_t client)
 {
-	bool found = false;
+	const GameModeClient *found = NULL;
 	pthread_rwlock_rdlock(&self->rwlock);
 
 	/* Walk all clients and find a matching pid */
 	for (GameModeClient *cl = self->client; cl; cl = cl->next) {
 		if (cl->pid == client) {
-			found = true;
+			found = cl;
 			break;
 		}
 	}
