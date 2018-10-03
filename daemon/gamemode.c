@@ -455,6 +455,8 @@ bool game_mode_context_register(GameModeContext *self, pid_t client)
 		return false;
 	}
 	cl->executable = game_mode_context_find_exe(client);
+	if (!cl->executable)
+		goto error_cleanup;
 
 	if (game_mode_context_has_client(self, client)) {
 		LOG_ERROR("Addition requested for already known process [%d]\n", client);
