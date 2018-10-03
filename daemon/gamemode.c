@@ -454,14 +454,17 @@ bool game_mode_context_register(GameModeContext *self, pid_t client)
 		fputs("OOM\n", stderr);
 		return false;
 	}
-	cl->executable = game_mode_context_find_exe(client);
-	if (!cl->executable)
-		goto error_cleanup;
 
+	/* Check the PID first to spare a potentially expensive lookup for the exe */
 	if (game_mode_context_has_client(self, client)) {
 		LOG_ERROR("Addition requested for already known process [%d]\n", client);
 		goto error_cleanup;
 	}
+
+	/* Lookup the executable */
+	cl->executable = game_mode_context_find_exe(client);
+	if (!cl->executable)
+		goto error_cleanup;
 
 	/* Check our blacklist and whitelist */
 	if (!config_get_client_whitelisted(self->config, cl->executable)) {
