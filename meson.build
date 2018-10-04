@@ -55,6 +55,19 @@ if with_systemd == true
     endif
 endif
 
+with_limits_conf = get_option('with-pam-group')
+if with_limits_conf != ''
+  ldata = configuration_data()
+  ldata.set('LIMITSGROUP', with_limits_conf)
+  # Install the limits.d configuration file
+  configure_file(
+      input: 'data/10-gamemode.conf.in',
+      output: '10-gamemode.conf',
+      configuration: ldata,
+      install_dir: '/etc/security/limits.d',
+  )
+endif
+
 # Set the dbus path as appropriate.
 path_dbus_service_dir = get_option('with-dbus-service-dir')
 if path_dbus_service_dir == ''
