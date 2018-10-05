@@ -35,6 +35,7 @@ POSSIBILITY OF SUCH DAMAGE.
 #include "daemon_config.h"
 #include "governors-query.h"
 #include "governors.h"
+#include "ioprio.h"
 #include "logging.h"
 
 #include <linux/limits.h>
@@ -44,6 +45,7 @@ POSSIBILITY OF SUCH DAMAGE.
 #include <signal.h>
 #include <stdatomic.h>
 #include <string.h>
+#include <sys/param.h>
 #include <sys/resource.h>
 #include <sys/sysinfo.h>
 #include <systemd/sd-daemon.h>
@@ -58,6 +60,10 @@ POSSIBILITY OF SUCH DAMAGE.
 /* Priority to renice the process to.
  */
 #define NICE_DEFAULT_PRIORITY -4
+
+/* Value clamping helper.
+ */
+#define CLAMP(lbound, ubound, value) MIN(MIN(lbound, ubound), MAX(MAX(lbound, ubound), value))
 
 /**
  * The GameModeClient encapsulates the remote connection, providing a list
@@ -233,6 +239,56 @@ static void game_mode_apply_scheduler(GameModeContext *self, pid_t client)
 		}
 	} else {
 		LOG_ERROR("Not using softrealtime, setting is '%s'.\n", softrealtime);
+	}
+}
+
+/**
+ * Apply io priorities
+ *
+ * This tries to change the io priority of the client to a value specified
+ * and can possibly reduce lags or latency when a game has to load assets
+ * on demand.
+ */
+static void game_mode_apply_ioprio(GameModeContext *self, pid_t client)
+{
+	LOG_MSG("Setting scheduling policies...\n");
+
+	/*
+	 * read configuration "ioprio" (0..7)
+	 */
+	int ioprio = 0;
+	config_get_ioprio_value(self->config, &ioprio);
+	if (IOPRIO_RESET_DEFAULT == ioprio) {
+		LOG_MSG("IO priority will be reset to default behavior (based on CPU priority).\n");
+		ioprio = 0;
+	} else if (IOPRIO_DONT_SET == ioprio) {
+		return;
+	} else {
+		/* maybe clamp the value */
+		int invalid_ioprio = ioprio;
+		ioprio = CLAMP(0, 7, ioprio);
+		if (ioprio != invalid_ioprio)
+			LOG_ERROR("IO priority value %d invalid, clamping to %d\n", invalid_ioprio, ioprio);
+
+		/* We support only IOPRIO_CLASS_BE as IOPRIO_CLASS_RT required CAP_SYS_ADMIN */
+		ioprio = IOPRIO_PRIO_VALUE(IOPRIO_CLASS_BE, ioprio);
+	}
+
+	/*
+	 * Actually apply the io priority
+	 */
+	int c = IOPRIO_PRIO_CLASS(ioprio), p = IOPRIO_PRIO_DATA(ioprio);
+	if (ioprio_set(IOPRIO_WHO_PROCESS, client, ioprio) == 0) {
+		if (0 == ioprio)
+			LOG_MSG("Resetting client [%d] IO priority.\n", client);
+		else
+			LOG_MSG("Setting client [%d] IO priority to (%d,%d).\n", client, c, p);
+	} else {
+		LOG_ERROR("Setting client [%d] IO priority to (%d,%d) failed with error %d, ignoring\n",
+		          client,
+		          c,
+		          p,
+		          errno);
 	}
 }
 
@@ -431,6 +487,9 @@ bool game_mode_context_register(GameModeContext *self, pid_t client)
 
 	/* Apply scheduler policies */
 	game_mode_apply_scheduler(self, client);
+
+	/* Apply io priorities */
+	game_mode_apply_ioprio(self, client);
 
 	return true;
 error_cleanup:
