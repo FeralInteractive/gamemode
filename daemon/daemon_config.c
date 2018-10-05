@@ -70,6 +70,8 @@ struct GameModeConfig {
 	char softrealtime[CONFIG_VALUE_MAX];
 	long renice;
 
+	char ioprio[CONFIG_VALUE_MAX];
+
 	long reaper_frequency;
 };
 
@@ -164,6 +166,8 @@ static int inih_handler(void *user, const char *section, const char *name, const
 			valid = get_string_value(value, self->softrealtime);
 		} else if (strcmp(name, "renice") == 0) {
 			valid = get_long_value(name, value, &self->renice);
+		} else if (strcmp(name, "ioprio") == 0) {
+			valid = get_string_value(value, self->ioprio);
 		}
 	} else if (strcmp(section, "custom") == 0) {
 		/* Custom subsection */
@@ -215,6 +219,7 @@ static void load_config_files(GameModeConfig *self)
 	pthread_rwlock_wrlock(&self->rwlock);
 
 	/* Clear our config values */
+	memset(self->ioprio, 0, sizeof(self->ioprio));
 	memset(self->whitelist, 0, sizeof(self->whitelist));
 	memset(self->blacklist, 0, sizeof(self->blacklist));
 	memset(self->startscripts, 0, sizeof(self->startscripts));
@@ -425,4 +430,19 @@ void config_get_soft_realtime(GameModeConfig *self, char softrealtime[CONFIG_VAL
 void config_get_renice_value(GameModeConfig *self, long *value)
 {
 	memcpy_locked_config(self, value, &self->renice, sizeof(long));
+}
+
+/*
+ * Get the ioprio value
+ */
+void config_get_ioprio_value(GameModeConfig *self, int *value)
+{
+	char ioprio_value[CONFIG_VALUE_MAX] = { 0 };
+	memcpy_locked_config(self, ioprio_value, &self->ioprio, sizeof(self->ioprio));
+	if (0 == strncmp(ioprio_value, "off", sizeof(self->ioprio)))
+		*value = IOPRIO_DONT_SET;
+	else if (0 == strncmp(ioprio_value, "default", sizeof(self->ioprio)))
+		*value = IOPRIO_RESET_DEFAULT;
+	else
+		*value = atoi(ioprio_value);
 }

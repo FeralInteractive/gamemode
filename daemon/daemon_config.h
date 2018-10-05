@@ -40,6 +40,12 @@ POSSIBILITY OF SUCH DAMAGE.
 #define CONFIG_VALUE_MAX 256
 
 /*
+ * Special ioprio values
+ */
+#define IOPRIO_RESET_DEFAULT -1
+#define IOPRIO_DONT_SET -2
+
+/*
  * Opaque config context type
  */
 typedef struct GameModeConfig GameModeConfig;
@@ -113,3 +119,8 @@ void config_get_soft_realtime(GameModeConfig *self, char softrealtime[CONFIG_VAL
  * Get the renice value
  */
 void config_get_renice_value(GameModeConfig *self, long *value);
+
+/*
+ * Get the ioprio value
+ */
+void config_get_ioprio_value(GameModeConfig *self, int *value);
