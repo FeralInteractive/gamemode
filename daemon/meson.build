@@ -18,6 +18,7 @@ link_daemon_common = declare_dependency(
 daemon_sources = [
     'main.c',
     'gamemode.c',
+    'gamemode-env.c',
     'gamemode-proc.c',
     'daemonize.c',
     'dbus_messaging.c',
