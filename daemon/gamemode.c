@@ -41,7 +41,6 @@ POSSIBILITY OF SUCH DAMAGE.
 
 #include <ctype.h>
 #include <fcntl.h>
-#include <linux/limits.h>
 #include <linux/sched.h>
 #include <pthread.h>
 #include <pwd.h>
@@ -50,7 +49,6 @@ POSSIBILITY OF SUCH DAMAGE.
 #include <stdatomic.h>
 #include <sys/resource.h>
 #include <sys/sysinfo.h>
-#include <sys/types.h>
 #include <systemd/sd-daemon.h>
 
 /* SCHED_ISO may not be defined as it is a reserved value not yet
@@ -725,7 +723,7 @@ GameModeContext *game_mode_context_instance()
  * Lookup the process environment for a specific variable or return NULL.
  * Requires an open directory FD from /proc/PID.
  */
-static char *game_mode_lookup_proc_env(int proc_fd, const char *var)
+static char *game_mode_lookup_proc_env(const procfd_t proc_fd, const char *var)
 {
 	char *environ = NULL;
 
@@ -785,18 +783,11 @@ static char *game_mode_resolve_wine_preloader(pid_t pid)
 {
 	char buffer[PATH_MAX];
 	char *proc_path = NULL, *wine_exe = NULL, *wineprefix = NULL;
-	int proc_fd = -1;
-
-	/* We could use the buffered_snprintf() helper here but it may potentially
-	 * overwrite proc_path when the buffer is re-used later and usage of
-	 * proc_path has not been discarded yet (i.e., it's used in the fail path).
-	 * Let's not introduce this non-obvious pitfall.
-	 */
-	if (!(proc_path = safe_snprintf(buffer, "/proc/%d", pid)))
-		goto fail;
 
 	/* Open the directory, we are potentially reading multiple files from it */
-	if (-1 == (proc_fd = open(proc_path, O_RDONLY | O_CLOEXEC)))
+	procfd_t proc_fd = game_mode_open_proc(pid);
+
+	if (proc_fd == INVALID_PROCFD)
 		goto fail_proc;
 
 	/* Open the command line */
@@ -868,7 +859,7 @@ static char *game_mode_resolve_wine_preloader(pid_t pid)
 		goto fail;
 
 error_cleanup:
-	close(proc_fd);
+	game_mode_close_proc(proc_fd);
 	free(wineprefix);
 	free(proc_path);
 	return wine_exe;
