@@ -19,6 +19,7 @@ daemon_sources = [
     'main.c',
     'gamemode.c',
     'gamemode-env.c',
+    'gamemode-ioprio.c',
     'gamemode-proc.c',
     'gamemode-sched.c',
     'daemonize.c',
