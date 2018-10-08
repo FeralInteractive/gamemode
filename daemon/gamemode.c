@@ -718,6 +718,11 @@ GameModeContext *game_mode_context_instance()
 	return &instance;
 }
 
+GameModeConfig *game_mode_config_from_context(const GameModeContext *context)
+{
+	return context ? context->config : NULL;
+}
+
 /**
  * Attempt to resolve the exe for wine-preloader.
  * This function is used if game_mode_context_find_exe() identified the

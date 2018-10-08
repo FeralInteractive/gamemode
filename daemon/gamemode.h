@@ -39,9 +39,10 @@ POSSIBILITY OF SUCH DAMAGE.
 typedef int procfd_t;
 
 /**
- * Opaque context
+ * Opaque types
  */
 typedef struct GameModeContext GameModeContext;
+typedef struct GameModeConfig GameModeConfig;
 
 /**
  * Return the singleton instance
@@ -87,6 +88,14 @@ bool game_mode_context_unregister(GameModeContext *self, pid_t pid);
  *          2 if gamemode is active and the client is registered
  */
 int game_mode_context_query_status(GameModeContext *self, pid_t pid);
+
+/**
+ * Query the config of a gamemode context
+ *
+ * @param context A gamemode context
+ * @returns Configuration from the gamemode context
+ */
+GameModeConfig *game_mode_config_from_context(const GameModeContext *context);
 
 /** gamemode-env.c
  * Provides internal API functions specific to working environment
