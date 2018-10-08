@@ -123,3 +123,11 @@ int game_mode_close_proc(const procfd_t procfd);
  */
 void game_mode_apply_renice(const GameModeContext *self, const pid_t client);
 void game_mode_apply_scheduling(const GameModeContext *self, const pid_t client);
+
+/** gamemode-wine.c
+ * Provides internal API functions specific to handling wine
+ * prefixes.
+ */
+bool game_mode_detect_wine_loader(const char *exe);
+bool game_mode_detect_wine_preloader(const char *exe);
+char *game_mode_resolve_wine_preloader(const pid_t pid);
