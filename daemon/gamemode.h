@@ -34,6 +34,10 @@ POSSIBILITY OF SUCH DAMAGE.
 #include <stdbool.h>
 #include <sys/types.h>
 
+#define INVALID_PROCFD -1
+
+typedef int procfd_t;
+
 /**
  * Opaque context
  */
@@ -83,3 +87,10 @@ bool game_mode_context_unregister(GameModeContext *self, pid_t pid);
  *          2 if gamemode is active and the client is registered
  */
 int game_mode_context_query_status(GameModeContext *self, pid_t pid);
+
+/** gamemode-proc.c
+ * Provides internal API functions specific to working with process
+ * environments.
+ */
+procfd_t game_mode_open_proc(const pid_t pid);
+int game_mode_close_proc(const procfd_t procfd);
