@@ -88,6 +88,13 @@ bool game_mode_context_unregister(GameModeContext *self, pid_t pid);
  */
 int game_mode_context_query_status(GameModeContext *self, pid_t pid);
 
+/** gamemode-env.c
+ * Provides internal API functions specific to working environment
+ * variables.
+ */
+char *game_mode_lookup_proc_env(const procfd_t proc_fd, const char *var);
+char *game_mode_lookup_user_home(void);
+
 /** gamemode-proc.c
  * Provides internal API functions specific to working with process
  * environments.
