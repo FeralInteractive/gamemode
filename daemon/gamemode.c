@@ -38,8 +38,6 @@ POSSIBILITY OF SUCH DAMAGE.
 #include "helpers.h"
 #include "logging.h"
 
-#include <ctype.h>
-#include <fcntl.h>
 #include <pthread.h>
 #include <signal.h>
 #include <stdatomic.h>
@@ -563,113 +561,6 @@ GameModeConfig *game_mode_config_from_context(const GameModeContext *context)
 }
 
 /**
- * Attempt to resolve the exe for wine-preloader.
- * This function is used if game_mode_context_find_exe() identified the
- * process as wine-preloader. Returns NULL when resolve fails.
- */
-static char *game_mode_resolve_wine_preloader(pid_t pid)
-{
-	char buffer[PATH_MAX];
-	char *proc_path = NULL, *wine_exe = NULL, *wineprefix = NULL;
-
-	/* Open the directory, we are potentially reading multiple files from it */
-	procfd_t proc_fd = game_mode_open_proc(pid);
-
-	if (proc_fd == INVALID_PROCFD)
-		goto fail_proc;
-
-	/* Open the command line */
-	int fd = openat(proc_fd, "cmdline", O_RDONLY | O_CLOEXEC);
-	if (fd != -1) {
-		FILE *stream = fdopen(fd, "r");
-		if (stream) {
-			char *argv = NULL;
-			size_t args = 0;
-			int argc = 0;
-			while (!wine_exe && (argc++ < 2) && (getdelim(&argv, &args, 0, stream) != -1)) {
-				/* If we see the wine loader here, we have to use the next argument */
-				if (strtail(argv, "/wine") || strtail(argv, "/wine64"))
-					continue;
-				free(wine_exe); // just in case
-				/* Check presence of the drive letter, we assume that below */
-				wine_exe = args > 2 && argv[1] == ':' ? strndup(argv, args) : NULL;
-			}
-			free(argv);
-			fclose(stream);
-		} else
-			close(fd);
-	}
-
-	/* Did we get wine exe from cmdline? */
-	if (wine_exe)
-		LOG_MSG("Detected wine exe for client %d [%s].\n", pid, wine_exe);
-	else
-		goto fail_cmdline;
-
-	/* Open the process environment and find the WINEPREFIX */
-	errno = 0;
-	if (!(wineprefix = game_mode_lookup_proc_env(proc_fd, "WINEPREFIX"))) {
-		/* Lookup user home instead only if there was no error */
-		char *home = NULL;
-		if (errno == 0)
-			home = game_mode_lookup_user_home();
-
-		/* Append "/.wine" if we found the user home */
-		if (home)
-			wineprefix = safe_snprintf(buffer, "%s/.wine", home);
-
-		/* Cleanup and check result */
-		free(home);
-		if (!wineprefix)
-			goto fail_env;
-	}
-
-	/* Wine prefix was detected, log this for diagnostics */
-	LOG_MSG("Detected wine prefix for client %d: '%s'\n", pid, wineprefix);
-
-	/* Convert Windows to Unix path separators */
-	char *ix = wine_exe;
-	while (ix != NULL)
-		(ix = strchr(ix, '\\')) && (*ix++ = '/');
-
-	/* Convert the drive letter to lcase because wine handles it this way in the prefix */
-	wine_exe[0] = (char)tolower(wine_exe[0]);
-
-	/* Convert relative wine exe path to full unix path */
-	char *wine_path = buffered_snprintf(buffer, "%s/dosdevices/%s", wineprefix, wine_exe);
-	free(wine_exe);
-	wine_exe = wine_path ? realpath(wine_path, NULL) : NULL;
-
-	/* Fine? Successo? Fortuna! */
-	if (wine_exe)
-		LOG_MSG("Successfully mapped wine client %d [%s].\n", pid, wine_exe);
-	else
-		goto fail;
-
-error_cleanup:
-	game_mode_close_proc(proc_fd);
-	free(wineprefix);
-	free(proc_path);
-	return wine_exe;
-
-fail:
-	LOG_ERROR("Unable to find wine executable for client %d: %s\n", pid, strerror(errno));
-	goto error_cleanup;
-
-fail_cmdline:
-	LOG_ERROR("Wine loader has no accepted cmdline for client %d yet, deferring.\n", pid);
-	goto error_cleanup;
-
-fail_env:
-	LOG_ERROR("Failed to access process environment in '%s': %s\n", proc_path, strerror(errno));
-	goto error_cleanup;
-
-fail_proc:
-	LOG_ERROR("Failed to access process data in '%s': %s\n", proc_path, strerror(errno));
-	goto error_cleanup;
-}
-
-/**
  * Attempt to locate the exe for the process.
  * We might run into issues if the process is running under an odd umask.
  */
@@ -687,11 +578,11 @@ static char *game_mode_context_find_exe(pid_t pid)
 		goto fail;
 
 	/* Detect if the process is a wine loader process */
-	if (strtail(exe, "/wine-preloader") || strtail(exe, "/wine64-preloader")) {
+	if (game_mode_detect_wine_preloader(exe)) {
 		LOG_MSG("Detected wine preloader for client %d [%s].\n", pid, exe);
 		goto wine_preloader;
 	}
-	if (strtail(exe, "/wine") || strtail(exe, "/wine64")) {
+	if (game_mode_detect_wine_loader(exe)) {
 		LOG_MSG("Detected wine loader for client %d [%s].\n", pid, exe);
 		goto wine_preloader;
 	}
