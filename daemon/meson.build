@@ -20,6 +20,7 @@ daemon_sources = [
     'gamemode.c',
     'gamemode-env.c',
     'gamemode-proc.c',
+    'gamemode-sched.c',
     'daemonize.c',
     'dbus_messaging.c',
     'governors.c',
