@@ -144,7 +144,7 @@ void game_mode_context_loop(GameModeContext *context)
 	ret = sd_bus_open_user(&bus);
 
 	if (ret < 0) {
-		FATAL_ERROR("Failed to connect to the bus: %s", strerror(-ret));
+		FATAL_ERROR("Failed to connect to the bus: %s\n", strerror(-ret));
 	}
 
 	/* Create the object to allow connections */
@@ -156,13 +156,13 @@ void game_mode_context_loop(GameModeContext *context)
 	                               context);
 
 	if (ret < 0) {
-		FATAL_ERROR("Failed to install GameMode object: %s", strerror(-ret));
+		FATAL_ERROR("Failed to install GameMode object: %s\n", strerror(-ret));
 	}
 
 	/* Request our name */
 	ret = sd_bus_request_name(bus, "com.feralinteractive.GameMode", 0);
 	if (ret < 0) {
-		FATAL_ERROR("Failed to acquire service name: %s", strerror(-ret));
+		FATAL_ERROR("Failed to acquire service name: %s\n", strerror(-ret));
 	}
 
 	LOG_MSG("Successfully initialised bus with name [%s]...\n", "com.feralinteractive.GameMode");
@@ -172,7 +172,7 @@ void game_mode_context_loop(GameModeContext *context)
 	for (;;) {
 		ret = sd_bus_process(bus, NULL);
 		if (ret < 0) {
-			FATAL_ERROR("Failure when processing the bus: %s", strerror(-ret));
+			FATAL_ERROR("Failure when processing the bus: %s\n", strerror(-ret));
 		}
 
 		/* We're done processing */
@@ -183,7 +183,7 @@ void game_mode_context_loop(GameModeContext *context)
 		/* Wait for more */
 		ret = sd_bus_wait(bus, (uint64_t)-1);
 		if (ret < 0 && -ret != EINTR) {
-			FATAL_ERROR("Failure when waiting on bus: %s", strerror(-ret));
+			FATAL_ERROR("Failure when waiting on bus: %s\n", strerror(-ret));
 		}
 	}
 }

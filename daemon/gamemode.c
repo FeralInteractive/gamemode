@@ -38,16 +38,21 @@ POSSIBILITY OF SUCH DAMAGE.
 #include "ioprio.h"
 #include "logging.h"
 
+#include <ctype.h>
+#include <fcntl.h>
 #include <linux/limits.h>
 #include <linux/sched.h>
 #include <pthread.h>
+#include <pwd.h>
 #include <sched.h>
 #include <signal.h>
 #include <stdatomic.h>
+#include <stdio.h>
 #include <string.h>
 #include <sys/param.h>
 #include <sys/resource.h>
 #include <sys/sysinfo.h>
+#include <sys/types.h>
 #include <systemd/sd-daemon.h>
 
 /* SCHED_ISO may not be defined as it is a reserved value not yet
@@ -64,6 +69,27 @@ POSSIBILITY OF SUCH DAMAGE.
 /* Value clamping helper.
  */
 #define CLAMP(lbound, ubound, value) MIN(MIN(lbound, ubound), MAX(MAX(lbound, ubound), value))
+
+/* Little helper to safely print into a buffer, returns a pointer into the buffer
+ */
+#define buffered_snprintf(b, s, ...)                                                               \
+	(snprintf(b, sizeof(b), s, __VA_ARGS__) < (ssize_t)sizeof(b) ? b : NULL)
+
+/* Little helper to safely print into a buffer, returns a newly allocated string
+ */
+#define safe_snprintf(b, s, ...)                                                                   \
+	(snprintf(b, sizeof(b), s, __VA_ARGS__) < (ssize_t)sizeof(b) ? strndup(b, sizeof(b)) : NULL)
+
+/**
+ * Helper function: Test, if haystack ends with needle.
+ */
+static inline const char *strtail(const char *haystack, const char *needle)
+{
+	char *pos = strstr(haystack, needle);
+	if (pos && (strlen(pos) == strlen(needle)))
+		return pos;
+	return NULL;
+}
 
 /**
  * The GameModeClient encapsulates the remote connection, providing a list
@@ -103,9 +129,9 @@ static GameModeContext instance = { 0 };
  */
 static volatile bool had_context_init = false;
 
-static GameModeClient *game_mode_client_new(pid_t pid);
+static GameModeClient *game_mode_client_new(pid_t pid, char *exe);
 static void game_mode_client_free(GameModeClient *client);
-static bool game_mode_context_has_client(GameModeContext *self, pid_t client);
+static const GameModeClient *game_mode_context_has_client(GameModeContext *self, pid_t client);
 static int game_mode_context_num_clients(GameModeContext *self);
 static void *game_mode_context_reaper(void *userdata);
 static void game_mode_context_enter(GameModeContext *self);
@@ -407,21 +433,24 @@ static void game_mode_context_auto_expire(GameModeContext *self)
 			pthread_rwlock_unlock(&self->rwlock);
 			break;
 		}
+
+		if (game_mode_context_num_clients(self) == 0)
+			LOG_MSG("Properly cleaned up all expired games.\n");
 	}
 }
 
 /**
  * Determine if the client is already known to the context
  */
-static bool game_mode_context_has_client(GameModeContext *self, pid_t client)
+static const GameModeClient *game_mode_context_has_client(GameModeContext *self, pid_t client)
 {
-	bool found = false;
+	const GameModeClient *found = NULL;
 	pthread_rwlock_rdlock(&self->rwlock);
 
 	/* Walk all clients and find a matching pid */
 	for (GameModeClient *cl = self->client; cl; cl = cl->next) {
 		if (cl->pid == client) {
-			found = true;
+			found = cl;
 			break;
 		}
 	}
@@ -442,6 +471,7 @@ bool game_mode_context_register(GameModeContext *self, pid_t client)
 {
 	/* Construct a new client if we can */
 	GameModeClient *cl = NULL;
+	char *executable = NULL;
 
 	/* Cap the total number of active clients */
 	if (game_mode_context_num_clients(self) + 1 > MAX_GAMES) {
@@ -449,26 +479,47 @@ bool game_mode_context_register(GameModeContext *self, pid_t client)
 		return false;
 	}
 
-	cl = game_mode_client_new(client);
-	if (!cl) {
-		fputs("OOM\n", stderr);
-		return false;
-	}
-	cl->executable = game_mode_context_find_exe(client);
+	errno = 0;
 
-	if (game_mode_context_has_client(self, client)) {
-		LOG_ERROR("Addition requested for already known process [%d]\n", client);
+	/* Check the PID first to spare a potentially expensive lookup for the exe */
+	pthread_rwlock_rdlock(&self->rwlock); // ensure our pointer is sane
+	const GameModeClient *existing = game_mode_context_has_client(self, client);
+	if (existing) {
+		static int once = 0;
+		const char *additional_message =
+		    (once++
+		         ? ""
+		         : "    -- This may happen due to using exec or shell wrappers. You may want to\n"
+		           "    -- blacklist this client so GameMode can see its final name here.\n");
+		LOG_ERROR("Addition requested for already known client %d [%s].\n%s",
+		          existing->pid,
+		          existing->executable,
+		          additional_message);
+		pthread_rwlock_unlock(&self->rwlock);
 		goto error_cleanup;
 	}
+	pthread_rwlock_unlock(&self->rwlock);
+
+	/* Lookup the executable first */
+	executable = game_mode_context_find_exe(client);
+	if (!executable)
+		goto error_cleanup;
 
 	/* Check our blacklist and whitelist */
-	if (!config_get_client_whitelisted(self->config, cl->executable)) {
-		LOG_MSG("Client [%s] was rejected (not in whitelist)\n", cl->executable);
+	if (!config_get_client_whitelisted(self->config, executable)) {
+		LOG_MSG("Client [%s] was rejected (not in whitelist)\n", executable);
 		goto error_cleanup;
-	} else if (config_get_client_blacklisted(self->config, cl->executable)) {
-		LOG_MSG("Client [%s] was rejected (in blacklist)\n", cl->executable);
+	} else if (config_get_client_blacklisted(self->config, executable)) {
+		LOG_MSG("Client [%s] was rejected (in blacklist)\n", executable);
 		goto error_cleanup;
 	}
+
+	/* From now on we depend on the client, initialize it */
+	cl = game_mode_client_new(client, executable);
+	if (cl)
+		executable = NULL; // ownership has been delegated
+	else
+		goto error_cleanup;
 
 	/* Begin a write lock now to insert our new client at list start */
 	pthread_rwlock_wrlock(&self->rwlock);
@@ -492,7 +543,11 @@ bool game_mode_context_register(GameModeContext *self, pid_t client)
 	game_mode_apply_ioprio(self, client);
 
 	return true;
+
 error_cleanup:
+	if (errno != 0)
+		LOG_ERROR("Failed to register client [%d]: %s\n", client, strerror(errno));
+	free(executable);
 	game_mode_client_free(cl);
 	return false;
 }
@@ -529,7 +584,15 @@ bool game_mode_context_unregister(GameModeContext *self, pid_t client)
 	pthread_rwlock_unlock(&self->rwlock);
 
 	if (!found) {
-		LOG_ERROR("Removal requested for unknown process [%d]\n", client);
+		static int once = 0;
+		const char *additional_message =
+		    (once++
+		         ? ""
+		         : "    -- The parent process probably forked and tries to unregister from the\n"
+		           "    -- wrong process now. We cannot work around this. This message will\n"
+		           "    -- likely be paired with a nearby 'Removing expired game' which means we\n"
+		           "    -- cleaned up properly (we will log this event).\n");
+		LOG_ERROR("Removal requested for unknown process [%d].\n%s", client, additional_message);
 		return false;
 	}
 
@@ -580,9 +643,10 @@ int game_mode_context_query_status(GameModeContext *self, pid_t client)
  *
  * This is deliberately OOM safe
  */
-static GameModeClient *game_mode_client_new(pid_t pid)
+static GameModeClient *game_mode_client_new(pid_t pid, char *executable)
 {
 	GameModeClient c = {
+		.executable = executable,
 		.next = NULL,
 		.pid = pid,
 	};
@@ -653,18 +717,219 @@ GameModeContext *game_mode_context_instance()
 }
 
 /**
+ * Lookup the process environment for a specific variable or return NULL.
+ * Requires an open directory FD from /proc/PID.
+ */
+static char *game_mode_lookup_proc_env(int proc_fd, const char *var)
+{
+	char *environ = NULL;
+
+	int fd = openat(proc_fd, "environ", O_RDONLY | O_CLOEXEC);
+	if (fd != -1) {
+		FILE *stream = fdopen(fd, "r");
+		if (stream) {
+			/* Read every \0 terminated line from the environment */
+			char *line = NULL;
+			size_t len = 0;
+			size_t pos = strlen(var) + 1;
+			while (!environ && (getdelim(&line, &len, 0, stream) != -1)) {
+				/* Find a match including the "=" suffix */
+				if ((len > pos) && (strncmp(line, var, strlen(var)) == 0) && (line[pos - 1] == '='))
+					environ = strndup(line + pos, len - pos);
+			}
+			free(line);
+			fclose(stream);
+		} else
+			close(fd);
+	}
+
+	/* If found variable is empty, skip it */
+	if (environ && !strlen(environ)) {
+		free(environ);
+		environ = NULL;
+	}
+
+	return environ;
+}
+
+/**
+ * Lookup the home directory of the user in a safe way.
+ */
+static char *game_mode_lookup_user_home(void)
+{
+	/* Try loading env HOME first */
+	const char *home = secure_getenv("HOME");
+	if (!home) {
+		/* If HOME is not defined (or out of context), fall back to passwd */
+		struct passwd *pw = getpwuid(getuid());
+		if (!pw)
+			return NULL;
+		home = pw->pw_dir;
+	}
+
+	/* Try to allocate into our heap */
+	return home ? strdup(home) : NULL;
+}
+
+/**
+ * Attempt to resolve the exe for wine-preloader.
+ * This function is used if game_mode_context_find_exe() identified the
+ * process as wine-preloader. Returns NULL when resolve fails.
+ */
+static char *game_mode_resolve_wine_preloader(pid_t pid)
+{
+	char buffer[PATH_MAX];
+	char *proc_path = NULL, *wine_exe = NULL, *wineprefix = NULL;
+	int proc_fd = -1;
+
+	/* We could use the buffered_snprintf() helper here but it may potentially
+	 * overwrite proc_path when the buffer is re-used later and usage of
+	 * proc_path has not been discarded yet (i.e., it's used in the fail path).
+	 * Let's not introduce this non-obvious pitfall.
+	 */
+	if (!(proc_path = safe_snprintf(buffer, "/proc/%d", pid)))
+		goto fail;
+
+	/* Open the directory, we are potentially reading multiple files from it */
+	if (-1 == (proc_fd = open(proc_path, O_RDONLY | O_CLOEXEC)))
+		goto fail_proc;
+
+	/* Open the command line */
+	int fd = openat(proc_fd, "cmdline", O_RDONLY | O_CLOEXEC);
+	if (fd != -1) {
+		FILE *stream = fdopen(fd, "r");
+		if (stream) {
+			char *argv = NULL;
+			size_t args = 0;
+			int argc = 0;
+			while (!wine_exe && (argc++ < 2) && (getdelim(&argv, &args, 0, stream) != -1)) {
+				/* If we see the wine loader here, we have to use the next argument */
+				if (strtail(argv, "/wine") || strtail(argv, "/wine64"))
+					continue;
+				free(wine_exe); // just in case
+				/* Check presence of the drive letter, we assume that below */
+				wine_exe = args > 2 && argv[1] == ':' ? strndup(argv, args) : NULL;
+			}
+			free(argv);
+			fclose(stream);
+		} else
+			close(fd);
+	}
+
+	/* Did we get wine exe from cmdline? */
+	if (wine_exe)
+		LOG_MSG("Detected wine exe for client %d [%s].\n", pid, wine_exe);
+	else
+		goto fail_cmdline;
+
+	/* Open the process environment and find the WINEPREFIX */
+	errno = 0;
+	if (!(wineprefix = game_mode_lookup_proc_env(proc_fd, "WINEPREFIX"))) {
+		/* Lookup user home instead only if there was no error */
+		char *home = NULL;
+		if (errno == 0)
+			home = game_mode_lookup_user_home();
+
+		/* Append "/.wine" if we found the user home */
+		if (home)
+			wineprefix = safe_snprintf(buffer, "%s/.wine", home);
+
+		/* Cleanup and check result */
+		free(home);
+		if (!wineprefix)
+			goto fail_env;
+	}
+
+	/* Wine prefix was detected, log this for diagnostics */
+	LOG_MSG("Detected wine prefix for client %d: '%s'\n", pid, wineprefix);
+
+	/* Convert Windows to Unix path separators */
+	char *ix = wine_exe;
+	while (ix != NULL)
+		(ix = strchr(ix, '\\')) && (*ix++ = '/');
+
+	/* Convert the drive letter to lcase because wine handles it this way in the prefix */
+	wine_exe[0] = (char)tolower(wine_exe[0]);
+
+	/* Convert relative wine exe path to full unix path */
+	char *wine_path = buffered_snprintf(buffer, "%s/dosdevices/%s", wineprefix, wine_exe);
+	free(wine_exe);
+	wine_exe = wine_path ? realpath(wine_path, NULL) : NULL;
+
+	/* Fine? Successo? Fortuna! */
+	if (wine_exe)
+		LOG_MSG("Successfully mapped wine client %d [%s].\n", pid, wine_exe);
+	else
+		goto fail;
+
+error_cleanup:
+	close(proc_fd);
+	free(wineprefix);
+	free(proc_path);
+	return wine_exe;
+
+fail:
+	LOG_ERROR("Unable to find wine executable for client %d: %s\n", pid, strerror(errno));
+	goto error_cleanup;
+
+fail_cmdline:
+	LOG_ERROR("Wine loader has no accepted cmdline for client %d yet, deferring.\n", pid);
+	goto error_cleanup;
+
+fail_env:
+	LOG_ERROR("Failed to access process environment in '%s': %s\n", proc_path, strerror(errno));
+	goto error_cleanup;
+
+fail_proc:
+	LOG_ERROR("Failed to access process data in '%s': %s\n", proc_path, strerror(errno));
+	goto error_cleanup;
+}
+
+/**
  * Attempt to locate the exe for the process.
  * We might run into issues if the process is running under an odd umask.
  */
 static char *game_mode_context_find_exe(pid_t pid)
 {
-	static char proc_path[PATH_MAX] = { 0 };
+	char buffer[PATH_MAX];
+	char *proc_path = NULL, *wine_exe = NULL;
 
-	if (snprintf(proc_path, sizeof(proc_path), "/proc/%d/exe", pid) < 0) {
-		LOG_ERROR("Unable to find executable for PID %d: %s\n", pid, strerror(errno));
-		return NULL;
-	}
+	if (!(proc_path = buffered_snprintf(buffer, "/proc/%d/exe", pid)))
+		goto fail;
 
 	/* Allocate the realpath if possible */
-	return realpath(proc_path, NULL);
+	char *exe = realpath(proc_path, NULL);
+	if (!exe)
+		goto fail;
+
+	/* Detect if the process is a wine loader process */
+	if (strtail(exe, "/wine-preloader") || strtail(exe, "/wine64-preloader")) {
+		LOG_MSG("Detected wine preloader for client %d [%s].\n", pid, exe);
+		goto wine_preloader;
+	}
+	if (strtail(exe, "/wine") || strtail(exe, "/wine64")) {
+		LOG_MSG("Detected wine loader for client %d [%s].\n", pid, exe);
+		goto wine_preloader;
+	}
+
+	return exe;
+
+wine_preloader:
+
+	wine_exe = game_mode_resolve_wine_preloader(pid);
+	if (wine_exe) {
+		free(exe);
+		exe = wine_exe;
+		return exe;
+	}
+
+	/* We have to ignore this because the wine process is in some sort
+	 * of respawn mode
+	 */
+	free(exe);
+
+fail:
+	if (errno != 0) // otherwise a proper message was logged before
+		LOG_ERROR("Unable to find executable for PID %d: %s\n", pid, strerror(errno));
+	return NULL;
 }
