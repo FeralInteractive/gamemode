@@ -110,3 +110,10 @@ char *game_mode_lookup_user_home(void);
  */
 procfd_t game_mode_open_proc(const pid_t pid);
 int game_mode_close_proc(const procfd_t procfd);
+
+/** gamemode-sched.c
+ * Provides internal API functions specific to adjusting process
+ * scheduling.
+ */
+void game_mode_apply_renice(const GameModeContext *self, const pid_t client);
+void game_mode_apply_scheduling(const GameModeContext *self, const pid_t client);
