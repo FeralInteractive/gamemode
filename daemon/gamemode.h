@@ -104,6 +104,12 @@ GameModeConfig *game_mode_config_from_context(const GameModeContext *context);
 char *game_mode_lookup_proc_env(const procfd_t proc_fd, const char *var);
 char *game_mode_lookup_user_home(void);
 
+/** gamemode-ioprio.c
+ * Provides internal API functions specific to adjusting process
+ * IO priorities.
+ */
+void game_mode_apply_ioprio(const GameModeContext *self, const pid_t client);
+
 /** gamemode-proc.c
  * Provides internal API functions specific to working with process
  * environments.
