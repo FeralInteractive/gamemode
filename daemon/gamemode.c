@@ -323,16 +323,12 @@ bool game_mode_context_register(GameModeContext *self, pid_t client)
 	pthread_rwlock_rdlock(&self->rwlock); // ensure our pointer is sane
 	const GameModeClient *existing = game_mode_context_has_client(self, client);
 	if (existing) {
-		static int once = 0;
-		const char *additional_message =
-		    (once++
-		         ? ""
-		         : "    -- This may happen due to using exec or shell wrappers. You may want to\n"
-		           "    -- blacklist this client so GameMode can see its final name here.\n");
-		LOG_ERROR("Addition requested for already known client %d [%s].\n%s",
-		          existing->pid,
-		          existing->executable,
-		          additional_message);
+		LOG_HINTED(ERROR,
+		           "Addition requested for already known client %d [%s].\n",
+		           "    -- This may happen due to using exec or shell wrappers. You may want to\n"
+		           "    -- blacklist this client so GameMode can see its final name here.\n",
+		           existing->pid,
+		           existing->executable);
 		pthread_rwlock_unlock(&self->rwlock);
 		goto error_cleanup;
 	}
@@ -423,15 +419,14 @@ bool game_mode_context_unregister(GameModeContext *self, pid_t client)
 	pthread_rwlock_unlock(&self->rwlock);
 
 	if (!found) {
-		static int once = 0;
-		const char *additional_message =
-		    (once++
-		         ? ""
-		         : "    -- The parent process probably forked and tries to unregister from the\n"
-		           "    -- wrong process now. We cannot work around this. This message will\n"
-		           "    -- likely be paired with a nearby 'Removing expired game' which means we\n"
-		           "    -- cleaned up properly (we will log this event).\n");
-		LOG_ERROR("Removal requested for unknown process [%d].\n%s", client, additional_message);
+		LOG_HINTED(
+		    ERROR,
+		    "Removal requested for unknown process [%d].\n",
+		    "    -- The parent process probably forked and tries to unregister from the wrong\n"
+		    "    -- process now. We cannot work around this. This message will likely be paired\n"
+		    "    -- with a nearby 'Removing expired game' which means we cleaned up properly\n"
+		    "    -- (we will log this event). This hint will be displayed only once.\n",
+		    client);
 		return false;
 	}
 
