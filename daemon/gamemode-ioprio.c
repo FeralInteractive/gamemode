@@ -114,7 +114,10 @@ void game_mode_apply_ioprio(const GameModeContext *self, const pid_t client)
 		int invalid_ioprio = ioprio;
 		ioprio = CLAMP(0, 7, ioprio);
 		if (ioprio != invalid_ioprio)
-			LOG_ERROR("IO priority value %d invalid, clamping to %d\n", invalid_ioprio, ioprio);
+			LOG_ONCE(ERROR,
+			         "IO priority value %d invalid, clamping to %d\n",
+			         invalid_ioprio,
+			         ioprio);
 
 		/* We support only IOPRIO_CLASS_BE as IOPRIO_CLASS_RT required CAP_SYS_ADMIN */
 		ioprio = IOPRIO_PRIO_VALUE(IOPRIO_CLASS_BE, ioprio);

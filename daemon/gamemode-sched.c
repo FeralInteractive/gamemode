@@ -67,9 +67,10 @@ void game_mode_apply_renice(const GameModeContext *self, const pid_t client)
 	long int renice = 0;
 	config_get_renice_value(config, &renice);
 	if ((renice < 1) || (renice > 20)) {
-		LOG_ERROR("Invalid renice value '%ld' reset to default: %d.\n",
-		          renice,
-		          -NICE_DEFAULT_PRIORITY);
+		LOG_ONCE(ERROR,
+		         "Invalid renice value '%ld' reset to default: %d.\n",
+		         renice,
+		         -NICE_DEFAULT_PRIORITY);
 		renice = NICE_DEFAULT_PRIORITY;
 	} else {
 		renice = -renice;
@@ -81,12 +82,12 @@ void game_mode_apply_renice(const GameModeContext *self, const pid_t client)
 	if (getpriority(PRIO_PROCESS, (id_t)client) != 0) {
 		LOG_ERROR("Refused to renice client [%d]: already reniced\n", client);
 	} else if (setpriority(PRIO_PROCESS, (id_t)client, (int)renice)) {
-		LOG_ERROR(
-		    "Failed to renice client [%d], ignoring error condition: %s\n"
-		    "    -- Your user may not have permission to do this. Please read the docs\n"
-		    "    -- to learn how to adjust the pam limits.\n",
-		    client,
-		    strerror(errno));
+		LOG_HINTED(ERROR,
+		           "Failed to renice client [%d], ignoring error condition: %s\n",
+		           "    -- Your user may not have permission to do this. Please read the docs\n"
+		           "    -- to learn how to adjust the pam limits.\n",
+		           client,
+		           strerror(errno));
 	}
 }
 
@@ -114,40 +115,31 @@ void game_mode_apply_scheduling(const GameModeContext *self, const pid_t client)
 	if (!(strcmp(softrealtime, "off") == 0) && (enable_softrealtime)) {
 		const struct sched_param p = { .sched_priority = 0 };
 		if (sched_setscheduler(client, SCHED_ISO | SCHED_RESET_ON_FORK, &p)) {
-			const char *additional_message = "";
-			switch (errno) {
-			case EPERM: {
-				static int once = 0;
-				if (once++)
-					break;
-				additional_message =
-				    "    -- The error indicates that you may be running a resource management\n"
-				    "    -- daemon managing your game launcher and it leaks lower scheduling\n"
-				    "    -- classes into the games. This is likely a bug in the management daemon\n"
-				    "    -- and not a bug in GameMode, it should be reported upstream.\n"
-				    "    -- If unsure, please also look here:\n"
-				    "    -- https://github.com/FeralInteractive/gamemode/issues/68\n";
-				break;
-			}
-			case EINVAL: {
-				static int once = 0;
-				if (once++)
-					break;
-				additional_message =
-				    "    -- The error indicates that your kernel may not support this. If you\n"
-				    "    -- don't know what SCHED_ISO means, you can safely ignore this. If you\n"
-				    "    -- expected it to work, ensure you're running a kernel with MuQSS or\n"
-				    "    -- PDS scheduler.\n"
-				    "    -- For further technical reading on the topic start here:\n"
-				    "    -- https://lwn.net/Articles/720227/\n";
-				break;
-			}
-			}
+			const char *hint = "";
+			HINT_ONCE_ON(
+			    errno == EPERM,
+			    hint,
+			    "    -- The error indicates that you may be running a resource management\n"
+			    "    -- daemon managing your game launcher and it leaks lower scheduling\n"
+			    "    -- classes into the games. This is likely a bug in the management daemon\n"
+			    "    -- and not a bug in GameMode, it should be reported upstream.\n"
+			    "    -- If unsure, please also look here:\n"
+			    "    -- https://github.com/FeralInteractive/gamemode/issues/68\n");
+			HINT_ONCE_ON(
+			    errno == EINVAL,
+			    hint,
+			    "    -- The error indicates that your kernel may not support this. If you\n"
+			    "    -- don't know what SCHED_ISO means, you can safely ignore this. If you\n"
+			    "    -- expected it to work, ensure you're running a kernel with MuQSS or\n"
+			    "    -- PDS scheduler.\n"
+			    "    -- For further technical reading on the topic start here:\n"
+			    "    -- https://lwn.net/Articles/720227/\n");
 			LOG_ERROR(
-			    "Failed setting client [%d] into SCHED_ISO mode, ignoring error condition: %s\n%s",
+			    "Failed setting client [%d] into SCHED_ISO mode, ignoring error condition: %s\n"
+			    "%s",
 			    client,
 			    strerror(errno),
-			    additional_message);
+			    hint);
 		}
 	} else {
 		LOG_ERROR("Skipped setting client [%d] into SCHED_ISO mode: softrealtime setting is '%s'\n",
