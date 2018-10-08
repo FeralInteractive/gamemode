@@ -35,6 +35,7 @@ POSSIBILITY OF SUCH DAMAGE.
 #include "daemon_config.h"
 #include "governors-query.h"
 #include "governors.h"
+#include "helpers.h"
 #include "ioprio.h"
 #include "logging.h"
 
@@ -47,9 +48,6 @@ POSSIBILITY OF SUCH DAMAGE.
 #include <sched.h>
 #include <signal.h>
 #include <stdatomic.h>
-#include <stdio.h>
-#include <string.h>
-#include <sys/param.h>
 #include <sys/resource.h>
 #include <sys/sysinfo.h>
 #include <sys/types.h>
@@ -65,31 +63,6 @@ POSSIBILITY OF SUCH DAMAGE.
 /* Priority to renice the process to.
  */
 #define NICE_DEFAULT_PRIORITY -4
-
-/* Value clamping helper.
- */
-#define CLAMP(lbound, ubound, value) MIN(MIN(lbound, ubound), MAX(MAX(lbound, ubound), value))
-
-/* Little helper to safely print into a buffer, returns a pointer into the buffer
- */
-#define buffered_snprintf(b, s, ...)                                                               \
-	(snprintf(b, sizeof(b), s, __VA_ARGS__) < (ssize_t)sizeof(b) ? b : NULL)
-
-/* Little helper to safely print into a buffer, returns a newly allocated string
- */
-#define safe_snprintf(b, s, ...)                                                                   \
-	(snprintf(b, sizeof(b), s, __VA_ARGS__) < (ssize_t)sizeof(b) ? strndup(b, sizeof(b)) : NULL)
-
-/**
- * Helper function: Test, if haystack ends with needle.
- */
-static inline const char *strtail(const char *haystack, const char *needle)
-{
-	char *pos = strstr(haystack, needle);
-	if (pos && (strlen(pos) == strlen(needle)))
-		return pos;
-	return NULL;
-}
 
 /**
  * The GameModeClient encapsulates the remote connection, providing a list
