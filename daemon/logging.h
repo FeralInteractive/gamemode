@@ -62,6 +62,13 @@ POSSIBILITY OF SUCH DAMAGE.
 		}                                                                                          \
 	} while (0)
 
+#define LOG_ONCE(type, ...)                                                                        \
+	do {                                                                                           \
+		static int __once = 0;                                                                     \
+		if (!__once++)                                                                             \
+			LOG_##type(__VA_ARGS__);                                                               \
+	} while (0)
+
 /* Fatal warnings trigger an exit */
 #define FATAL_ERRORNO(msg)                                                                         \
 	do {                                                                                           \
@@ -72,6 +79,26 @@ POSSIBILITY OF SUCH DAMAGE.
 	do {                                                                                           \
 		LOG_ERROR(__VA_ARGS__);                                                                    \
 		exit(EXIT_FAILURE);                                                                        \
+	} while (0)
+
+/* Hinting helpers */
+#define HINT_ONCE(name, hint)                                                                      \
+	do {                                                                                           \
+		static int __once = 0;                                                                     \
+		name = (!__once++ ? hint : "");                                                            \
+	} while (0)
+
+#define HINT_ONCE_ON(cond, ...)                                                                    \
+	do {                                                                                           \
+		if (cond)                                                                                  \
+			HINT_ONCE(__VA_ARGS__);                                                                \
+	} while (0);
+
+#define LOG_HINTED(type, msg, hint, ...)                                                           \
+	do {                                                                                           \
+		const char *__arg;                                                                         \
+		HINT_ONCE(__arg, hint);                                                                    \
+		LOG_##type(msg "%s", __VA_ARGS__, __arg);                                                  \
 	} while (0)
 
 /**
