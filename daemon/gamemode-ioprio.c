@@ -29,9 +29,14 @@ POSSIBILITY OF SUCH DAMAGE.
 
  */
 
-#pragma once
-
 #define _GNU_SOURCE
+
+#include "daemon_config.h"
+#include "gamemode.h"
+#include "helpers.h"
+#include "logging.h"
+
+#include <errno.h>
 #include <sys/syscall.h>
 #include <unistd.h>
 
@@ -79,4 +84,59 @@ enum {
 static inline int ioprio_set(int which, int who, int ioprio)
 {
 	return (int)syscall(SYS_ioprio_set, which, who, ioprio);
+}
+
+/**
+ * Apply io priorities
+ *
+ * This tries to change the io priority of the client to a value specified
+ * and can possibly reduce lags or latency when a game has to load assets
+ * on demand.
+ */
+void game_mode_apply_ioprio(const GameModeContext *self, const pid_t client)
+{
+	GameModeConfig *config = game_mode_config_from_context(self);
+
+	LOG_MSG("Setting scheduling policies...\n");
+
+	/*
+	 * read configuration "ioprio" (0..7)
+	 */
+	int ioprio = 0;
+	config_get_ioprio_value(config, &ioprio);
+	if (IOPRIO_RESET_DEFAULT == ioprio) {
+		LOG_MSG("IO priority will be reset to default behavior (based on CPU priority).\n");
+		ioprio = 0;
+	} else if (IOPRIO_DONT_SET == ioprio) {
+		return;
+	} else {
+		/* maybe clamp the value */
+		int invalid_ioprio = ioprio;
+		ioprio = CLAMP(0, 7, ioprio);
+		if (ioprio != invalid_ioprio)
+			LOG_ONCE(ERROR,
+			         "IO priority value %d invalid, clamping to %d\n",
+			         invalid_ioprio,
+			         ioprio);
+
+		/* We support only IOPRIO_CLASS_BE as IOPRIO_CLASS_RT required CAP_SYS_ADMIN */
+		ioprio = IOPRIO_PRIO_VALUE(IOPRIO_CLASS_BE, ioprio);
+	}
+
+	/*
+	 * Actually apply the io priority
+	 */
+	int c = IOPRIO_PRIO_CLASS(ioprio), p = IOPRIO_PRIO_DATA(ioprio);
+	if (ioprio_set(IOPRIO_WHO_PROCESS, client, ioprio) == 0) {
+		if (0 == ioprio)
+			LOG_MSG("Resetting client [%d] IO priority.\n", client);
+		else
+			LOG_MSG("Setting client [%d] IO priority to (%d,%d).\n", client, c, p);
+	} else {
+		LOG_ERROR("Setting client [%d] IO priority to (%d,%d) failed with error %d, ignoring\n",
+		          client,
+		          c,
+		          p,
+		          errno);
+	}
 }

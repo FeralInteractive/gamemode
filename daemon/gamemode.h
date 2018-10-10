@@ -34,10 +34,15 @@ POSSIBILITY OF SUCH DAMAGE.
 #include <stdbool.h>
 #include <sys/types.h>
 
+#define INVALID_PROCFD -1
+
+typedef int procfd_t;
+
 /**
- * Opaque context
+ * Opaque types
  */
 typedef struct GameModeContext GameModeContext;
+typedef struct GameModeConfig GameModeConfig;
 
 /**
  * Return the singleton instance
@@ -83,3 +88,46 @@ bool game_mode_context_unregister(GameModeContext *self, pid_t pid);
  *          2 if gamemode is active and the client is registered
  */
 int game_mode_context_query_status(GameModeContext *self, pid_t pid);
+
+/**
+ * Query the config of a gamemode context
+ *
+ * @param context A gamemode context
+ * @returns Configuration from the gamemode context
+ */
+GameModeConfig *game_mode_config_from_context(const GameModeContext *context);
+
+/** gamemode-env.c
+ * Provides internal API functions specific to working environment
+ * variables.
+ */
+char *game_mode_lookup_proc_env(const procfd_t proc_fd, const char *var);
+char *game_mode_lookup_user_home(void);
+
+/** gamemode-ioprio.c
+ * Provides internal API functions specific to adjusting process
+ * IO priorities.
+ */
+void game_mode_apply_ioprio(const GameModeContext *self, const pid_t client);
+
+/** gamemode-proc.c
+ * Provides internal API functions specific to working with process
+ * environments.
+ */
+procfd_t game_mode_open_proc(const pid_t pid);
+int game_mode_close_proc(const procfd_t procfd);
+
+/** gamemode-sched.c
+ * Provides internal API functions specific to adjusting process
+ * scheduling.
+ */
+void game_mode_apply_renice(const GameModeContext *self, const pid_t client);
+void game_mode_apply_scheduling(const GameModeContext *self, const pid_t client);
+
+/** gamemode-wine.c
+ * Provides internal API functions specific to handling wine
+ * prefixes.
+ */
+bool game_mode_detect_wine_loader(const char *exe);
+bool game_mode_detect_wine_preloader(const char *exe);
+char *game_mode_resolve_wine_preloader(const pid_t pid);

@@ -35,24 +35,12 @@ POSSIBILITY OF SUCH DAMAGE.
 #include "daemon_config.h"
 #include "governors-query.h"
 #include "governors.h"
-#include "ioprio.h"
+#include "helpers.h"
 #include "logging.h"
 
-#include <ctype.h>
-#include <fcntl.h>
-#include <linux/limits.h>
-#include <linux/sched.h>
 #include <pthread.h>
-#include <pwd.h>
-#include <sched.h>
 #include <signal.h>
 #include <stdatomic.h>
-#include <stdio.h>
-#include <string.h>
-#include <sys/param.h>
-#include <sys/resource.h>
-#include <sys/sysinfo.h>
-#include <sys/types.h>
 #include <systemd/sd-daemon.h>
 
 /* SCHED_ISO may not be defined as it is a reserved value not yet
@@ -61,35 +49,6 @@ POSSIBILITY OF SUCH DAMAGE.
 #ifndef SCHED_ISO
 #define SCHED_ISO 4
 #endif
-
-/* Priority to renice the process to.
- */
-#define NICE_DEFAULT_PRIORITY -4
-
-/* Value clamping helper.
- */
-#define CLAMP(lbound, ubound, value) MIN(MIN(lbound, ubound), MAX(MAX(lbound, ubound), value))
-
-/* Little helper to safely print into a buffer, returns a pointer into the buffer
- */
-#define buffered_snprintf(b, s, ...)                                                               \
-	(snprintf(b, sizeof(b), s, __VA_ARGS__) < (ssize_t)sizeof(b) ? b : NULL)
-
-/* Little helper to safely print into a buffer, returns a newly allocated string
- */
-#define safe_snprintf(b, s, ...)                                                                   \
-	(snprintf(b, sizeof(b), s, __VA_ARGS__) < (ssize_t)sizeof(b) ? strndup(b, sizeof(b)) : NULL)
-
-/**
- * Helper function: Test, if haystack ends with needle.
- */
-static inline const char *strtail(const char *haystack, const char *needle)
-{
-	char *pos = strstr(haystack, needle);
-	if (pos && (strlen(pos) == strlen(needle)))
-		return pos;
-	return NULL;
-}
 
 /**
  * The GameModeClient encapsulates the remote connection, providing a list
@@ -195,159 +154,6 @@ void game_mode_context_destroy(GameModeContext *self)
 	config_destroy(self->config);
 
 	pthread_rwlock_destroy(&self->rwlock);
-}
-
-/**
- * Apply scheduling policies
- *
- * This tries to change the scheduler of the client to soft realtime mode
- * available in some kernels as SCHED_ISO. It also tries to adjust the nice
- * level. If some of each fail, ignore this and log a warning.
- *
- * We don't need to store the current values because when the client exits,
- * everything will be good: Scheduling is only applied to the client and
- * its children.
- */
-static void game_mode_apply_scheduler(GameModeContext *self, pid_t client)
-{
-	/*
-	 * read configuration "renice" (1..20)
-	 */
-	long int renice = 0;
-	config_get_renice_value(self->config, &renice);
-	if ((renice < 1) || (renice > 20)) {
-		LOG_ERROR("Invalid renice value '%ld' reset to default: %d.\n",
-		          renice,
-		          -NICE_DEFAULT_PRIORITY);
-		renice = NICE_DEFAULT_PRIORITY;
-	} else {
-		renice = -renice;
-	}
-
-	/*
-	 * don't adjust priority if it was already adjusted
-	 */
-	if (getpriority(PRIO_PROCESS, (id_t)client) != 0) {
-		LOG_ERROR("Refused to renice client [%d]: already reniced\n", client);
-	} else if (setpriority(PRIO_PROCESS, (id_t)client, (int)renice)) {
-		LOG_ERROR(
-		    "Failed to renice client [%d], ignoring error condition: %s\n"
-		    "    -- Your user may not have permission to do this. Please read the docs\n"
-		    "    -- to learn how to adjust the pam limits.\n",
-		    client,
-		    strerror(errno));
-	}
-
-	/*
-	 * read configuration "softrealtime" (on, off, auto)
-	 */
-	char softrealtime[CONFIG_VALUE_MAX] = { 0 };
-	config_get_soft_realtime(self->config, softrealtime);
-
-	/*
-	 * Enable unconditionally or auto-detect soft realtime usage,
-	 * auto detection is based on observations where dual-core CPU suffered
-	 * priority inversion problems with the graphics driver thus running
-	 * slower as a result, so enable only with more than 3 cores.
-	 */
-	bool enable_softrealtime = (strcmp(softrealtime, "on") == 0) || (get_nprocs() > 3);
-
-	/*
-	 * Actually apply the scheduler policy if not explicitly turned off
-	 */
-	if (!(strcmp(softrealtime, "off") == 0) && (enable_softrealtime)) {
-		const struct sched_param p = { .sched_priority = 0 };
-		if (sched_setscheduler(client, SCHED_ISO | SCHED_RESET_ON_FORK, &p)) {
-			const char *additional_message = "";
-			switch (errno) {
-			case EPERM: {
-				static int once = 0;
-				if (once++)
-					break;
-				additional_message =
-				    "    -- The error indicates that you may be running a resource management\n"
-				    "    -- daemon managing your game launcher and it leaks lower scheduling\n"
-				    "    -- classes into the games. This is likely a bug in the management daemon\n"
-				    "    -- and not a bug in GameMode, it should be reported upstream.\n"
-				    "    -- If unsure, please also look here:\n"
-				    "    -- https://github.com/FeralInteractive/gamemode/issues/68\n";
-				break;
-			}
-			case EINVAL: {
-				static int once = 0;
-				if (once++)
-					break;
-				additional_message =
-				    "    -- The error indicates that your kernel may not support this. If you\n"
-				    "    -- don't know what SCHED_ISO means, you can safely ignore this. If you\n"
-				    "    -- expected it to work, ensure you're running a kernel with MuQSS or\n"
-				    "    -- PDS scheduler.\n"
-				    "    -- For further technical reading on the topic start here:\n"
-				    "    -- https://lwn.net/Articles/720227/\n";
-				break;
-			}
-			}
-			LOG_ERROR(
-			    "Failed setting client [%d] into SCHED_ISO mode, ignoring error condition: %s\n%s",
-			    client,
-			    strerror(errno),
-			    additional_message);
-		}
-	} else {
-		LOG_ERROR("Skipped setting client [%d] into SCHED_ISO mode: softrealtime setting is '%s'\n",
-		          client,
-		          softrealtime);
-	}
-}
-
-/**
- * Apply io priorities
- *
- * This tries to change the io priority of the client to a value specified
- * and can possibly reduce lags or latency when a game has to load assets
- * on demand.
- */
-static void game_mode_apply_ioprio(GameModeContext *self, pid_t client)
-{
-	LOG_MSG("Setting scheduling policies...\n");
-
-	/*
-	 * read configuration "ioprio" (0..7)
-	 */
-	int ioprio = 0;
-	config_get_ioprio_value(self->config, &ioprio);
-	if (IOPRIO_RESET_DEFAULT == ioprio) {
-		LOG_MSG("IO priority will be reset to default behavior (based on CPU priority).\n");
-		ioprio = 0;
-	} else if (IOPRIO_DONT_SET == ioprio) {
-		return;
-	} else {
-		/* maybe clamp the value */
-		int invalid_ioprio = ioprio;
-		ioprio = CLAMP(0, 7, ioprio);
-		if (ioprio != invalid_ioprio)
-			LOG_ERROR("IO priority value %d invalid, clamping to %d\n", invalid_ioprio, ioprio);
-
-		/* We support only IOPRIO_CLASS_BE as IOPRIO_CLASS_RT required CAP_SYS_ADMIN */
-		ioprio = IOPRIO_PRIO_VALUE(IOPRIO_CLASS_BE, ioprio);
-	}
-
-	/*
-	 * Actually apply the io priority
-	 */
-	int c = IOPRIO_PRIO_CLASS(ioprio), p = IOPRIO_PRIO_DATA(ioprio);
-	if (ioprio_set(IOPRIO_WHO_PROCESS, client, ioprio) == 0) {
-		if (0 == ioprio)
-			LOG_MSG("Resetting client [%d] IO priority.\n", client);
-		else
-			LOG_MSG("Setting client [%d] IO priority to (%d,%d).\n", client, c, p);
-	} else {
-		LOG_ERROR("Setting client [%d] IO priority to (%d,%d) failed with error %d, ignoring\n",
-		          client,
-		          c,
-		          p,
-		          errno);
-	}
 }
 
 /**
@@ -517,16 +323,12 @@ bool game_mode_context_register(GameModeContext *self, pid_t client)
 	pthread_rwlock_rdlock(&self->rwlock); // ensure our pointer is sane
 	const GameModeClient *existing = game_mode_context_has_client(self, client);
 	if (existing) {
-		static int once = 0;
-		const char *additional_message =
-		    (once++
-		         ? ""
-		         : "    -- This may happen due to using exec or shell wrappers. You may want to\n"
-		           "    -- blacklist this client so GameMode can see its final name here.\n");
-		LOG_ERROR("Addition requested for already known client %d [%s].\n%s",
-		          existing->pid,
-		          existing->executable,
-		          additional_message);
+		LOG_HINTED(ERROR,
+		           "Addition requested for already known client %d [%s].\n",
+		           "    -- This may happen due to using exec or shell wrappers. You may want to\n"
+		           "    -- blacklist this client so GameMode can see its final name here.\n",
+		           existing->pid,
+		           existing->executable);
 		pthread_rwlock_unlock(&self->rwlock);
 		goto error_cleanup;
 	}
@@ -569,7 +371,8 @@ bool game_mode_context_register(GameModeContext *self, pid_t client)
 	}
 
 	/* Apply scheduler policies */
-	game_mode_apply_scheduler(self, client);
+	game_mode_apply_renice(self, client);
+	game_mode_apply_scheduling(self, client);
 
 	/* Apply io priorities */
 	game_mode_apply_ioprio(self, client);
@@ -616,15 +419,14 @@ bool game_mode_context_unregister(GameModeContext *self, pid_t client)
 	pthread_rwlock_unlock(&self->rwlock);
 
 	if (!found) {
-		static int once = 0;
-		const char *additional_message =
-		    (once++
-		         ? ""
-		         : "    -- The parent process probably forked and tries to unregister from the\n"
-		           "    -- wrong process now. We cannot work around this. This message will\n"
-		           "    -- likely be paired with a nearby 'Removing expired game' which means we\n"
-		           "    -- cleaned up properly (we will log this event).\n");
-		LOG_ERROR("Removal requested for unknown process [%d].\n%s", client, additional_message);
+		LOG_HINTED(
+		    ERROR,
+		    "Removal requested for unknown process [%d].\n",
+		    "    -- The parent process probably forked and tries to unregister from the wrong\n"
+		    "    -- process now. We cannot work around this. This message will likely be paired\n"
+		    "    -- with a nearby 'Removing expired game' which means we cleaned up properly\n"
+		    "    -- (we will log this event). This hint will be displayed only once.\n",
+		    client);
 		return false;
 	}
 
@@ -748,173 +550,9 @@ GameModeContext *game_mode_context_instance()
 	return &instance;
 }
 
-/**
- * Lookup the process environment for a specific variable or return NULL.
- * Requires an open directory FD from /proc/PID.
- */
-static char *game_mode_lookup_proc_env(int proc_fd, const char *var)
+GameModeConfig *game_mode_config_from_context(const GameModeContext *context)
 {
-	char *environ = NULL;
-
-	int fd = openat(proc_fd, "environ", O_RDONLY | O_CLOEXEC);
-	if (fd != -1) {
-		FILE *stream = fdopen(fd, "r");
-		if (stream) {
-			/* Read every \0 terminated line from the environment */
-			char *line = NULL;
-			size_t len = 0;
-			size_t pos = strlen(var) + 1;
-			while (!environ && (getdelim(&line, &len, 0, stream) != -1)) {
-				/* Find a match including the "=" suffix */
-				if ((len > pos) && (strncmp(line, var, strlen(var)) == 0) && (line[pos - 1] == '='))
-					environ = strndup(line + pos, len - pos);
-			}
-			free(line);
-			fclose(stream);
-		} else
-			close(fd);
-	}
-
-	/* If found variable is empty, skip it */
-	if (environ && !strlen(environ)) {
-		free(environ);
-		environ = NULL;
-	}
-
-	return environ;
-}
-
-/**
- * Lookup the home directory of the user in a safe way.
- */
-static char *game_mode_lookup_user_home(void)
-{
-	/* Try loading env HOME first */
-	const char *home = secure_getenv("HOME");
-	if (!home) {
-		/* If HOME is not defined (or out of context), fall back to passwd */
-		struct passwd *pw = getpwuid(getuid());
-		if (!pw)
-			return NULL;
-		home = pw->pw_dir;
-	}
-
-	/* Try to allocate into our heap */
-	return home ? strdup(home) : NULL;
-}
-
-/**
- * Attempt to resolve the exe for wine-preloader.
- * This function is used if game_mode_context_find_exe() identified the
- * process as wine-preloader. Returns NULL when resolve fails.
- */
-static char *game_mode_resolve_wine_preloader(pid_t pid)
-{
-	char buffer[PATH_MAX];
-	char *proc_path = NULL, *wine_exe = NULL, *wineprefix = NULL;
-	int proc_fd = -1;
-
-	/* We could use the buffered_snprintf() helper here but it may potentially
-	 * overwrite proc_path when the buffer is re-used later and usage of
-	 * proc_path has not been discarded yet (i.e., it's used in the fail path).
-	 * Let's not introduce this non-obvious pitfall.
-	 */
-	if (!(proc_path = safe_snprintf(buffer, "/proc/%d", pid)))
-		goto fail;
-
-	/* Open the directory, we are potentially reading multiple files from it */
-	if (-1 == (proc_fd = open(proc_path, O_RDONLY | O_CLOEXEC)))
-		goto fail_proc;
-
-	/* Open the command line */
-	int fd = openat(proc_fd, "cmdline", O_RDONLY | O_CLOEXEC);
-	if (fd != -1) {
-		FILE *stream = fdopen(fd, "r");
-		if (stream) {
-			char *argv = NULL;
-			size_t args = 0;
-			int argc = 0;
-			while (!wine_exe && (argc++ < 2) && (getdelim(&argv, &args, 0, stream) != -1)) {
-				/* If we see the wine loader here, we have to use the next argument */
-				if (strtail(argv, "/wine") || strtail(argv, "/wine64"))
-					continue;
-				free(wine_exe); // just in case
-				/* Check presence of the drive letter, we assume that below */
-				wine_exe = args > 2 && argv[1] == ':' ? strndup(argv, args) : NULL;
-			}
-			free(argv);
-			fclose(stream);
-		} else
-			close(fd);
-	}
-
-	/* Did we get wine exe from cmdline? */
-	if (wine_exe)
-		LOG_MSG("Detected wine exe for client %d [%s].\n", pid, wine_exe);
-	else
-		goto fail_cmdline;
-
-	/* Open the process environment and find the WINEPREFIX */
-	errno = 0;
-	if (!(wineprefix = game_mode_lookup_proc_env(proc_fd, "WINEPREFIX"))) {
-		/* Lookup user home instead only if there was no error */
-		char *home = NULL;
-		if (errno == 0)
-			home = game_mode_lookup_user_home();
-
-		/* Append "/.wine" if we found the user home */
-		if (home)
-			wineprefix = safe_snprintf(buffer, "%s/.wine", home);
-
-		/* Cleanup and check result */
-		free(home);
-		if (!wineprefix)
-			goto fail_env;
-	}
-
-	/* Wine prefix was detected, log this for diagnostics */
-	LOG_MSG("Detected wine prefix for client %d: '%s'\n", pid, wineprefix);
-
-	/* Convert Windows to Unix path separators */
-	char *ix = wine_exe;
-	while (ix != NULL)
-		(ix = strchr(ix, '\\')) && (*ix++ = '/');
-
-	/* Convert the drive letter to lcase because wine handles it this way in the prefix */
-	wine_exe[0] = (char)tolower(wine_exe[0]);
-
-	/* Convert relative wine exe path to full unix path */
-	char *wine_path = buffered_snprintf(buffer, "%s/dosdevices/%s", wineprefix, wine_exe);
-	free(wine_exe);
-	wine_exe = wine_path ? realpath(wine_path, NULL) : NULL;
-
-	/* Fine? Successo? Fortuna! */
-	if (wine_exe)
-		LOG_MSG("Successfully mapped wine client %d [%s].\n", pid, wine_exe);
-	else
-		goto fail;
-
-error_cleanup:
-	close(proc_fd);
-	free(wineprefix);
-	free(proc_path);
-	return wine_exe;
-
-fail:
-	LOG_ERROR("Unable to find wine executable for client %d: %s\n", pid, strerror(errno));
-	goto error_cleanup;
-
-fail_cmdline:
-	LOG_ERROR("Wine loader has no accepted cmdline for client %d yet, deferring.\n", pid);
-	goto error_cleanup;
-
-fail_env:
-	LOG_ERROR("Failed to access process environment in '%s': %s\n", proc_path, strerror(errno));
-	goto error_cleanup;
-
-fail_proc:
-	LOG_ERROR("Failed to access process data in '%s': %s\n", proc_path, strerror(errno));
-	goto error_cleanup;
+	return context ? context->config : NULL;
 }
 
 /**
@@ -935,11 +573,11 @@ static char *game_mode_context_find_exe(pid_t pid)
 		goto fail;
 
 	/* Detect if the process is a wine loader process */
-	if (strtail(exe, "/wine-preloader") || strtail(exe, "/wine64-preloader")) {
+	if (game_mode_detect_wine_preloader(exe)) {
 		LOG_MSG("Detected wine preloader for client %d [%s].\n", pid, exe);
 		goto wine_preloader;
 	}
-	if (strtail(exe, "/wine") || strtail(exe, "/wine64")) {
+	if (game_mode_detect_wine_loader(exe)) {
 		LOG_MSG("Detected wine loader for client %d [%s].\n", pid, exe);
 		goto wine_preloader;
 	}

@@ -4,7 +4,7 @@
 # Ensure we are at the project root
 cd "$(dirname $0)"/..
 
-wget -Nq https://llvm.org/svn/llvm-project/cfe/trunk/tools/clang-format/git-clang-format
+wget -Nq -T3 -t1 https://llvm.org/svn/llvm-project/cfe/trunk/tools/clang-format/git-clang-format
 
 if chmod +x git-clang-format; then
   if [[ "$1" == "--pre-commit" ]]; then
