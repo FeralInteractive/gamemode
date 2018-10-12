@@ -138,6 +138,23 @@ If you are unsure, `bootstrap.sh` will warn you if your system lacks CPU governo
 Scripts and other features will still work.
 
 ---
+## The issue with bumblebee / optirun / et al
+People with multiple graphics cards may have the idea to use GameMode to automatically opt-in to run the game with a
+specific GPU. Actually, this is not possible. The game is already running when GameMode starts to optimize the process
+and the running environment. You're encouraged to use wrapper scripts instead which you add to the launch options of
+the game. In Steam, this can be achieved with a start option like:
+
+`optirun %command%`
+
+Please note, that this issue will go away when games start using Vulkan. Vulkan allows to choose the correct graphics
+card in-game. Similar solutions exist when running games with Wine and DXVK.
+
+A solution to this from within GameMode is out of the scope of GameMode and cannot be added as a feature.
+
+Please also read here:
+[Support for hybrid graphic cards](https://github.com/FeralInteractive/gamemode/issues/20)
+
+---
 ## Contributions
 
 ### Pull Requests
