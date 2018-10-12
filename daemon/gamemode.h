@@ -33,6 +33,7 @@ POSSIBILITY OF SUCH DAMAGE.
 
 #include <stdbool.h>
 #include <stdint.h>
+#include <stdio.h>
 #include <sys/types.h>
 
 #define INVALID_PROCFD -1
@@ -173,6 +174,8 @@ int game_mode_reload_config(GameModeContext *context);
  * variables.
  */
 char *game_mode_lookup_proc_env(const procfd_t proc_fd, const char *var);
+FILE *game_mode_open_proc_env(const procfd_t proc_fd);
+int game_mode_open_close_env(FILE *stream);
 char *game_mode_lookup_user_home(void);
 
 /** gamemode-ioprio.c

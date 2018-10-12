@@ -41,6 +41,33 @@ POSSIBILITY OF SUCH DAMAGE.
 #include <unistd.h>
 
 /**
+ * Open the process environment for enumerating or lookup. Requires an open
+ * directory FD from /proc/PID.
+ */
+FILE *game_mode_open_proc_env(const procfd_t proc_fd)
+{
+	/* Try to open the environ file of the process */
+	int fd = openat(proc_fd, "environ", O_RDONLY | O_CLOEXEC);
+	if (fd != -1) {
+		FILE *stream = fdopen(fd, "r");
+		if (stream)
+			return stream;
+		else
+			close(fd);
+	}
+	/* We failed */
+	return NULL;
+}
+
+/**
+ * Close the process enviroment opened by game_mode_open_proc_env().
+ */
+int game_mode_close_proc_env(FILE *stream)
+{
+	return fclose(stream);
+}
+
+/**
  * Lookup the process environment for a specific variable or return NULL.
  * Requires an open directory FD from /proc/PID.
  */
@@ -48,23 +75,19 @@ char *game_mode_lookup_proc_env(const procfd_t proc_fd, const char *var)
 {
 	char *environ = NULL;
 
-	int fd = openat(proc_fd, "environ", O_RDONLY | O_CLOEXEC);
-	if (fd != -1) {
-		FILE *stream = fdopen(fd, "r");
-		if (stream) {
-			/* Read every \0 terminated line from the environment */
-			char *line = NULL;
-			size_t len = 0;
-			size_t pos = strlen(var) + 1;
-			while (!environ && (getdelim(&line, &len, 0, stream) != -1)) {
-				/* Find a match including the "=" suffix */
-				if ((len > pos) && (strncmp(line, var, strlen(var)) == 0) && (line[pos - 1] == '='))
-					environ = strndup(line + pos, len - pos);
-			}
-			free(line);
-			fclose(stream);
-		} else
-			close(fd);
+	FILE *stream = game_mode_open_proc_env(proc_fd);
+	if (stream) {
+		/* Read every \0 terminated line from the environment */
+		char *line = NULL;
+		size_t len = 0;
+		size_t pos = strlen(var) + 1;
+		while (!environ && (getdelim(&line, &len, 0, stream) != -1)) {
+			/* Find a match including the "=" suffix */
+			if ((len > pos) && (strncmp(line, var, strlen(var)) == 0) && (line[pos - 1] == '='))
+				environ = strndup(line + pos, len - pos);
+		}
+		free(line);
+		game_mode_close_proc_env(stream);
 	}
 
 	/* If found variable is empty, skip it */
