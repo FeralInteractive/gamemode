@@ -19,15 +19,18 @@ if [ ! -f "/sys/devices/system/cpu/cpu0/cpufreq/scaling_governor" ]; then
 	[[ $REPLY =~ ^[Yy]$ ]]
 fi
 
+# accept a prefix value as: prefix=/path ./bootstrap.sh
+: ${prefix:=/usr}
+
 # Echo the rest so it's obvious
 set -x
-meson --prefix=/usr build -Dwith-systemd-user-unit-dir=/etc/systemd/user
+meson --prefix=$prefix build -Dwith-systemd-user-unit-dir=/etc/systemd/user
 cd build
 ninja
 
 # Verify user wants to install
 set +x
-read -p "Install to /usr? [Yy] " -r
+read -p "Install to $prefix? [Yy] " -r
 [[ $REPLY =~ ^[Yy]$ ]]
 set -x
 
