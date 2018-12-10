@@ -7,7 +7,8 @@ GameMode was designed primarily as a stop-gap solution to problems with the Inte
 
 GameMode can leverage support for soft real time mode if the running kernel supports `SCHED_ISO`. This adjusts the scheduling of the game to real time without sacrificing system stability by starving other processes.
 
-GameMode adjusts the nice priority of games to -4 by default to give it a slight IO and CPU priority over other background processes. This only works if your user is permitted to adjust priorities within the limits configured by PAM. See `/etc/security/limits.conf`.
+GameMode adjusts the nice priority of games to -4 by default to give it a slight IO and CPU priority over other background processes. This only works if your user is permitted to adjust priorities within the limits configured by PAM. GameMode can be configured to take care of it by passing `with-pam-group=group` to the build options where `group` is a group your user needs to be part of.
+For more information, see `/etc/security/limits.conf`.
 
 Please take note that some games may actually run seemingly slower with `SCHED_ISO` if the game makes use of busy looping while interacting with the graphic driver. The same may happen if you apply too strong nice values. This effect is called priority inversion: Due to the high priority given to busy loops, there may be too few resources left for the graphics driver. Thus, sane defaults were chosen to not expose this effect on most systems. Part of this default is a heuristic which automatically turns off `SCHED_ISO` if GameMode detects three or less CPU cores. Your experience may change based on using GL threaded optimizations, CPU core binding (taskset), the graphic driver, or different CPU architectures. If you experience bad input latency or inconsistent FPS, try switching these configurations on or off first and report back. `SCHED_ISO` comes with a protection against this effect by falling back to normal scheduling as soon as the `SCHED_ISO` process uses more than 70% avarage across all CPU cores. This default value can be adjusted outside of the scope of GameMode (it's in `/proc/sys/kernel/iso_cpu`). This value also protects against compromising system stability, do not set it to 100% as this would turn the game into a full real time process, thus potentially starving all other OS components from CPU resources.
 
@@ -161,4 +162,3 @@ See the [contributors](https://github.com/FeralInteractive/gamemode/graphs/contr
 Copyright © 2018 Feral Interactive
 
 GameMode is available under the terms of the BSD 3-Clause License (Revised)
-
