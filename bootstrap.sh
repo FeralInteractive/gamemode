@@ -38,3 +38,13 @@ sudo ninja install
 
 # Reload systemd configuration so that it picks up the new service.
 systemctl --user daemon-reload
+
+# Verify user wants to activate now
+set +x
+read -p "Activate daemon now? [Yy] " -r
+[[ $REPLY =~ ^[Yy]$ ]]
+set -x
+
+systemctl --user enable gamemoded.service
+systemctl --user start gamemoded.service
+
