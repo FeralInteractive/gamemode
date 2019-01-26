@@ -86,6 +86,11 @@ static void sigint_handler(__attribute__((unused)) int signo)
 	_Exit(EXIT_SUCCESS);
 }
 
+static void sigint_handler_noexit(__attribute__((unused)) int signo)
+{
+	LOG_MSG("Quitting by request...\n");
+}
+
 /**
  * Main bootstrap entry into gamemoded
  */
@@ -136,8 +141,17 @@ int main(int argc, char *argv[])
 				exit(EXIT_FAILURE);
 			}
 
-			// Simply pause and wait for any signal
+			// Simply pause and wait a SIGINT
+			if (signal(SIGINT, sigint_handler_noexit) == SIG_ERR) {
+				FATAL_ERRORNO("Could not catch SIGINT");
+			}
 			pause();
+
+			// Explicitly clean up
+			if (gamemode_request_end() < 0) {
+				fprintf(stderr, "gamemode request failed: %s\n", gamemode_error_string());
+				exit(EXIT_FAILURE);
+			}
 
 			exit(EXIT_SUCCESS);
 			break;

@@ -36,6 +36,8 @@ POSSIBILITY OF SUCH DAMAGE.
 #include "logging.h"
 
 #include <libgen.h>
+#include <sys/types.h>
+#include <sys/wait.h>
 #include <unistd.h>
 
 #include "gamemode_client.h"
@@ -155,7 +157,9 @@ static int run_basic_client_tests(void)
 	return 0;
 }
 
-/* Run some dual client tests */
+/* Run some dual client tests
+ * This also tests that the "-r" argument works correctly and cleans up correctly
+ */
 static int run_dual_client_tests(void)
 {
 	int status = 0;
@@ -200,20 +204,35 @@ static int run_dual_client_tests(void)
 	if (verify_active_and_registered() != 0)
 		status = -1;
 
-	/* Send SIGCONT to child */
-	if (kill(child, SIGCONT) == -1) {
+	/* Request end of gamemode (de-register ourselves) */
+	if (gamemode_request_end() != 0) {
+		fprintf(stderr, "gamemode_request_end failed: %s!\n", gamemode_error_string());
+		status = -1;
+	}
+
+	/* Check that when we request gamemode, it replies that the other client is connected */
+	if (verify_other_client_connected() != 0)
+		status = -1;
+
+	/* Send SIGINT to child to wake it up*/
+	if (kill(child, SIGINT) == -1) {
 		fprintf(stderr, "failed to send continue signal to other client: %s\n", strerror(errno));
 		status = -1;
 	}
 
 	/* Give the child a chance to finish */
-	usleep(1000);
+	usleep(10000);
 
-	/* clean up the child */
-	if (kill(child, SIGKILL) == -1) {
-		fprintf(stderr, "failed to kill the child: %s\n", strerror(errno));
-		status = -1;
+	// Wait for the child to finish up
+	int wstatus;
+	while (waitpid(child, &wstatus, WNOHANG) == 0) {
+		fprintf(stderr, "Waiting for child to quit...\n");
+		usleep(10000);
 	}
+
+	/* Verify that gamemode is now innactive */
+	if (verify_deactivated() != 0)
+		return -1;
 
 	if (status == 0)
 		fprintf(stdout, "dual client tests passed.\n");
