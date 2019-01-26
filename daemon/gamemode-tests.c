@@ -117,16 +117,12 @@ static int verify_other_client_connected(void)
 	return status;
 }
 
-/**
- * game_mode_run_client_tests runs a set of tests of the client code
- * we simply verify that the client can request the status and recieves the correct results
- *
- * returns 0 for success, -1 for failure
+/* Run basic client tests
+ * Tests a simple request_start and request_end works
  */
-int game_mode_run_client_tests()
+static int run_basic_client_tests(void)
 {
-	int status = 0;
-	fprintf(stdout, "running tests on external gamemode instance...\n");
+	fprintf(stdout, "running basic client tests...\n");
 
 	/* First verify that gamemode is not currently active on the system
 	 * As well as it being currently installed and queryable
@@ -154,8 +150,18 @@ int game_mode_run_client_tests()
 	if (verify_deactivated() != 0)
 		return -1;
 
+	fprintf(stdout, "basic client tests passed.\n");
+
+	return 0;
+}
+
+/* Run some dual client tests */
+static int run_dual_client_tests(void)
+{
+	int status = 0;
+
 	/* Try running some process interop tests */
-	fprintf(stdout, "running tests with two clients...\n");
+	fprintf(stdout, "running tests with dual clients...\n");
 
 	/* Get the current path to this binary */
 	char mypath[PATH_MAX];
@@ -197,14 +203,42 @@ int game_mode_run_client_tests()
 	/* Send SIGCONT to child */
 	if (kill(child, SIGCONT) == -1) {
 		fprintf(stderr, "failed to send continue signal to other client: %s\n", strerror(errno));
-		return -1;
+		status = -1;
 	}
 
-	/* Kill the child regardless */
+	/* Give the child a chance to finish */
+	usleep(1000);
+
+	/* clean up the child */
 	if (kill(child, SIGKILL) == -1) {
 		fprintf(stderr, "failed to kill the child: %s\n", strerror(errno));
-		return -1;
+		status = -1;
 	}
+
+	if (status == 0)
+		fprintf(stdout, "dual client tests passed.\n");
+
+	return status;
+}
+
+/**
+ * game_mode_run_client_tests runs a set of tests of the client code
+ * we simply verify that the client can request the status and recieves the correct results
+ *
+ * returns 0 for success, -1 for failure
+ */
+int game_mode_run_client_tests()
+{
+	int status = 0;
+	fprintf(stdout, "running tests...\n");
+
+	/* Run the basic tests */
+	if (run_basic_client_tests() != 0)
+		return -1;
+
+	/* Run the dual client tests */
+	if (run_dual_client_tests() != 0)
+		return -1;
 
 	return status;
 }
