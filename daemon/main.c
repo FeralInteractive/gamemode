@@ -67,6 +67,7 @@ POSSIBILITY OF SUCH DAMAGE.
 	"  -d  daemonize self after launch\n"                                                          \
 	"  -l  log to syslog\n"                                                                        \
 	"  -r  request gamemode and pause\n"                                                           \
+	"  -t  run tests on self\n"                                                                    \
 	"  -h  print this help\n"                                                                      \
 	"  -v  print version\n"                                                                        \
 	"\n"                                                                                           \
@@ -96,7 +97,7 @@ int main(int argc, char *argv[])
 	bool daemon = false;
 	bool use_syslog = false;
 	int opt = 0;
-	while ((opt = getopt(argc, argv, "dlsrvh")) != -1) {
+	while ((opt = getopt(argc, argv, "dlsrtvh")) != -1) {
 		switch (opt) {
 		case 'd':
 			daemon = true;
@@ -140,6 +141,10 @@ int main(int argc, char *argv[])
 			// Simply pause and wait for any signal
 			pause();
 
+			exit(EXIT_SUCCESS);
+			break;
+		case 't':
+			fprintf(stdout, "Running tests...\n");
 			exit(EXIT_SUCCESS);
 			break;
 		case 'v':
