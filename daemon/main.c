@@ -67,7 +67,7 @@ POSSIBILITY OF SUCH DAMAGE.
 	"  -d  daemonize self after launch\n"                                                          \
 	"  -l  log to syslog\n"                                                                        \
 	"  -r  request gamemode and pause\n"                                                           \
-	"  -t  run tests on self\n"                                                                    \
+	"  -t  run tests\n"                                                                            \
 	"  -h  print this help\n"                                                                      \
 	"  -v  print version\n"                                                                        \
 	"\n"                                                                                           \
