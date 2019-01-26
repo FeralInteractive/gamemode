@@ -48,12 +48,13 @@ static int verify_gamemode_initial(void)
 	int status = 0;
 
 	if ((status = gamemode_query_status()) != 0) {
-		fprintf(stderr,
-		        "gamemode is currently active, tests require gamemode to start deactivated!\n");
+		fprintf(
+		    stderr,
+		    "ERROR: gamemode is currently active, tests require gamemode to start deactivated!\n");
 		status = -1;
 	} else if (status == -1) {
-		fprintf(stderr, "gamemode_query_status failed: %s!\n", gamemode_error_string());
-		fprintf(stderr, "is gamemode installed correctly?\n");
+		fprintf(stderr, "ERROR: gamemode_query_status failed: %s!\n", gamemode_error_string());
+		fprintf(stderr, "ERROR: is gamemode installed correctly?\n");
 		status = -1;
 	} else {
 		status = 0;
@@ -69,11 +70,13 @@ static int verify_active_and_registered(void)
 
 	if (status != 2) {
 		if (status == -1) {
-			fprintf(stderr, "gamemode_query_status failed: %s\n", gamemode_error_string());
+			fprintf(stderr, "ERROR: gamemode_query_status failed: %s\n", gamemode_error_string());
 		} else if (status == 1) {
-			fprintf(stderr, "gamemode was active but did not have this process registered\n");
+			fprintf(stderr,
+			        "ERROR: gamemode was active but did not have this process registered\n");
 		}
-		fprintf(stderr, "gamemode failed to activate correctly when requested (expected 2)!\n");
+		fprintf(stderr,
+		        "ERROR: gamemode failed to activate correctly when requested (expected 2)!\n");
 		status = -1;
 	} else {
 		status = 0;
@@ -89,9 +92,9 @@ static int verify_deactivated(void)
 
 	if (status != 0) {
 		if (status == -1) {
-			fprintf(stderr, "gamemode_query_status failed: %s\n", gamemode_error_string());
+			fprintf(stderr, "ERROR: gamemode_query_status failed: %s\n", gamemode_error_string());
 		}
-		fprintf(stderr, "gamemode failed to deactivate when requested (expected 0)!\n");
+		fprintf(stderr, "ERROR: gamemode failed to deactivate when requested (expected 0)!\n");
 		status = -1;
 	} else {
 		status = 0;
@@ -107,10 +110,11 @@ static int verify_other_client_connected(void)
 
 	if (status != 1) {
 		if (status == -1) {
-			fprintf(stderr, "gamemode_query_status failed: %s\n", gamemode_error_string());
+			fprintf(stderr, "ERROR: gamemode_query_status failed: %s\n", gamemode_error_string());
 		}
-		fprintf(stderr,
-		        "gamemode_query_status failed to return other client connected (expected 1)!\n");
+		fprintf(
+		    stderr,
+		    "ERROR: gamemode_query_status failed to return other client connected (expected 1)!\n");
 		status = -1;
 	} else {
 		status = 0;
@@ -124,7 +128,7 @@ static int verify_other_client_connected(void)
  */
 static int run_basic_client_tests(void)
 {
-	fprintf(stdout, "running basic client tests...\n");
+	fprintf(stdout, "   *basic client tests*\n");
 
 	/* First verify that gamemode is not currently active on the system
 	 * As well as it being currently installed and queryable
@@ -134,7 +138,7 @@ static int run_basic_client_tests(void)
 
 	/* Verify that gamemode_request_start correctly start gamemode */
 	if (gamemode_request_start() != 0) {
-		fprintf(stderr, "gamemode_request_start failed: %s\n", gamemode_error_string());
+		fprintf(stderr, "ERROR: gamemode_request_start failed: %s\n", gamemode_error_string());
 		return -1;
 	}
 
@@ -144,7 +148,7 @@ static int run_basic_client_tests(void)
 
 	/* Verify that gamemode_request_end corrently de-registers gamemode */
 	if (gamemode_request_end() != 0) {
-		fprintf(stderr, "gamemode_request_end failed: %s!\n", gamemode_error_string());
+		fprintf(stderr, "ERROR: gamemode_request_end failed: %s!\n", gamemode_error_string());
 		return -1;
 	}
 
@@ -152,7 +156,7 @@ static int run_basic_client_tests(void)
 	if (verify_deactivated() != 0)
 		return -1;
 
-	fprintf(stdout, "basic client tests passed.\n");
+	fprintf(stdout, "       *passed*\n");
 
 	return 0;
 }
@@ -165,12 +169,12 @@ static int run_dual_client_tests(void)
 	int status = 0;
 
 	/* Try running some process interop tests */
-	fprintf(stdout, "running tests with dual clients...\n");
+	fprintf(stdout, "   *dual clients tests*\n");
 
 	/* Get the current path to this binary */
 	char mypath[PATH_MAX];
 	if (readlink("/proc/self/exe", mypath, PATH_MAX) == -1) {
-		fprintf(stderr, "could not read current exe path\n");
+		fprintf(stderr, "ERROR: could not read current exe path: %s\n", strerror(errno));
 		return -1;
 	}
 
@@ -179,7 +183,7 @@ static int run_dual_client_tests(void)
 	if (child == 0) {
 		/* Relaunch self with -r (request and wait for signal) */
 		if (execl(mypath, mypath, "-r") == -1) {
-			fprintf(stderr, "failed to re-launch self with execv: %s\n", strerror(errno));
+			fprintf(stderr, "ERROR: failed to re-launch self with execv: %s\n", strerror(errno));
 			return -1;
 		}
 	}
@@ -196,7 +200,7 @@ static int run_dual_client_tests(void)
 
 	/* Verify that gamemode_request_start correctly start gamemode */
 	if (gamemode_request_start() != 0) {
-		fprintf(stderr, "gamemode_request_start failed: %s\n", gamemode_error_string());
+		fprintf(stderr, "ERROR: gamemode_request_start failed: %s\n", gamemode_error_string());
 		status = -1;
 	}
 
@@ -206,7 +210,7 @@ static int run_dual_client_tests(void)
 
 	/* Request end of gamemode (de-register ourselves) */
 	if (gamemode_request_end() != 0) {
-		fprintf(stderr, "gamemode_request_end failed: %s!\n", gamemode_error_string());
+		fprintf(stderr, "ERROR: gamemode_request_end failed: %s!\n", gamemode_error_string());
 		status = -1;
 	}
 
@@ -216,7 +220,9 @@ static int run_dual_client_tests(void)
 
 	/* Send SIGINT to child to wake it up*/
 	if (kill(child, SIGINT) == -1) {
-		fprintf(stderr, "failed to send continue signal to other client: %s\n", strerror(errno));
+		fprintf(stderr,
+		        "ERROR: failed to send continue signal to other client: %s\n",
+		        strerror(errno));
 		status = -1;
 	}
 
@@ -226,7 +232,7 @@ static int run_dual_client_tests(void)
 	// Wait for the child to finish up
 	int wstatus;
 	while (waitpid(child, &wstatus, WNOHANG) == 0) {
-		fprintf(stderr, "Waiting for child to quit...\n");
+		fprintf(stdout, "   Waiting for child to quit...\n");
 		usleep(10000);
 	}
 
@@ -235,7 +241,7 @@ static int run_dual_client_tests(void)
 		return -1;
 
 	if (status == 0)
-		fprintf(stdout, "dual client tests passed.\n");
+		fprintf(stdout, "       *passed*\n");
 
 	return status;
 }
@@ -249,7 +255,7 @@ static int run_dual_client_tests(void)
 int game_mode_run_client_tests()
 {
 	int status = 0;
-	fprintf(stdout, "running tests...\n");
+	fprintf(stdout, "Running tests...\n");
 
 	/* Run the basic tests */
 	if (run_basic_client_tests() != 0)
