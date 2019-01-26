@@ -23,6 +23,7 @@ daemon_sources = [
     'gamemode-proc.c',
     'gamemode-sched.c',
     'gamemode-wine.c',
+    'gamemode-tests.c',
     'daemonize.c',
     'dbus_messaging.c',
     'governors.c',
