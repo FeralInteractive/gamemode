@@ -135,4 +135,4 @@ char *game_mode_resolve_wine_preloader(const pid_t pid);
 /** gamemode-tests.c
  * Provides a test suite to verify gamemode behaviour
  */
-int game_mode_run_tests(void);
+int game_mode_run_client_tests(void);
