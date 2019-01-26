@@ -142,7 +142,7 @@ int main(int argc, char *argv[])
 			exit(EXIT_SUCCESS);
 			break;
 		case 't':
-			if ((status = game_mode_run_tests()) == 0) {
+			if ((status = game_mode_run_client_tests()) == 0) {
 				fprintf(stdout, "gamemode tests succeeded\n");
 				exit(EXIT_SUCCESS);
 			} else if (status == -1) {
