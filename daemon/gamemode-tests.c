@@ -47,7 +47,7 @@ static int verify_gamemode_initial(void)
 {
 	int status = 0;
 
-	if ((status = gamemode_query_status()) != 0) {
+	if ((status = gamemode_query_status()) != 0 && status != -1) {
 		fprintf(
 		    stderr,
 		    "ERROR: gamemode is currently active, tests require gamemode to start deactivated!\n");
