@@ -33,6 +33,7 @@ POSSIBILITY OF SUCH DAMAGE.
 
 #include "gamemode.h"
 #include "daemon_config.h"
+#include "dbus_messaging.h"
 #include "governors-query.h"
 #include "governors.h"
 #include "helpers.h"
@@ -202,6 +203,9 @@ static void game_mode_context_enter(GameModeContext *self)
 			memset(self->initial_cpu_mode, 0, sizeof(self->initial_cpu_mode));
 		}
 	}
+
+	/* Inhibit the screensaver */
+	game_mode_inhibit_screensaver(true);
 }
 
 /**
@@ -214,6 +218,9 @@ static void game_mode_context_leave(GameModeContext *self)
 {
 	LOG_MSG("Leaving Game Mode...\n");
 	sd_notifyf(0, "STATUS=%sGameMode is currently deactivated.%s\n", "\x1B[1;36m", "\x1B[0m");
+
+	/* UnInhibit the screensaver */
+	game_mode_inhibit_screensaver(false);
 
 	/* Reset the governer state back to initial */
 	if (self->initial_cpu_mode[0] != '\0') {
