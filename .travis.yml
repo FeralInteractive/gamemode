@@ -1,12 +1,21 @@
+dist: xenial
 language: c
 compiler: gcc
 sudo: false
-dist: xenial
 
 addons:
   apt:
     packages:
       - clang-format
+      - python3-pip
+      - python3-setuptools
+      - libsystemd-dev
+      - ninja-build
+
+before_script:
+  - pip3 install wheel
+  - pip3 install meson
+  - meson --version
 
 script:
   - ./scripts/format-check.sh
