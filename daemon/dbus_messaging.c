@@ -187,3 +187,80 @@ void game_mode_context_loop(GameModeContext *context)
 		}
 	}
 }
+
+/**
+ * Attempts to inhibit the screensaver
+ * Uses the "org.freedesktop.ScreenSaver" interface
+ */
+static unsigned int screensaver_inhibit_cookie = 0;
+int game_mode_inhibit_screensaver(bool inhibit)
+{
+	const char *service = "org.freedesktop.ScreenSaver";
+	const char *object_path = "/org/freedesktop/ScreenSaver";
+	const char *interface = "org.freedesktop.ScreenSaver";
+	const char *function = inhibit ? "Inhibit" : "UnInhibit";
+
+	sd_bus_message *msg = NULL;
+	sd_bus *bus = NULL;
+	sd_bus_error err;
+	memset(&err, 0, sizeof(sd_bus_error));
+
+	int result = -1;
+
+	// Open the user bus
+	int ret = sd_bus_open_user(&bus);
+	if (ret < 0) {
+		LOG_ERROR("Could not connect to user bus: %s\n", strerror(-ret));
+		return -1;
+	}
+
+	if (inhibit) {
+		ret = sd_bus_call_method(bus,
+		                         service,
+		                         object_path,
+		                         interface,
+		                         function,
+		                         &err,
+		                         &msg,
+		                         "ss",
+		                         "com.feralinteractive.GameMode",
+		                         "GameMode Activated");
+	} else {
+		ret = sd_bus_call_method(bus,
+		                         service,
+		                         object_path,
+		                         interface,
+		                         function,
+		                         &err,
+		                         &msg,
+		                         "u",
+		                         screensaver_inhibit_cookie);
+	}
+
+	if (ret < 0) {
+		LOG_ERROR(
+		    "Could not call %s on %s: %s\n"
+		    "\t%s\n"
+		    "\t%s\n",
+		    function,
+		    service,
+		    strerror(-ret),
+		    err.name,
+		    err.message);
+	} else if (inhibit) {
+		// Read the reply
+		ret = sd_bus_message_read(msg, "u", &screensaver_inhibit_cookie);
+		if (ret < 0) {
+			LOG_ERROR("Failure to parse response from %s on %s: %s\n",
+			          function,
+			          service,
+			          strerror(-ret));
+		} else {
+			result = 0;
+		}
+	} else {
+		result = 0;
+	}
+
+	return result;
+}
