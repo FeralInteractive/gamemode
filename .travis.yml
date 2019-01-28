@@ -19,3 +19,4 @@ before_script:
 
 script:
   - ./scripts/format-check.sh
+  - ./bootstrap.sh
