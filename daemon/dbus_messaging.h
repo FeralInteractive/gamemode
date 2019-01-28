@@ -39,3 +39,8 @@ POSSIBILITY OF SUCH DAMAGE.
  * Run the main D-BUS loop "forever"
  */
 void game_mode_context_loop(GameModeContext *context);
+
+/**
+ * Inhibit the screensaver
+ */
+int game_mode_inhibit_screensaver(bool inhibit);
