@@ -67,6 +67,7 @@ POSSIBILITY OF SUCH DAMAGE.
 	"  -d  daemonize self after launch\n"                                                          \
 	"  -l  log to syslog\n"                                                                        \
 	"  -r  request gamemode and pause\n"                                                           \
+	"  -t  run tests\n"                                                                            \
 	"  -h  print this help\n"                                                                      \
 	"  -v  print version\n"                                                                        \
 	"\n"                                                                                           \
@@ -85,6 +86,11 @@ static void sigint_handler(__attribute__((unused)) int signo)
 	_Exit(EXIT_SUCCESS);
 }
 
+static void sigint_handler_noexit(__attribute__((unused)) int signo)
+{
+	LOG_MSG("Quitting by request...\n");
+}
+
 /**
  * Main bootstrap entry into gamemoded
  */
@@ -96,7 +102,8 @@ int main(int argc, char *argv[])
 	bool daemon = false;
 	bool use_syslog = false;
 	int opt = 0;
-	while ((opt = getopt(argc, argv, "dlsrvh")) != -1) {
+	int status;
+	while ((opt = getopt(argc, argv, "dlsrtvh")) != -1) {
 		switch (opt) {
 		case 'd':
 			daemon = true;
@@ -105,8 +112,6 @@ int main(int argc, char *argv[])
 			use_syslog = true;
 			break;
 		case 's': {
-			int status;
-
 			if ((status = gamemode_query_status()) < 0) {
 				fprintf(stderr, "gamemode status request failed: %s\n", gamemode_error_string());
 				exit(EXIT_FAILURE);
@@ -125,8 +130,7 @@ int main(int argc, char *argv[])
 				exit(EXIT_FAILURE);
 			}
 
-			int status = gamemode_query_status();
-			if (status == 2) {
+			if ((status = gamemode_query_status()) == 2) {
 				fprintf(stdout, "gamemode request succeeded and is active\n");
 			} else if (status == 1) {
 				fprintf(stderr,
@@ -137,10 +141,31 @@ int main(int argc, char *argv[])
 				exit(EXIT_FAILURE);
 			}
 
-			// Simply pause and wait for any signal
+			// Simply pause and wait a SIGINT
+			if (signal(SIGINT, sigint_handler_noexit) == SIG_ERR) {
+				FATAL_ERRORNO("Could not catch SIGINT");
+			}
 			pause();
 
+			// Explicitly clean up
+			if (gamemode_request_end() < 0) {
+				fprintf(stderr, "gamemode request failed: %s\n", gamemode_error_string());
+				exit(EXIT_FAILURE);
+			}
+
 			exit(EXIT_SUCCESS);
+			break;
+		case 't':
+			if ((status = game_mode_run_client_tests()) == 0) {
+				fprintf(stdout, "gamemode tests succeeded\n");
+				exit(EXIT_SUCCESS);
+			} else if (status == -1) {
+				fprintf(stderr, "gamemode tests failed\n");
+				exit(EXIT_FAILURE);
+			} else {
+				fprintf(stderr, "gamemode test results unknown: %d\n", status);
+				exit(EXIT_FAILURE);
+			}
 			break;
 		case 'v':
 			fprintf(stdout, VERSION_TEXT);
