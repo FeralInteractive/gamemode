@@ -1,11 +1,12 @@
 language: c
 compiler: gcc
 sudo: false
+dist: xenial
 
 addons:
   apt:
     packages:
-      - clang-format-3.4
+      - clang-format
 
 script:
   - ./scripts/format-check.sh
