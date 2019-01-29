@@ -44,13 +44,6 @@ POSSIBILITY OF SUCH DAMAGE.
 #include <stdatomic.h>
 #include <systemd/sd-daemon.h>
 
-/* SCHED_ISO may not be defined as it is a reserved value not yet
- * implemented in official kernel sources, see linux/sched.h.
- */
-#ifndef SCHED_ISO
-#define SCHED_ISO 4
-#endif
-
 /**
  * The GameModeClient encapsulates the remote connection, providing a list
  * form to contain the pid and credentials.
