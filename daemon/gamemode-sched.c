@@ -41,6 +41,13 @@ POSSIBILITY OF SUCH DAMAGE.
 #include <sys/resource.h>
 #include <sys/sysinfo.h>
 
+/* SCHED_ISO may not be defined as it is a reserved value not yet
+ * implemented in official kernel sources, see linux/sched.h.
+ */
+#ifndef SCHED_ISO
+#define SCHED_ISO 4
+#endif
+
 /**
  * Priority to renice the process to.
  */
