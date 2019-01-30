@@ -63,6 +63,8 @@ struct GameModeContext {
 
 	char initial_cpu_mode[64]; /**<Only updates when we can */
 
+	struct GameModeGPUInfo *gpu_info; /**<Stored GPU info for the current GPU */
+
 	/* Reaper control */
 	struct {
 		pthread_t thread;
@@ -107,6 +109,9 @@ void game_mode_context_init(GameModeContext *self)
 	self->config = config_create();
 	config_init(self->config);
 
+	/* Grab the current GPU */
+	game_mode_identify_gpu(&self->gpu_info);
+
 	pthread_rwlock_init(&self->rwlock, NULL);
 	pthread_mutex_init(&self->reaper.mutex, NULL);
 	pthread_cond_init(&self->reaper.condition, NULL);
@@ -143,6 +148,9 @@ void game_mode_context_destroy(GameModeContext *self)
 
 	pthread_cond_destroy(&self->reaper.condition);
 	pthread_mutex_destroy(&self->reaper.mutex);
+
+	/* Destroy the gpu object */
+	game_mode_free_gpu(&self->gpu_info);
 
 	/* Destroy the config object */
 	config_destroy(self->config);
@@ -200,6 +208,9 @@ static void game_mode_context_enter(GameModeContext *self)
 	/* Inhibit the screensaver */
 	if (config_get_inhibit_screensaver(self->config))
 		game_mode_inhibit_screensaver(true);
+
+	/* Apply GPU optimisations */
+	game_mode_apply_gpu(self->gpu_info, true);
 }
 
 /**
@@ -212,6 +223,9 @@ static void game_mode_context_leave(GameModeContext *self)
 {
 	LOG_MSG("Leaving Game Mode...\n");
 	sd_notifyf(0, "STATUS=%sGameMode is currently deactivated.%s\n", "\x1B[1;36m", "\x1B[0m");
+
+	/* Remove GPU optimisations */
+	game_mode_apply_gpu(self->gpu_info, false);
 
 	/* UnInhibit the screensaver */
 	if (config_get_inhibit_screensaver(self->config))
