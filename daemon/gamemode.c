@@ -109,8 +109,8 @@ void game_mode_context_init(GameModeContext *self)
 	self->config = config_create();
 	config_init(self->config);
 
-	/* Grab the current GPU */
-	game_mode_identify_gpu(&self->gpu_info);
+	/* Initialise the current GPU info */
+	game_mode_initialise_gpu(self->config, &self->gpu_info);
 
 	pthread_rwlock_init(&self->rwlock, NULL);
 	pthread_mutex_init(&self->reaper.mutex, NULL);
