@@ -141,6 +141,6 @@ int game_mode_run_client_tests(void);
  * Provides internal APU functions to apply optimisations to gpus
  */
 typedef struct GameModeGPUInfo GameModeGPUInfo;
-int game_mode_identify_gpu(GameModeGPUInfo **info);
+int game_mode_initialise_gpu(GameModeConfig *config, GameModeGPUInfo **info);
 void game_mode_free_gpu(GameModeGPUInfo **info);
 int game_mode_apply_gpu(const GameModeGPUInfo *info, bool apply);

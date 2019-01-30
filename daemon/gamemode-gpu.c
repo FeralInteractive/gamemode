@@ -36,6 +36,8 @@ POSSIBILITY OF SUCH DAMAGE.
 #include "helpers.h"
 #include "logging.h"
 
+#include "daemon_config.h"
+
 // TODO
 // Gather GPU type and information
 // Allow configuration file specifying of gpu info
@@ -56,13 +58,19 @@ enum GPUVendor {
 struct GameModeGPUInfo {
 	enum GPUVendor vendor;
 	int device; /* path to device, ie. /sys/class/drm/card#/ */
+
+	long core; /* Core clock to apply */
+	long mem;  /* Mem clock to apply */
 };
 
 /**
  * Applies or removes Nvidia optimisations
  */
-static int apply_gpu_nvidia(bool apply)
+static int apply_gpu_nvidia(const GameModeGPUInfo *info, bool apply)
 {
+	if (!info)
+		return 0;
+
 	// Running these commands:
 	// nvidia-settings -a '[gpu:0]/GPUMemoryTransferRateOffset[3]=1400'
 	// nvidia-settings -a '[gpu:0]/GPUGraphicsClockOffset[3]=50'
@@ -76,8 +84,11 @@ static int apply_gpu_nvidia(bool apply)
 /**
  * Applies or removes AMD optimisations
  */
-static int apply_gpu_amd(bool apply)
+static int apply_gpu_amd(const GameModeGPUInfo *info, bool apply)
 {
+	if (!info)
+		return 0;
+
 	// We'll want to set both the following:
 	// core: device/pp_sclk_od (0%+ additional)
 	// mem: device/pp_mclk_od (0%+ additional)
@@ -92,7 +103,7 @@ static int apply_gpu_amd(bool apply)
 /**
  * Attempts to identify the current in use GPU information
  */
-int game_mode_identify_gpu(GameModeGPUInfo **info)
+int game_mode_initialise_gpu(GameModeConfig *config, GameModeGPUInfo **info)
 {
 	int status = 0;
 
@@ -100,11 +111,31 @@ int game_mode_identify_gpu(GameModeGPUInfo **info)
 	if (!info || *info)
 		FATAL_ERROR("Invalid GameModeGPUInfo passed to %s", __func__);
 
+	/* Early out if we have this feature turned off */
+	long apply = 0;
+	config_get_apply_gpu_optimisations(config, &apply);
+	if (apply == 0)
+		return 0;
+
 	/* Create the context */
 	GameModeGPUInfo *new_info = malloc(sizeof(GameModeGPUInfo));
 	memset(new_info, 0, sizeof(GameModeGPUInfo));
 
 	// TODO: Fill in the GPU info
+
+	/* Load the config based on GPU */
+	switch (new_info->vendor) {
+	case Vendor_NVIDIA:
+		config_get_nv_core_clock_mhz_offset(config, &new_info->core);
+		config_get_nv_mem_clock_mhz_offset(config, &new_info->mem);
+		break;
+	case Vendor_AMD:
+		config_get_amd_core_clock_percentage(config, &new_info->core);
+		config_get_amd_mem_clock_percentage(config, &new_info->mem);
+		break;
+	default:
+		break;
+	}
 
 	/* Give back the new gpu info */
 	*info = new_info;
@@ -125,11 +156,15 @@ void game_mode_free_gpu(GameModeGPUInfo **info)
  */
 int game_mode_apply_gpu(const GameModeGPUInfo *info, bool apply)
 {
+	// Null info means don't apply anything
+	if (!info)
+		return 0;
+
 	switch (info->vendor) {
 	case Vendor_NVIDIA:
-		return apply_gpu_nvidia(apply);
+		return apply_gpu_nvidia(info, apply);
 	case Vendor_AMD:
-		return apply_gpu_amd(apply);
+		return apply_gpu_amd(info, apply);
 	default:
 		break;
 	}

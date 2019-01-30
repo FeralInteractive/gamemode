@@ -75,6 +75,12 @@ struct GameModeConfig {
 	long inhibit_screensaver;
 
 	long reaper_frequency;
+
+	long apply_gpu_optimisations;
+	long nv_core_clock_mhz_offset;
+	long nv_mem_clock_mhz_offset;
+	long amd_core_clock_percentage;
+	long amd_mem_clock_percentage;
 };
 
 /*
@@ -173,6 +179,19 @@ static int inih_handler(void *user, const char *section, const char *name, const
 		} else if (strcmp(name, "inhibit_screensaver") == 0) {
 			valid = get_long_value(name, value, &self->inhibit_screensaver);
 		}
+	} else if (strcmp(section, "gpu") == 0) {
+		/* GPU subsection */
+		if (strcmp(name, "apply_gpu_optimisations") == 0) {
+			valid = get_long_value(name, value, &self->apply_gpu_optimisations);
+		} else if (strcmp(name, "nv_core_clock_mhz_offset") == 0) {
+			valid = get_long_value(name, value, &self->nv_core_clock_mhz_offset);
+		} else if (strcmp(name, "nv_mem_clock_mhz_offset") == 0) {
+			valid = get_long_value(name, value, &self->nv_mem_clock_mhz_offset);
+		} else if (strcmp(name, "amd_core_clock_percentage") == 0) {
+			valid = get_long_value(name, value, &self->amd_core_clock_percentage);
+		} else if (strcmp(name, "amd_mem_clock_percentage") == 0) {
+			valid = get_long_value(name, value, &self->amd_mem_clock_percentage);
+		}
 	} else if (strcmp(section, "custom") == 0) {
 		/* Custom subsection */
 		if (strcmp(name, "start") == 0) {
@@ -234,6 +253,11 @@ static void load_config_files(GameModeConfig *self)
 	self->renice = 4; /* default value of 4 */
 	self->reaper_frequency = DEFAULT_REAPER_FREQ;
 	self->inhibit_screensaver = 1; /* Defaults to on */
+	self->apply_gpu_optimisations = 0;
+	self->nv_core_clock_mhz_offset = 0;
+	self->nv_mem_clock_mhz_offset = 0;
+	self->amd_core_clock_percentage = 0;
+	self->amd_mem_clock_percentage = 0;
 
 	/*
 	 * Locations to load, in order
@@ -460,4 +484,32 @@ void config_get_ioprio_value(GameModeConfig *self, int *value)
 		*value = IOPRIO_RESET_DEFAULT;
 	else
 		*value = atoi(ioprio_value);
+}
+
+/*
+ * Get various config info for gpu optimisations
+ */
+void config_get_apply_gpu_optimisations(GameModeConfig *self, long *value)
+{
+	memcpy_locked_config(self, value, &self->apply_gpu_optimisations, sizeof(long));
+}
+
+void config_get_nv_core_clock_mhz_offset(GameModeConfig *self, long *value)
+{
+	memcpy_locked_config(self, value, &self->nv_core_clock_mhz_offset, sizeof(long));
+}
+
+void config_get_nv_mem_clock_mhz_offset(GameModeConfig *self, long *value)
+{
+	memcpy_locked_config(self, value, &self->nv_mem_clock_mhz_offset, sizeof(long));
+}
+
+void config_get_amd_core_clock_percentage(GameModeConfig *self, long *value)
+{
+	memcpy_locked_config(self, value, &self->amd_core_clock_percentage, sizeof(long));
+}
+
+void config_get_amd_mem_clock_percentage(GameModeConfig *self, long *value)
+{
+	memcpy_locked_config(self, value, &self->amd_mem_clock_percentage, sizeof(long));
 }
