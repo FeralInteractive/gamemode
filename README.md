@@ -1,7 +1,14 @@
 # GameMode
 **GameMode** is a daemon/lib combo for Linux that allows games to request a set of optimisations be temporarily applied to the host OS.
 
-GameMode was designed primarily as a stop-gap solution to problems with the Intel and AMD CPU powersave or ondemand governors, but is now able to launch custom user defined plugins, and is intended to be expanded further, as there are a wealth of automation tasks one might want to apply.
+GameMode was designed primarily as a stop-gap solution to problems with the Intel and AMD CPU powersave or ondemand governors, but is now host to a range of optimisation features and configurations.
+
+Currently GameMode includes support for optimisations including:
+* CPU Governor
+* I/O Priority
+* Kernel Scheduler (`SCHED_ISO`)
+* Screensaver inhibiting
+* Custom scripts
 
 Issues with GameMode should be reported here in the issues section, and not reported to Feral directly.
 
