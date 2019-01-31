@@ -119,7 +119,7 @@ static bool append_value_to_list(const char *list_name, const char *value,
 }
 
 /*
- * Get a positive long value from a string
+ * Get a long value from a string
  */
 static bool get_long_value(const char *value_name, const char *value, long *output)
 {
@@ -129,7 +129,27 @@ static bool get_long_value(const char *value_name, const char *value, long *outp
 	if (errno == ERANGE) {
 		LOG_ERROR("Config: %s overflowed, given [%s]\n", value_name, value);
 		return false;
-	} else if (config_value <= 0 || !(*value != '\0' && end && *end == '\0')) {
+	} else if (!(*value != '\0' && end && *end == '\0')) {
+		LOG_ERROR("Config: %s was invalid, given [%s]\n", value_name, value);
+		return false;
+	} else {
+		*output = config_value;
+	}
+
+	return true;
+}
+/*
+ * Get a long value from a hex string
+ */
+static bool get_long_value_hex(const char *value_name, const char *value, long *output)
+{
+	char *end = NULL;
+	long config_value = strtol(value, &end, 16);
+
+	if (errno == ERANGE) {
+		LOG_ERROR("Config: %s overflowed, given [%s]\n", value_name, value);
+		return false;
+	} else if (!(*value != '\0' && end && *end == '\0')) {
 		LOG_ERROR("Config: %s was invalid, given [%s]\n", value_name, value);
 		return false;
 	} else {
@@ -186,7 +206,7 @@ static int inih_handler(void *user, const char *section, const char *name, const
 		if (strcmp(name, "apply_gpu_optimisations") == 0) {
 			valid = get_long_value(name, value, &self->apply_gpu_optimisations);
 		} else if (strcmp(name, "gpu_vendor") == 0) {
-			valid = get_long_value(name, value, &self->gpu_device);
+			valid = get_long_value_hex(name, value, &self->gpu_vendor);
 		} else if (strcmp(name, "gpu_device") == 0) {
 			valid = get_long_value(name, value, &self->gpu_device);
 		} else if (strcmp(name, "nv_core_clock_mhz_offset") == 0) {
