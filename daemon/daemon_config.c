@@ -261,7 +261,7 @@ static void load_config_files(GameModeConfig *self)
 	self->inhibit_screensaver = 1; /* Defaults to on */
 	self->apply_gpu_optimisations = 0;
 	self->gpu_vendor = 0;
-	self->gpu_device = 0;
+	self->gpu_device = -1; /* 0 is a valid device ID so use -1 to indicate no value */
 	self->nv_core_clock_mhz_offset = 0;
 	self->nv_mem_clock_mhz_offset = 0;
 	self->amd_core_clock_percentage = 0;
