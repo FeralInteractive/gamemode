@@ -1,18 +1,7 @@
 # GameMode
 **GameMode** is a daemon/lib combo for Linux that allows games to request a set of optimisations be temporarily applied to the host OS.
 
-The design has a clear-cut abstraction between the host daemon and library (`gamemoded` and `libgamemode`), and the client loaders (`libgamemodeauto` and `gamemode_client.h`) that allows for safe use without worrying about whether the daemon is installed or running. This design also means that while the host library currently relies on `systemd` for exchanging messages with the daemon, it's entirely possible to implement other internals that still work with the same clients.
-
 GameMode was designed primarily as a stop-gap solution to problems with the Intel and AMD CPU powersave or ondemand governors, but is now able to launch custom user defined plugins, and is intended to be expanded further, as there are a wealth of automation tasks one might want to apply.
-
-GameMode can leverage support for soft real time mode if the running kernel supports `SCHED_ISO`. This adjusts the scheduling of the game to real time without sacrificing system stability by starving other processes.
-
-GameMode adjusts the nice priority of games to -4 by default to give it a slight IO and CPU priority over other background processes. This only works if your user is permitted to adjust priorities within the limits configured by PAM. GameMode can be configured to take care of it by passing `with-pam-group=group` to the build options where `group` is a group your user needs to be part of.
-For more information, see `/etc/security/limits.conf`.
-
-Please take note that some games may actually run seemingly slower with `SCHED_ISO` if the game makes use of busy looping while interacting with the graphic driver. The same may happen if you apply too strong nice values. This effect is called priority inversion: Due to the high priority given to busy loops, there may be too few resources left for the graphics driver. Thus, sane defaults were chosen to not expose this effect on most systems. Part of this default is a heuristic which automatically turns off `SCHED_ISO` if GameMode detects three or less CPU cores. Your experience may change based on using GL threaded optimizations, CPU core binding (taskset), the graphic driver, or different CPU architectures. If you experience bad input latency or inconsistent FPS, try switching these configurations on or off first and report back. `SCHED_ISO` comes with a protection against this effect by falling back to normal scheduling as soon as the `SCHED_ISO` process uses more than 70% avarage across all CPU cores. This default value can be adjusted outside of the scope of GameMode (it's in `/proc/sys/kernel/iso_cpu`). This value also protects against compromising system stability, do not set it to 100% as this would turn the game into a full real time process, thus potentially starving all other OS components from CPU resources.
-
-GameMode can adjust the io priority of games to benefit from reduced lag and latency when a game has to load assets on demand.
 
 Issues with GameMode should be reported here in the issues section, and not reported to Feral directly.
 
@@ -46,20 +35,9 @@ Then clone, build and install a release version of GameMode at 1.2:
 ```bash
 git clone https://github.com/FeralInteractive/gamemode.git
 cd gamemode
-git checkout 1.2
+git checkout 1.2 # omit to build the master branch
 ./bootstrap.sh
 ```
-
-To build the master branch:
-
-```bash
-git clone https://github.com/FeralInteractive/gamemode.git
-cd gamemode
-git submodule update --init --recursive
-./bootstrap.sh
-```
-
-This will also satisfy the build requirement `inih` by pulling it in as a git submodule.
 
 To uninstall:
 ```bash
@@ -82,7 +60,45 @@ LD_PRELOAD=$LD_PRELOAD:/usr/\$LIB/libgamemodeauto.so.0 %command%
 ```
 Please note the backslash here in `\$LIB` is required.
 
-### Developers
+---
+## Configuration
+
+The daemon can currently be configured using a `gamemode.ini` file. [gamemode.ini](https://github.com/FeralInteractive/gamemode/blob/master/example/gamemode.ini) is an example of what this file would look like, with explanations for all the variables.
+
+Config files are loaded and merged from the following directories, in order:
+1. `/usr/share/gamemode/`
+2. `/etc/`
+3. `$XDG_CONFIG_HOME` or `$HOME/.config/`
+4. `$PWD`
+
+The file parsing uses [inih](https://github.com/benhoyt/inih).
+
+---
+## Features
+
+GameMode can leverage support for soft real time mode if the running kernel supports `SCHED_ISO`. This adjusts the scheduling of the game to real time without sacrificing system stability by starving other processes.
+
+GameMode adjusts the nice priority of games to -4 by default to give it a slight IO and CPU priority over other background processes. This only works if your user is permitted to adjust priorities within the limits configured by PAM. GameMode can be configured to take care of it by passing `with-pam-group=group` to the build options where `group` is a group your user needs to be part of.
+For more information, see `/etc/security/limits.conf`.
+
+Please take note that some games may actually run seemingly slower with `SCHED_ISO` if the game makes use of busy looping while interacting with the graphic driver. The same may happen if you apply too strong nice values. This effect is called priority inversion: Due to the high priority given to busy loops, there may be too few resources left for the graphics driver. Thus, sane defaults were chosen to not expose this effect on most systems. Part of this default is a heuristic which automatically turns off `SCHED_ISO` if GameMode detects three or less CPU cores. Your experience may change based on using GL threaded optimizations, CPU core binding (taskset), the graphic driver, or different CPU architectures. If you experience bad input latency or inconsistent FPS, try switching these configurations on or off first and report back. `SCHED_ISO` comes with a protection against this effect by falling back to normal scheduling as soon as the `SCHED_ISO` process uses more than 70% avarage across all CPU cores. This default value can be adjusted outside of the scope of GameMode (it's in `/proc/sys/kernel/iso_cpu`). This value also protects against compromising system stability, do not set it to 100% as this would turn the game into a full real time process, thus potentially starving all other OS components from CPU resources.
+
+GameMode can adjust the io priority of games to benefit from reduced lag and latency when a game has to load assets on demand.
+
+---
+## Developers
+
+The design has a clear-cut abstraction between the host daemon and library (`gamemoded` and `libgamemode`), and the client loaders (`libgamemodeauto` and `gamemode_client.h`) that allows for safe use without worrying about whether the daemon is installed or running. This design also means that while the host library currently relies on `systemd` for exchanging messages with the daemon, it's entirely possible to implement other internals that still work with the same clients.
+
+#### Components
+**gamemoded** runs in the background, activates game mode on request, refcounts and also checks caller PID lifetime. Run `man gamemoded` for command line options.
+
+**libgamemode** is an internal library used to dispatch requests to the daemon. Note: `libgamemode` should never be linked with directly.
+
+**libgamemodeauto** is a simple dynamic library that automatically requests game mode when loaded. Useful to `LD_PRELOAD` into any game as needed.
+
+**gamemode\_client.h** is as single header lib that lets a game request game mode and handle errors.
+
 Developers can build the request directly into an app. Note that none of these client methods force your users to have the daemon installed or running - they will safely no-op if the host is missing.
 
 ```C
@@ -105,30 +121,6 @@ Developers can build the request directly into an app. Note that none of these c
 ```
 
 Or, distribute `libgamemodeauto.so` and either add `-lgamemodeauto` to your linker arguments, or add it to an LD\_PRELOAD in a launch script.
-
----
-## Components
-
-**gamemoded** runs in the background, activates game mode on request, refcounts and also checks caller PID lifetime. Run `man gamemoded` for command line options.
-
-**libgamemode** is an internal library used to dispatch requests to the daemon. Note: `libgamemode` should never be linked with directly.
-
-**libgamemodeauto** is a simple dynamic library that automatically requests game mode when loaded. Useful to `LD_PRELOAD` into any game as needed.
-
-**gamemode\_client.h** is as single header lib that lets a game request game mode and handle errors.
-
----
-## Configuration
-
-The daemon can currently be configured using a `gamemode.ini` file. [gamemode.ini](https://github.com/FeralInteractive/gamemode/blob/master/example/gamemode.ini) is an example of what this file would look like, with explanations for all the variables.
-
-Config files are loaded and merged from the following directories, in order:
-1. `/usr/share/gamemode/`
-2. `/etc/`
-3. `$XDG_CONFIG_HOME` or `$HOME/.config/`
-4. `$PWD`
-
-The file parsing uses [inih](https://github.com/benhoyt/inih).
 
 ---
 ## For those with overclocked CPUs
