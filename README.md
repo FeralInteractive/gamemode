@@ -12,6 +12,7 @@ If your distribution already has GameMode packaged, it is preferable to install 
 
 GameMode depends on `meson` for building and `systemd` for internal communication. This repo contains a `bootstrap.sh` script to allow for quick install to the user bus, but check `meson_options.txt` for custom settings.
 
+### Install Dependencies
 #### Ubuntu/Debian (you may also need `dbus-user-session`)
 ```bash
 apt install meson libsystemd-dev pkg-config ninja-build git
@@ -30,6 +31,7 @@ Gentoo has a bleeding-edge ebuild which builds from sources. It will also pull i
 ACCEPT_KEYWORDS="**" emerge --ask ~games-util/gamemode-9999
 ```
 
+### Build and Install GameMode
 Then clone, build and install a release version of GameMode at 1.2:
 
 ```bash
