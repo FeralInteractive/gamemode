@@ -40,8 +40,7 @@ POSSIBILITY OF SUCH DAMAGE.
 #include "gpu-query.h"
 
 // TODO
-// Gather GPU type and information
-// Allow override of vendor and device
+// Gather GPU type and information automatically
 // Apply Nvidia GPU settings (CoolBits will be needed)
 // Apply AMD GPU settings (Will need user changing pwm1_enable)
 // Intel?
@@ -76,15 +75,18 @@ int game_mode_initialise_gpu(GameModeConfig *config, GameModeGPUInfo **info)
 
 	/* verify device ID */
 	if (new_info->device == -1) {
-		LOG_ERROR("Invalid gpu_device value set in configuration, will not appli optimisations!\n");
+		LOG_ERROR("Invalid gpu_device value set in configuration, will not apply optimisations!\n");
 		free(new_info);
 		return -1;
 	}
 
 	/* verify GPU vendor */
-	if (new_info->vendor != Vendor_NVIDIA && new_info->vendor != Vendor_AMD &&
-	    new_info->vendor != Vendor_Intel) {
-		LOG_ERROR("Invalid gpu_vendor value set in configuration, will not apply optimisations!\n");
+	if (!(new_info->vendor == Vendor_NVIDIA || new_info->vendor == Vendor_AMD ||
+	      new_info->vendor == Vendor_Intel)) {
+		LOG_ERROR(
+		    "Invalid gpu_vendor value (0x%04x) set in configuration, will not apply "
+		    "optimisations!\n",
+		    (unsigned int)new_info->vendor);
 		LOG_ERROR("Possible values are: 0x%04x (NVIDIA) 0x%04x (AMD) 0x%04x (Intel)\n",
 		          Vendor_NVIDIA,
 		          Vendor_AMD,
