@@ -37,68 +37,15 @@ POSSIBILITY OF SUCH DAMAGE.
 #include "logging.h"
 
 #include "daemon_config.h"
+#include "gpu-query.h"
 
 // TODO
 // Gather GPU type and information
-// Allow configuration file specifying of gpu info
+// Allow override of vendor and device
 // Apply Nvidia GPU settings (CoolBits will be needed)
 // Apply AMD GPU settings (Will need user changing pwm1_enable)
 // Intel?
 // Provide documentation on optimisations
-
-/* Enums for GPU vendors */
-enum GPUVendor {
-	Vendor_Invalid = 0,
-	Vendor_NVIDIA = 0x10de,
-	Vendor_AMD = 0x1002,
-	Vendor_Intel = 0x8086
-};
-
-/* Storage for static GPU info gathered at start */
-struct GameModeGPUInfo {
-	enum GPUVendor vendor;
-	int device; /* path to device, ie. /sys/class/drm/card#/ */
-
-	long core; /* Core clock to apply */
-	long mem;  /* Mem clock to apply */
-};
-
-/**
- * Applies or removes Nvidia optimisations
- */
-static int apply_gpu_nvidia(const GameModeGPUInfo *info, bool apply)
-{
-	if (!info)
-		return 0;
-
-	// Running these commands:
-	// nvidia-settings -a '[gpu:0]/GPUMemoryTransferRateOffset[3]=1400'
-	// nvidia-settings -a '[gpu:0]/GPUGraphicsClockOffset[3]=50'
-	if (apply) {
-	} else {
-	}
-
-	return 0;
-}
-
-/**
- * Applies or removes AMD optimisations
- */
-static int apply_gpu_amd(const GameModeGPUInfo *info, bool apply)
-{
-	if (!info)
-		return 0;
-
-	// We'll want to set both the following:
-	// core: device/pp_sclk_od (0%+ additional)
-	// mem: device/pp_mclk_od (0%+ additional)
-	// Guide from https://www.maketecheasier.com/overclock-amd-gpu-linux/
-	if (apply) {
-	} else {
-	}
-
-	return 0;
-}
 
 /**
  * Attempts to identify the current in use GPU information
@@ -121,7 +68,7 @@ int game_mode_initialise_gpu(GameModeConfig *config, GameModeGPUInfo **info)
 	GameModeGPUInfo *new_info = malloc(sizeof(GameModeGPUInfo));
 	memset(new_info, 0, sizeof(GameModeGPUInfo));
 
-	// TODO: Fill in the GPU info
+	// TODO: Fill in the GPU vendor and device
 
 	/* Load the config based on GPU */
 	switch (new_info->vendor) {
@@ -160,15 +107,7 @@ int game_mode_apply_gpu(const GameModeGPUInfo *info, bool apply)
 	if (!info)
 		return 0;
 
-	switch (info->vendor) {
-	case Vendor_NVIDIA:
-		return apply_gpu_nvidia(info, apply);
-	case Vendor_AMD:
-		return apply_gpu_amd(info, apply);
-	default:
-		break;
-	}
+	/* TODO Call gpuclockctl set */
 
-	/* Unsupported GPU vendor, do nothing */
 	return 0;
 }
