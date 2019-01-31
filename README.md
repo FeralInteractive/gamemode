@@ -8,7 +8,7 @@ Issues with GameMode should be reported here in the issues section, and not repo
 ---
 ## Building and installing [![Build Status](https://travis-ci.org/FeralInteractive/gamemode.svg?branch=master)](https://travis-ci.org/FeralInteractive/gamemode)
 
-If your distribution already has GameMode packaged, it is preferable to install it directly from there. There are Solus, AUR, Gentoo and Fedora packages already available.
+*It is preferable to install GameMode with your package manager of choice, if available*. There are Solus, AUR, Gentoo and Fedora packages available at the time of writing.
 
 GameMode depends on `meson` for building and `systemd` for internal communication. This repo contains a `bootstrap.sh` script to allow for quick install to the user bus, but check `meson_options.txt` for custom settings.
 
