@@ -77,6 +77,8 @@ struct GameModeConfig {
 	long reaper_frequency;
 
 	long apply_gpu_optimisations;
+	long gpu_vendor;
+	long gpu_device;
 	long nv_core_clock_mhz_offset;
 	long nv_mem_clock_mhz_offset;
 	long amd_core_clock_percentage;
@@ -183,6 +185,10 @@ static int inih_handler(void *user, const char *section, const char *name, const
 		/* GPU subsection */
 		if (strcmp(name, "apply_gpu_optimisations") == 0) {
 			valid = get_long_value(name, value, &self->apply_gpu_optimisations);
+		} else if (strcmp(name, "gpu_vendor") == 0) {
+			valid = get_long_value(name, value, &self->gpu_device);
+		} else if (strcmp(name, "gpu_device") == 0) {
+			valid = get_long_value(name, value, &self->gpu_device);
 		} else if (strcmp(name, "nv_core_clock_mhz_offset") == 0) {
 			valid = get_long_value(name, value, &self->nv_core_clock_mhz_offset);
 		} else if (strcmp(name, "nv_mem_clock_mhz_offset") == 0) {
@@ -254,6 +260,8 @@ static void load_config_files(GameModeConfig *self)
 	self->reaper_frequency = DEFAULT_REAPER_FREQ;
 	self->inhibit_screensaver = 1; /* Defaults to on */
 	self->apply_gpu_optimisations = 0;
+	self->gpu_vendor = 0;
+	self->gpu_device = 0;
 	self->nv_core_clock_mhz_offset = 0;
 	self->nv_mem_clock_mhz_offset = 0;
 	self->amd_core_clock_percentage = 0;
@@ -492,6 +500,16 @@ void config_get_ioprio_value(GameModeConfig *self, int *value)
 void config_get_apply_gpu_optimisations(GameModeConfig *self, long *value)
 {
 	memcpy_locked_config(self, value, &self->apply_gpu_optimisations, sizeof(long));
+}
+
+void config_get_gpu_vendor(GameModeConfig *self, long *value)
+{
+	memcpy_locked_config(self, value, &self->gpu_vendor, sizeof(long));
+}
+
+void config_get_gpu_device(GameModeConfig *self, long *value)
+{
+	memcpy_locked_config(self, value, &self->gpu_device, sizeof(long));
 }
 
 void config_get_nv_core_clock_mhz_offset(GameModeConfig *self, long *value)

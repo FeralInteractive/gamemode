@@ -68,7 +68,11 @@ int game_mode_initialise_gpu(GameModeConfig *config, GameModeGPUInfo **info)
 	GameModeGPUInfo *new_info = malloc(sizeof(GameModeGPUInfo));
 	memset(new_info, 0, sizeof(GameModeGPUInfo));
 
-	// TODO: Fill in the GPU vendor and device
+	// TODO: Fill in the GPU vendor and device automatically
+
+	/* Get the config parameters */
+	config_get_gpu_vendor(config, &new_info->vendor);
+	config_get_gpu_device(config, &new_info->device);
 
 	/* Load the config based on GPU */
 	switch (new_info->vendor) {
