@@ -41,8 +41,8 @@ enum GPUVendor {
 
 /* Storage for GPU info*/
 struct GameModeGPUInfo {
-	enum GPUVendor vendor;
-	int device; /* path to device, ie. /sys/class/drm/card#/ */
+	long vendor;
+	long device; /* path to device, ie. /sys/class/drm/card#/ */
 
 	long core; /* Core clock to apply */
 	long mem;  /* Mem clock to apply */

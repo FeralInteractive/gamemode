@@ -68,11 +68,30 @@ int game_mode_initialise_gpu(GameModeConfig *config, GameModeGPUInfo **info)
 	GameModeGPUInfo *new_info = malloc(sizeof(GameModeGPUInfo));
 	memset(new_info, 0, sizeof(GameModeGPUInfo));
 
-	// TODO: Fill in the GPU vendor and device automatically
-
 	/* Get the config parameters */
 	config_get_gpu_vendor(config, &new_info->vendor);
 	config_get_gpu_device(config, &new_info->device);
+
+	/* TODO: Detect the GPU vendor and device automatically when these aren't set */
+
+	/* verify device ID */
+	if (new_info->device == -1) {
+		LOG_ERROR("Invalid gpu_device value set in configuration, will not appli optimisations!\n");
+		free(new_info);
+		return -1;
+	}
+
+	/* verify GPU vendor */
+	if (new_info->vendor != Vendor_NVIDIA && new_info->vendor != Vendor_AMD &&
+	    new_info->vendor != Vendor_Intel) {
+		LOG_ERROR("Invalid gpu_vendor value set in configuration, will not apply optimisations!\n");
+		LOG_ERROR("Possible values are: 0x%04x (NVIDIA) 0x%04x (AMD) 0x%04x (Intel)\n",
+		          Vendor_NVIDIA,
+		          Vendor_AMD,
+		          Vendor_Intel);
+		free(new_info);
+		return -1;
+	}
 
 	/* Load the config based on GPU */
 	switch (new_info->vendor) {
@@ -87,6 +106,7 @@ int game_mode_initialise_gpu(GameModeConfig *config, GameModeGPUInfo **info)
 	default:
 		break;
 	}
+	/* TODO : Sanity check these values */
 
 	/* Give back the new gpu info */
 	*info = new_info;
