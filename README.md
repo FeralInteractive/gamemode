@@ -6,7 +6,7 @@ GameMode was designed primarily as a stop-gap solution to problems with the Inte
 Issues with GameMode should be reported here in the issues section, and not reported to Feral directly.
 
 ---
-## Building and installing
+## Building and installing [![Build Status](https://travis-ci.org/FeralInteractive/gamemode.svg?branch=master)](https://travis-ci.org/FeralInteractive/gamemode)
 
 If your distribution already has GameMode packaged, it is preferable to install it directly from there. There are Solus, AUR, Gentoo and Fedora packages already available.
 
