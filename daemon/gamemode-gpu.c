@@ -82,7 +82,9 @@ int game_mode_initialise_gpu(GameModeConfig *config, GameModeGPUInfo **info)
 
 	/* verify device ID */
 	if (new_info->device == -1) {
-		LOG_ERROR("ERROR: Invalid gpu_device value set in configuration, will not apply optimisations!\n");
+		LOG_ERROR(
+		    "ERROR: Invalid gpu_device value set in configuration, will not apply "
+		    "optimisations!\n");
 		free(new_info);
 		return -1;
 	}
@@ -110,12 +112,18 @@ int game_mode_initialise_gpu(GameModeConfig *config, GameModeGPUInfo **info)
 
 		/* Reject values over some guessed values
 		 * If a user wants to go into very unsafe levels they can recompile
-         */
+		 */
 		const int nv_core_hard_limit = 200;
 		const int nv_mem_hard_limit = 2000;
-		if( new_info->core > nv_core_hard_limit || new_info->mem > nv_mem_hard_limit ) {
-			LOG_ERROR("ERROR NVIDIA Overclock value above safety levels of +%d (core) +%d (mem), will not overclock!\n", nv_core_hard_limit, nv_mem_hard_limit );
-			LOG_ERROR("nv_core_clock_mhz_offset:%ld nv_mem_clock_mhz_offset:%ld\n", new_info->core, new_info->mem );
+		if (new_info->core > nv_core_hard_limit || new_info->mem > nv_mem_hard_limit) {
+			LOG_ERROR(
+			    "ERROR NVIDIA Overclock value above safety levels of +%d (core) +%d (mem), will "
+			    "not overclock!\n",
+			    nv_core_hard_limit,
+			    nv_mem_hard_limit);
+			LOG_ERROR("nv_core_clock_mhz_offset:%ld nv_mem_clock_mhz_offset:%ld\n",
+			          new_info->core,
+			          new_info->mem);
 			free(new_info);
 			return -1;
 		}
@@ -127,11 +135,14 @@ int game_mode_initialise_gpu(GameModeConfig *config, GameModeGPUInfo **info)
 
 		/* Reject values over 25%
 		 * If a user wants to go into very unsafe levels they can recompile
-         */
+		 */
 		const int amd_hard_limit = 25;
-		if( new_info->core > amd_hard_limit || new_info->mem > amd_hard_limit ) {
-			LOG_ERROR("ERROR AMD Overclock value above safety level of %d%%, will not overclock!\n", amd_hard_limit );
-			LOG_ERROR("amd_core_clock_percentage:%ld amd_mem_clock_percentage:%ld\n", new_info->core, new_info->mem );
+		if (new_info->core > amd_hard_limit || new_info->mem > amd_hard_limit) {
+			LOG_ERROR("ERROR AMD Overclock value above safety level of %d%%, will not overclock!\n",
+			          amd_hard_limit);
+			LOG_ERROR("amd_core_clock_percentage:%ld amd_mem_clock_percentage:%ld\n",
+			          new_info->core,
+			          new_info->mem);
 			free(new_info);
 			return -1;
 		}
