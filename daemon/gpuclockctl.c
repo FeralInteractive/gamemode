@@ -42,17 +42,6 @@ POSSIBILITY OF SUCH DAMAGE.
 // Intel?
 // Gather GPU type and information automatically if possible
 
-// NVIDIA
-// Running these commands:
-// nvidia-settings -a '[gpu:0]/GPUMemoryTransferRateOffset[3]=1400'
-// nvidia-settings -a '[gpu:0]/GPUGraphicsClockOffset[3]=50'
-
-// AMD
-// We'll want to set both the following:
-// core: device/pp_sclk_od (0%+ additional)
-// mem: device/pp_mclk_od (0%+ additional)
-// Guide from https://www.maketecheasier.com/overclock-amd-gpu-linux/
-
 /* Helper to quit with usage */
 static const char *usage_text =
     "usage: gpuclockctl PCI_ID DEVICE [get] [set CORE MEM [PERF_LEVEL]]]";
@@ -69,26 +58,39 @@ static void print_usage_and_exit(void)
 int get_gpu_state(struct GameModeGPUInfo *info)
 {
 	fprintf(stderr, "Fetching GPU state is currently unimplemented!\n");
-	return -1;
+	return info != NULL;
 }
 
 /**
- * Set the gpu state based on input parameters
- * Only works when run as root
+ * Set the gpu state based on input parameters on Nvidia
  */
-int set_gpu_state(struct GameModeGPUInfo *info)
+int set_gpu_state_nv(struct GameModeGPUInfo *info)
 {
-	if (!info)
+	if(info->vendor != Vendor_NVIDIA )
 		return -1;
 
-	switch (info->vendor) {
-	case Vendor_NVIDIA:
-		break;
-	case Vendor_Intel:
-		break;
-	default:
-		break;
-	}
+	// Running these commands:
+	// nvidia-settings -a '[gpu:0]/GPUMemoryTransferRateOffset[3]=1400'
+	// nvidia-settings -a '[gpu:0]/GPUGraphicsClockOffset[3]=50'
+
+	fprintf(stderr, "Setting GPU parameters on NVIDIA is currently unimplemented!\n");
+	return 0;
+}
+
+/**
+ * Set the gpu state based on input parameters on amd 
+ */
+int set_gpu_state_amd(struct GameModeGPUInfo *info)
+{
+	if(info->vendor != Vendor_AMD)
+		return -1;
+
+	// We'll want to set both the following:
+	// core: device/pp_sclk_od (0%+ additional)
+	// mem: device/pp_mclk_od (0%+ additional)
+	// Guide from https://www.maketecheasier.com/overclock-amd-gpu-linux/
+
+	fprintf(stderr, "Setting GPU parameters on AMD is currently unimplemented!\n");
 	return 0;
 }
 
@@ -171,7 +173,15 @@ int main(int argc, char *argv[])
 		if (info.vendor == Vendor_NVIDIA)
 			printf("on Performance Level %ld\n", info.nv_perf_level);
 
-		return set_gpu_state(&info);
+		switch (info.vendor) {
+		case Vendor_NVIDIA:
+			return set_gpu_state_nv(&info);
+		case Vendor_AMD:
+			return set_gpu_state_amd(&info);
+		default:
+			printf("Currently unsupported GPU vendor 0x%04x, doing nothing!\n", (short)info.vendor);
+			break;
+		}
 	} else {
 		print_usage_and_exit();
 	}
