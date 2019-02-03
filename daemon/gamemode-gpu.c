@@ -32,11 +32,11 @@ POSSIBILITY OF SUCH DAMAGE.
 
 #define _GNU_SOURCE
 
+#include "config.h"
+#include "external-helper.h"
 #include "gamemode.h"
 #include "helpers.h"
 #include "logging.h"
-#include "config.h"
-#include "external-helper.h"
 
 #include "daemon_config.h"
 #include "gpu-query.h"
