@@ -39,6 +39,9 @@ enum GPUVendor {
 	Vendor_Intel = 0x8086
 };
 
+#define GPUVendorValid(vendor)                                                                     \
+	(vendor == Vendor_NVIDIA || vendor == Vendor_AMD || vendor == Vendor_Intel)
+
 /* Storage for GPU info*/
 struct GameModeGPUInfo {
 	long vendor;
