@@ -49,6 +49,8 @@ struct GameModeGPUInfo {
 
 	long core; /* Core clock to apply */
 	long mem;  /* Mem clock to apply */
+
+	long nv_perf_level; /* The Nvidia Performance Level to adjust */
 };
 
 /**
