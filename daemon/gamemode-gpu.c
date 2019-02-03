@@ -39,7 +39,7 @@ POSSIBILITY OF SUCH DAMAGE.
 #include "logging.h"
 
 #include "daemon_config.h"
-#include "gpu-query.h"
+#include "gpu-control.h"
 
 // TODO
 // Gather GPU type and information automatically
