@@ -34,6 +34,13 @@ POSSIBILITY OF SUCH DAMAGE.
 #include "gpu-control.h"
 #include "logging.h"
 
+// TODO
+// Gather GPU type and information automatically
+// Apply Nvidia GPU settings (CoolBits will be needed)
+// Apply AMD GPU settings (Will need user changing pwm1_enable)
+// Intel?
+// Provide documentation on optimisations
+
 // NVIDIA
 // Running these commands:
 // nvidia-settings -a '[gpu:0]/GPUMemoryTransferRateOffset[3]=1400'
