@@ -108,7 +108,13 @@ int main(int argc, char *argv[])
 		info.vendor = get_vendor(argv[1]);
 		info.device = get_device(argv[2]);
 		info.core = get_coremem(argv[4]);
-		info.mem = get_coremem(argv[4]);
+		info.mem = get_coremem(argv[5]);
+
+		printf("gpuclockctl setting core:%ld mem:%ld on device:%ld with vendor 0x%04x\n",
+		       info.core,
+		       info.mem,
+		       info.device,
+		       (unsigned short)info.vendor);
 
 		return set_gpu_state(&info);
 	} else {
