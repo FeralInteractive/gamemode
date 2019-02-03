@@ -48,7 +48,6 @@ static int set_gov_state(const char *value)
 	int retval = EXIT_SUCCESS;
 	int res = 0;
 
-	LOG_MSG("Setting governors to %s\n", value);
 	for (int i = 0; i < num; i++) {
 		const char *gov = governors[i];
 		FILE *f = fopen(gov, "w");
