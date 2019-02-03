@@ -124,9 +124,11 @@ int game_mode_initialise_gpu(GameModeConfig *config, GameModeGPUInfo **info)
 
 		/* Sanity check the performance level value as well */
 		config_get_nv_perf_level(config, &new_info->nv_perf_level);
-		if(new_info->nv_perf_level < 0 || new_info->nv_perf_level > 16)
-		{
-			LOG_ERROR( "ERROR: NVIDIA Performance level value invalid (%ld), will not apply optimisations!\n", new_info->nv_perf_level );
+		if (new_info->nv_perf_level < 0 || new_info->nv_perf_level > 16) {
+			LOG_ERROR(
+			    "ERROR: NVIDIA Performance level value invalid (%ld), will not apply "
+			    "optimisations!\n",
+			    new_info->nv_perf_level);
 			free(new_info);
 			return -1;
 		}

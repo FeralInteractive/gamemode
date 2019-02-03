@@ -36,7 +36,8 @@ POSSIBILITY OF SUCH DAMAGE.
 #include "gpu-control.h"
 
 /* Helper to quit with usage */
-static const char *usage_text = "usage: gpuclockctl PCI_ID DEVICE [get] [set CORE MEM [PERF_LEVEL]]]";
+static const char *usage_text =
+    "usage: gpuclockctl PCI_ID DEVICE [get] [set CORE MEM [PERF_LEVEL]]]";
 static void print_usage_and_exit(void)
 {
 	fprintf(stderr, "%s\n", usage_text);
@@ -95,7 +96,7 @@ int main(int argc, char *argv[])
 		get_gpu_state(&info);
 		printf("%ld %ld\n", info.core, info.mem);
 
-	} else if (argc >=6 && argc <=7 && strncmp(argv[3], "set", 3) == 0) {
+	} else if (argc >= 6 && argc <= 7 && strncmp(argv[3], "set", 3) == 0) {
 		/* Must be root to set the state */
 		if (geteuid() != 0) {
 			fprintf(stderr, "gpuclockctl must be run as root to set values\n");
@@ -110,7 +111,7 @@ int main(int argc, char *argv[])
 		info.core = get_generic_value(argv[4]);
 		info.mem = get_generic_value(argv[5]);
 
-		if( info.vendor == Vendor_NVIDIA )
+		if (info.vendor == Vendor_NVIDIA)
 			info.nv_perf_level = get_generic_value(argv[6]);
 
 		printf("gpuclockctl setting core:%ld mem:%ld on device:%ld with vendor 0x%04x\n",
@@ -119,7 +120,7 @@ int main(int argc, char *argv[])
 		       info.device,
 		       (unsigned short)info.vendor);
 
-		if( info.vendor == Vendor_NVIDIA )
+		if (info.vendor == Vendor_NVIDIA)
 			printf("on Performance Level %ld\n", info.nv_perf_level);
 
 		return set_gpu_state(&info);
