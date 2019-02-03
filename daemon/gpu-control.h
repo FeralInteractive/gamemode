@@ -52,15 +52,3 @@ struct GameModeGPUInfo {
 
 	long nv_perf_level; /* The Nvidia Performance Level to adjust */
 };
-
-/**
- * Get the gpu state
- * Populates the struct with the GPU info on the system
- */
-int get_gpu_state(struct GameModeGPUInfo *info);
-
-/**
- * Set the gpu state based on input parameters
- * Only works when run as root
- */
-int set_gpu_state(struct GameModeGPUInfo *info);
