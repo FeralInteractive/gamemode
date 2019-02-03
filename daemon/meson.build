@@ -2,6 +2,7 @@
 common_sources = [
     'logging.c',
     'governors-query.c',
+    'external-helper.c',
 ]
 
 daemon_common = static_library(
@@ -27,7 +28,6 @@ daemon_sources = [
     'gamemode-gpu.c',
     'daemonize.c',
     'dbus_messaging.c',
-    'external-helper.c',
     'daemon_config.c',
 ]
 
