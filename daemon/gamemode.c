@@ -32,10 +32,11 @@ POSSIBILITY OF SUCH DAMAGE.
 #define _GNU_SOURCE
 
 #include "gamemode.h"
+#include "config.h"
 #include "daemon_config.h"
 #include "dbus_messaging.h"
+#include "external-helper.h"
 #include "governors-query.h"
-#include "governors.h"
 #include "helpers.h"
 #include "logging.h"
 
@@ -197,8 +198,13 @@ static void game_mode_context_enter(GameModeContext *self)
 		config_get_desired_governor(self->config, desired);
 		const char *desiredGov = desired[0] != '\0' ? desired : "performance";
 
-		/* set the governor to performance */
-		if (!set_governors(desiredGov)) {
+		const char *const exec_args[] = {
+			"/usr/bin/pkexec", LIBEXECDIR "/cpugovctl", "set", desiredGov, NULL,
+		};
+
+		LOG_MSG("Requesting update of governor policy to %s\n", desiredGov);
+		if (run_external_process(exec_args) != 0) {
+			LOG_ERROR("Failed to update cpu governor policy\n");
 			/* if the set fails, clear the initial mode so we don't try and reset it back and fail
 			 * again, presumably */
 			memset(self->initial_cpu_mode, 0, sizeof(self->initial_cpu_mode));
@@ -238,7 +244,15 @@ static void game_mode_context_leave(GameModeContext *self)
 		config_get_default_governor(self->config, defaultgov);
 		const char *gov_mode = defaultgov[0] != '\0' ? defaultgov : self->initial_cpu_mode;
 
-		set_governors(gov_mode);
+		const char *const exec_args[] = {
+			"/usr/bin/pkexec", LIBEXECDIR "/cpugovctl", "set", gov_mode, NULL,
+		};
+
+		LOG_MSG("Requesting update of governor policy to %s\n", gov_mode);
+		if (run_external_process(exec_args) != 0) {
+			LOG_ERROR("Failed to update cpu governor policy\n");
+		}
+
 		memset(self->initial_cpu_mode, 0, sizeof(self->initial_cpu_mode));
 	}
 

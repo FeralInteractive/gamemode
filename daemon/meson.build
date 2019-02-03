@@ -28,7 +28,7 @@ daemon_sources = [
     'gamemode-gpu.c',
     'daemonize.c',
     'dbus_messaging.c',
-    'governors.c',
+    'external-helper.c',
     'daemon_config.c',
 ]
 

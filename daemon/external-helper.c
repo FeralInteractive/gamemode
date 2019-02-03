@@ -31,9 +31,7 @@ POSSIBILITY OF SUCH DAMAGE.
 
 #define _GNU_SOURCE
 
-#include "governors.h"
 #include "config.h"
-#include "governors-query.h"
 #include "logging.h"
 
 #include <linux/limits.h>
@@ -42,20 +40,14 @@ POSSIBILITY OF SUCH DAMAGE.
 #include <unistd.h>
 
 /**
- * Update the governors to the given argument, via pkexec
+ * Call an external process
  */
-bool set_governors(const char *value)
+int run_external_process(const char *const *exec_args)
 {
 	pid_t p;
 	int status = 0;
 	int ret = 0;
 	int r = -1;
-
-	const char *const exec_args[] = {
-		"/usr/bin/pkexec", LIBEXECDIR "/cpugovctl", "set", value, NULL,
-	};
-
-	LOG_MSG("Requesting update of governor policy to %s\n", value);
 
 	if ((p = fork()) < 0) {
 		LOG_ERROR("Failed to fork(): %s\n", strerror(errno));
@@ -69,14 +61,14 @@ bool set_governors(const char *value)
 		 * http://pubs.opengroup.org/onlinepubs/9699919799/functions/exec.html
 		 */
 		if ((r = execv(exec_args[0], (char *const *)exec_args)) != 0) {
-			LOG_ERROR("Failed to execute cpugovctl helper: %s %s\n", exec_args[1], strerror(errno));
+			LOG_ERROR("Failed to execute external process: %s %s\n", exec_args[1], strerror(errno));
 			exit(EXIT_FAILURE);
 		}
 		_exit(EXIT_SUCCESS);
 	} else {
 		if (waitpid(p, &status, 0) < 0) {
 			LOG_ERROR("Failed to waitpid(%d): %s\n", (int)p, strerror(errno));
-			return false;
+			return -1;
 		}
 		/* i.e. sigsev */
 		if (!WIFEXITED(status)) {
@@ -85,9 +77,9 @@ bool set_governors(const char *value)
 	}
 
 	if ((ret = WEXITSTATUS(status)) != 0) {
-		LOG_ERROR("Failed to update cpu governor policy\n");
-		return false;
+		LOG_ERROR("External process failed\n");
+		return -1;
 	}
 
-	return true;
+	return 0;
 }

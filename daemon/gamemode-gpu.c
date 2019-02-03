@@ -164,6 +164,11 @@ void game_mode_free_gpu(GameModeGPUInfo **info)
 	*info = NULL;
 }
 
+//#include <linux/limits.h>
+//#include <stdio.h>
+//#include <sys/wait.h>
+//#include <unistd.h>
+
 /**
  * Applies GPU optimisations when gamemode is active and removes them after
  */
@@ -173,7 +178,40 @@ int game_mode_apply_gpu(const GameModeGPUInfo *info, bool apply)
 	if (!info)
 		return 0;
 
-	/* TODO Call gpuclockctl set */
+	/*
+	    pid_t p;
+	    int status = 0;
+	    int ret = 0;
+	    int r = -1;
+
+	    const char *const exec_args[] = {
+	        "/usr/bin/pkexec", LIBEXECDIR "/gpuclockctl", "set", value, NULL,
+	    };
+
+	    LOG_MSG("Requesting new GPU settings %s\n", value);
+
+	    if ((p = fork()) < 0) {
+	        LOG_ERROR("Failed to fork(): %s\n", strerror(errno));
+	        return false;
+	    } else if (p == 0) {
+	        if ((r = execv(exec_args[0], (char *const *)exec_args)) != 0) {
+	            LOG_ERROR("Failed to execute cpugovctl helper: %s %s\n", exec_args[1],
+	   strerror(errno)); exit(EXIT_FAILURE);
+	        }
+	        _exit(EXIT_SUCCESS);
+	    } else {
+	        if (waitpid(p, &status, 0) < 0) {
+	            LOG_ERROR("Failed to waitpid(%d): %s\n", (int)p, strerror(errno));
+	            return false;
+	        }
+	        if (!WIFEXITED(status)) {
+	            LOG_ERROR("Child process '%s' exited abnormally\n", exec_args[0]);
+	        }
+	    }
+
+	    if ((ret = WEXITSTATUS(status)) != 0) {
+	        LOG_ERROR("Failed to update cpu governor policy\n");
+	*/
 
 	return 0;
 }
