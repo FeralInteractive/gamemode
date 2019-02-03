@@ -92,8 +92,7 @@ int game_mode_initialise_gpu(GameModeConfig *config, GameModeGPUInfo **info)
 	}
 
 	/* verify GPU vendor */
-	if (!(new_info->vendor == Vendor_NVIDIA || new_info->vendor == Vendor_AMD ||
-	      new_info->vendor == Vendor_Intel)) {
+	if (!GPUVendorValid(new_info->vendor)) {
 		LOG_ERROR(
 		    "ERROR: Invalid gpu_vendor value (0x%04x) set in configuration, will not apply "
 		    "optimisations!\n",
