@@ -60,7 +60,7 @@ int run_external_process(const char *const *exec_args)
 		 * http://pubs.opengroup.org/onlinepubs/9699919799/functions/exec.html
 		 */
 		if ((r = execv(exec_args[0], (char *const *)exec_args)) != 0) {
-			LOG_ERROR("Failed to execute external process: %s %s\n", exec_args[1], strerror(errno));
+			LOG_ERROR("Failed to execute external process: %s %s\n", exec_args[0], strerror(errno));
 			exit(EXIT_FAILURE);
 		}
 		_exit(EXIT_SUCCESS);
