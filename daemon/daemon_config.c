@@ -76,7 +76,7 @@ struct GameModeConfig {
 
 	long reaper_frequency;
 
-	long apply_gpu_optimisations;
+	char apply_gpu_optimisations[CONFIG_VALUE_MAX];
 	long gpu_vendor;
 	long gpu_device;
 	long nv_core_clock_mhz_offset;
@@ -204,7 +204,7 @@ static int inih_handler(void *user, const char *section, const char *name, const
 	} else if (strcmp(section, "gpu") == 0) {
 		/* GPU subsection */
 		if (strcmp(name, "apply_gpu_optimisations") == 0) {
-			valid = get_long_value(name, value, &self->apply_gpu_optimisations);
+			valid = get_string_value(value, self->apply_gpu_optimisations);
 		} else if (strcmp(name, "gpu_vendor") == 0) {
 			valid = get_long_value_hex(name, value, &self->gpu_vendor);
 		} else if (strcmp(name, "gpu_device") == 0) {
@@ -276,10 +276,10 @@ static void load_config_files(GameModeConfig *self)
 	memset(self->defaultgov, 0, sizeof(self->defaultgov));
 	memset(self->desiredgov, 0, sizeof(self->desiredgov));
 	memset(self->softrealtime, 0, sizeof(self->softrealtime));
+	memset(self->apply_gpu_optimisations, 0, sizeof(self->apply_gpu_optimisations));
+	self->inhibit_screensaver = 1; /* Defaults to on */
 	self->renice = 4; /* default value of 4 */
 	self->reaper_frequency = DEFAULT_REAPER_FREQ;
-	self->inhibit_screensaver = 1; /* Defaults to on */
-	self->apply_gpu_optimisations = 0;
 	self->gpu_vendor = 0;
 	self->gpu_device = -1; /* 0 is a valid device ID so use -1 to indicate no value */
 	self->nv_core_clock_mhz_offset = 0;
@@ -517,9 +517,12 @@ void config_get_ioprio_value(GameModeConfig *self, int *value)
 /*
  * Get various config info for gpu optimisations
  */
-void config_get_apply_gpu_optimisations(GameModeConfig *self, long *value)
+void config_get_apply_gpu_optimisations(GameModeConfig *self, char value[CONFIG_VALUE_MAX])
 {
-	memcpy_locked_config(self, value, &self->apply_gpu_optimisations, sizeof(long));
+	memcpy_locked_config(self,
+	                     value,
+	                     &self->apply_gpu_optimisations,
+	                     sizeof(self->apply_gpu_optimisations));
 }
 
 void config_get_gpu_vendor(GameModeConfig *self, long *value)

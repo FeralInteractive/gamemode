@@ -58,10 +58,17 @@ int game_mode_initialise_gpu(GameModeConfig *config, GameModeGPUInfo **info)
 		FATAL_ERROR("Invalid GameModeGPUInfo passed to %s", __func__);
 
 	/* Early out if we have this feature turned off */
-	long apply = 0;
-	config_get_apply_gpu_optimisations(config, &apply);
-	if (apply == 0)
+	char apply[CONFIG_VALUE_MAX];
+	config_get_apply_gpu_optimisations(config, apply);
+	if (strlen(apply) == 0) {
 		return 0;
+	} else if (strncmp(apply, "accept-responsibility", CONFIG_VALUE_MAX) != 0) {
+		LOG_ERROR(
+		    "apply_gpu_optimisations set to value other than \"accept-responsibility\" (%s), will "
+		    "not apply GPU optimisations!\n",
+		    apply);
+		return -1;
+	}
 
 	/* Create the context */
 	GameModeGPUInfo *new_info = malloc(sizeof(GameModeGPUInfo));
