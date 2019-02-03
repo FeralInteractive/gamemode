@@ -75,7 +75,7 @@ int game_mode_initialise_gpu(GameModeConfig *config, GameModeGPUInfo **info)
 
 	/* verify device ID */
 	if (new_info->device == -1) {
-		LOG_ERROR("Invalid gpu_device value set in configuration, will not apply optimisations!\n");
+		LOG_ERROR("ERROR: Invalid gpu_device value set in configuration, will not apply optimisations!\n");
 		free(new_info);
 		return -1;
 	}
@@ -84,7 +84,7 @@ int game_mode_initialise_gpu(GameModeConfig *config, GameModeGPUInfo **info)
 	if (!(new_info->vendor == Vendor_NVIDIA || new_info->vendor == Vendor_AMD ||
 	      new_info->vendor == Vendor_Intel)) {
 		LOG_ERROR(
-		    "Invalid gpu_vendor value (0x%04x) set in configuration, will not apply "
+		    "ERROR: Invalid gpu_vendor value (0x%04x) set in configuration, will not apply "
 		    "optimisations!\n",
 		    (unsigned int)new_info->vendor);
 		LOG_ERROR("Possible values are: 0x%04x (NVIDIA) 0x%04x (AMD) 0x%04x (Intel)\n",
