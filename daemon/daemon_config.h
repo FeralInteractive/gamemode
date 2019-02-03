@@ -138,5 +138,6 @@ void config_get_gpu_vendor(GameModeConfig *self, long *value);
 void config_get_gpu_device(GameModeConfig *self, long *value);
 void config_get_nv_core_clock_mhz_offset(GameModeConfig *self, long *value);
 void config_get_nv_mem_clock_mhz_offset(GameModeConfig *self, long *value);
+void config_get_nv_perf_level(GameModeConfig *self, long *value);
 void config_get_amd_core_clock_percentage(GameModeConfig *self, long *value);
 void config_get_amd_mem_clock_percentage(GameModeConfig *self, long *value);

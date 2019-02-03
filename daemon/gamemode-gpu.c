@@ -111,13 +111,22 @@ int game_mode_initialise_gpu(GameModeConfig *config, GameModeGPUInfo **info)
 		const int nv_mem_hard_limit = 2000;
 		if (new_info->core > nv_core_hard_limit || new_info->mem > nv_mem_hard_limit) {
 			LOG_ERROR(
-			    "ERROR NVIDIA Overclock value above safety levels of +%d (core) +%d (mem), will "
+			    "ERROR: NVIDIA Overclock value above safety levels of +%d (core) +%d (mem), will "
 			    "not overclock!\n",
 			    nv_core_hard_limit,
 			    nv_mem_hard_limit);
 			LOG_ERROR("nv_core_clock_mhz_offset:%ld nv_mem_clock_mhz_offset:%ld\n",
 			          new_info->core,
 			          new_info->mem);
+			free(new_info);
+			return -1;
+		}
+
+		/* Sanity check the performance level value as well */
+		config_get_nv_perf_level(config, &new_info->nv_perf_level);
+		if(new_info->nv_perf_level < 0 || new_info->nv_perf_level > 16)
+		{
+			LOG_ERROR( "ERROR: NVIDIA Performance level value invalid (%ld), will not apply optimisations!\n", new_info->nv_perf_level );
 			free(new_info);
 			return -1;
 		}
@@ -186,6 +195,8 @@ int game_mode_apply_gpu(const GameModeGPUInfo *info, bool apply)
 	snprintf(core, 8, "%ld", info->core);
 	char mem[8];
 	snprintf(mem, 8, "%ld", info->mem);
+	char nv_perf_level[4];
+	snprintf(nv_perf_level, 4, "%ld", info->nv_perf_level);
 
 	// TODO: Actually pass right arguments
 	const char *const exec_args[] = {
@@ -196,6 +207,7 @@ int game_mode_apply_gpu(const GameModeGPUInfo *info, bool apply)
 		"set",
 		apply ? core : "0", /* For now simply reset to zero */
 		apply ? mem : "0",  /* could in the future store default values for reset */
+		info->vendor == Vendor_NVIDIA ? nv_perf_level : NULL, /* Only use this if Nvidia */
 		NULL,
 	};
 

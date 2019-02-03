@@ -81,6 +81,7 @@ struct GameModeConfig {
 	long gpu_device;
 	long nv_core_clock_mhz_offset;
 	long nv_mem_clock_mhz_offset;
+	long nv_perf_level;
 	long amd_core_clock_percentage;
 	long amd_mem_clock_percentage;
 };
@@ -213,6 +214,8 @@ static int inih_handler(void *user, const char *section, const char *name, const
 			valid = get_long_value(name, value, &self->nv_core_clock_mhz_offset);
 		} else if (strcmp(name, "nv_mem_clock_mhz_offset") == 0) {
 			valid = get_long_value(name, value, &self->nv_mem_clock_mhz_offset);
+		} else if (strcmp(name, "nv_perf_level") == 0) {
+			valid = get_long_value(name, value, &self->nv_perf_level);
 		} else if (strcmp(name, "amd_core_clock_percentage") == 0) {
 			valid = get_long_value(name, value, &self->amd_core_clock_percentage);
 		} else if (strcmp(name, "amd_mem_clock_percentage") == 0) {
@@ -284,6 +287,7 @@ static void load_config_files(GameModeConfig *self)
 	self->gpu_device = -1; /* 0 is a valid device ID so use -1 to indicate no value */
 	self->nv_core_clock_mhz_offset = 0;
 	self->nv_mem_clock_mhz_offset = 0;
+	self->nv_perf_level = -1;
 	self->amd_core_clock_percentage = 0;
 	self->amd_mem_clock_percentage = 0;
 
@@ -543,6 +547,11 @@ void config_get_nv_core_clock_mhz_offset(GameModeConfig *self, long *value)
 void config_get_nv_mem_clock_mhz_offset(GameModeConfig *self, long *value)
 {
 	memcpy_locked_config(self, value, &self->nv_mem_clock_mhz_offset, sizeof(long));
+
+}
+void config_get_nv_perf_level(GameModeConfig *self, long *value)
+{
+	memcpy_locked_config(self, value, &self->nv_perf_level, sizeof(long));
 }
 
 void config_get_amd_core_clock_percentage(GameModeConfig *self, long *value)

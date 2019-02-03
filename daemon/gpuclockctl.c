@@ -36,7 +36,7 @@ POSSIBILITY OF SUCH DAMAGE.
 #include "gpu-control.h"
 
 /* Helper to quit with usage */
-static const char *usage_text = "usage: gpuclockctl PCI_ID DEVICE [get] [set CORE MEM]";
+static const char *usage_text = "usage: gpuclockctl PCI_ID DEVICE [get] [set CORE MEM [PERF_LEVEL]]]";
 static void print_usage_and_exit(void)
 {
 	fprintf(stderr, "%s\n", usage_text);
@@ -68,12 +68,12 @@ static long get_device(const char *val)
 }
 
 /* Helper to get and verify core and mem value */
-static long get_coremem(const char *val)
+static long get_generic_value(const char *val)
 {
 	char *end;
 	long ret = strtol(val, &end, 10);
 	if (ret < 0 || end == val) {
-		LOG_ERROR("ERROR: Invalid core or mem value passed (%ld)!\n", ret);
+		LOG_ERROR("ERROR: Invalid value passed (%ld)!\n", ret);
 		print_usage_and_exit();
 	}
 	return ret;
@@ -95,7 +95,7 @@ int main(int argc, char *argv[])
 		get_gpu_state(&info);
 		printf("%ld %ld\n", info.core, info.mem);
 
-	} else if (argc == 6 && strncmp(argv[3], "set", 3) == 0) {
+	} else if (argc >=6 && argc <=7 && strncmp(argv[3], "set", 3) == 0) {
 		/* Must be root to set the state */
 		if (geteuid() != 0) {
 			fprintf(stderr, "gpuclockctl must be run as root to set values\n");
@@ -107,14 +107,20 @@ int main(int argc, char *argv[])
 		memset(&info, 0, sizeof(info));
 		info.vendor = get_vendor(argv[1]);
 		info.device = get_device(argv[2]);
-		info.core = get_coremem(argv[4]);
-		info.mem = get_coremem(argv[5]);
+		info.core = get_generic_value(argv[4]);
+		info.mem = get_generic_value(argv[5]);
+
+		if( info.vendor == Vendor_NVIDIA )
+			info.nv_perf_level = get_generic_value(argv[6]);
 
 		printf("gpuclockctl setting core:%ld mem:%ld on device:%ld with vendor 0x%04x\n",
 		       info.core,
 		       info.mem,
 		       info.device,
 		       (unsigned short)info.vendor);
+
+		if( info.vendor == Vendor_NVIDIA )
+			printf("on Performance Level %ld\n", info.nv_perf_level);
 
 		return set_gpu_state(&info);
 	} else {
