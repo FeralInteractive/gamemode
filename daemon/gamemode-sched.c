@@ -69,7 +69,8 @@ void game_mode_apply_renice(const GameModeContext *self, const pid_t client)
 	long int renice = 0;
 	config_get_renice_value(config, &renice);
 	if ((renice < 1) || (renice > 20)) {
-		LOG_ONCE(ERROR, "Invalid renice value '%ld' is invalid, will not renice.\n", renice);
+		LOG_ONCE(ERROR, "Configured renice value '%ld' is invalid, will not renice.\n", renice);
+		return;
 	} else {
 		renice = -renice;
 	}
