@@ -35,41 +35,84 @@ POSSIBILITY OF SUCH DAMAGE.
 
 #include "gpu-query.h"
 
+/* Helper to quit with usage */
+static const char *usage_text = "usage: gpuclockctl PCI_ID DEVICE [get] [set CORE MEM]";
+static void print_usage_and_exit(void)
+{
+	fprintf(stderr, "%s\n", usage_text);
+	exit(EXIT_FAILURE);
+}
+
+/* Helper to get and verify vendor value */
+static long get_vendor(const char *val)
+{
+	char *end;
+	long ret = strtol(val, &end, 0);
+	if (!GPUVendorValid(ret) || end == val) {
+		LOG_ERROR("ERROR: Invalid GPU Vendor passed (0x%04x)!\n", (unsigned short)ret);
+		print_usage_and_exit();
+	}
+	return ret;
+}
+
+/* Helper to get and verify device value */
+static long get_device(const char *val)
+{
+	char *end;
+	long ret = strtol(val, &end, 10);
+	if (ret < 0 || end == val) {
+		LOG_ERROR("ERROR: Invalid GPU device passed (%ld)!\n", ret);
+		print_usage_and_exit();
+	}
+	return ret;
+}
+
+/* Helper to get and verify core and mem value */
+static long get_coremem(const char *val)
+{
+	char *end;
+	long ret = strtol(val, &end, 10);
+	if (ret < 0 || end == val) {
+		LOG_ERROR("ERROR: Invalid core or mem value passed (%ld)!\n", ret);
+		print_usage_and_exit();
+	}
+	return ret;
+}
+
 /**
  * Main entry point, dispatch to the appropriate helper
  */
 int main(int argc, char *argv[])
 {
-	if (argc == 4 && strncmp(argv[1], "get", 3) == 0) {
-		const char *vendor = argv[1];
-		const char *device = argv[2];
-
+	if (argc == 4 && strncmp(argv[3], "get", 3) == 0) {
+		/* Get and verify the vendor and device */
 		struct GameModeGPUInfo info;
-		/* TODO Populate with vendor and device */
+		memset(&info, 0, sizeof(info));
+		info.vendor = get_vendor(argv[1]);
+		info.device = get_device(argv[2]);
 
+		/* Fetch the state and print it out */
 		get_gpu_state(&info);
-
 		printf("%ld %ld\n", info.core, info.mem);
 
 	} else if (argc == 6 && strncmp(argv[3], "set", 3) == 0) {
-		const char *vendor = argv[1];
-		const char *device = argv[2];
-		const char *core = argv[4];
-		const char *mem = argv[5];
-
 		/* Must be root to set the state */
 		if (geteuid() != 0) {
-			fprintf(stderr, "This program must be run as root\n");
-			return EXIT_FAILURE;
+			fprintf(stderr, "gpuclockctl must be run as root to set values\n");
+			print_usage_and_exit();
 		}
 
+		/* Get and verify the vendor and device */
 		struct GameModeGPUInfo info;
-		/* TODO Populate with vendor, device and clocks */
+		memset(&info, 0, sizeof(info));
+		info.vendor = get_vendor(argv[1]);
+		info.device = get_device(argv[2]);
+		info.core = get_coremem(argv[4]);
+		info.mem = get_coremem(argv[4]);
 
 		return set_gpu_state(&info);
 	} else {
-		fprintf(stderr, "usage: gpuclockctl PCI_ID DEVICE [get] [set CORE MEM]\n");
-		return EXIT_FAILURE;
+		print_usage_and_exit();
 	}
 
 	return EXIT_SUCCESS;
