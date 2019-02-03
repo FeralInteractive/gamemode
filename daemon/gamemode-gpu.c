@@ -95,24 +95,46 @@ int game_mode_initialise_gpu(GameModeConfig *config, GameModeGPUInfo **info)
 		return -1;
 	}
 
-	/* Load the config based on GPU */
+	/* Load the config based on GPU and also verify the values are sane */
 	switch (new_info->vendor) {
 	case Vendor_NVIDIA:
 		config_get_nv_core_clock_mhz_offset(config, &new_info->core);
 		config_get_nv_mem_clock_mhz_offset(config, &new_info->mem);
+
+		/* Reject values over some guessed values
+		 * If a user wants to go into very unsafe levels they can recompile
+         */
+		const int nv_core_hard_limit = 200;
+		const int nv_mem_hard_limit = 2000;
+		if( new_info->core > nv_core_hard_limit || new_info->mem > nv_mem_hard_limit ) {
+			LOG_ERROR("ERROR NVIDIA Overclock value above safety levels of +%d (core) +%d (mem), will not overclock!\n", nv_core_hard_limit, nv_mem_hard_limit );
+			LOG_ERROR("nv_core_clock_mhz_offset:%ld nv_mem_clock_mhz_offset:%ld\n", new_info->core, new_info->mem );
+			free(new_info);
+			return -1;
+		}
+
 		break;
 	case Vendor_AMD:
 		config_get_amd_core_clock_percentage(config, &new_info->core);
 		config_get_amd_mem_clock_percentage(config, &new_info->mem);
+
+		/* Reject values over 25%
+		 * If a user wants to go into very unsafe levels they can recompile
+         */
+		const int amd_hard_limit = 25;
+		if( new_info->core > amd_hard_limit || new_info->mem > amd_hard_limit ) {
+			LOG_ERROR("ERROR AMD Overclock value above safety level of %d%%, will not overclock!\n", amd_hard_limit );
+			LOG_ERROR("amd_core_clock_percentage:%ld amd_mem_clock_percentage:%ld\n", new_info->core, new_info->mem );
+			free(new_info);
+			return -1;
+		}
 		break;
 	default:
 		break;
 	}
-	/* TODO : Sanity check these values */
 
 	/* Give back the new gpu info */
 	*info = new_info;
-
 	return status;
 }
 
