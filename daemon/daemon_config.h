@@ -90,6 +90,11 @@ bool config_get_client_blacklisted(GameModeConfig *self, const char *client);
 void config_get_reaper_thread_frequency(GameModeConfig *self, long *value);
 
 /*
+ * Get whether we want to inhibit the screensaver (defaults to true)
+ */
+bool config_get_inhibit_screensaver(GameModeConfig *self);
+
+/*
  * Get a set of scripts to call when gamemode starts
  */
 void config_get_gamemode_start_scripts(GameModeConfig *self,
