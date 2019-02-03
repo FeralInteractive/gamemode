@@ -35,6 +35,8 @@ POSSIBILITY OF SUCH DAMAGE.
 #include "gamemode.h"
 #include "helpers.h"
 #include "logging.h"
+#include "config.h"
+#include "external-helper.h"
 
 #include "daemon_config.h"
 #include "gpu-query.h"
@@ -178,40 +180,22 @@ int game_mode_apply_gpu(const GameModeGPUInfo *info, bool apply)
 	if (!info)
 		return 0;
 
-	/*
-	    pid_t p;
-	    int status = 0;
-	    int ret = 0;
-	    int r = -1;
+	LOG_MSG("Requesting GPU optimisations on device:%ld with settings core:%ld clock:%ld\n",
+	        info->device,
+	        info->core,
+	        info->mem);
 
-	    const char *const exec_args[] = {
-	        "/usr/bin/pkexec", LIBEXECDIR "/gpuclockctl", "set", value, NULL,
-	    };
+	// TODO: Actually pass right arguments
+	const char *const exec_args[] = {
+		"/usr/bin/pkexec",
+		LIBEXECDIR "/gpuclockctl",
+		NULL,
+	};
 
-	    LOG_MSG("Requesting new GPU settings %s\n", value);
-
-	    if ((p = fork()) < 0) {
-	        LOG_ERROR("Failed to fork(): %s\n", strerror(errno));
-	        return false;
-	    } else if (p == 0) {
-	        if ((r = execv(exec_args[0], (char *const *)exec_args)) != 0) {
-	            LOG_ERROR("Failed to execute cpugovctl helper: %s %s\n", exec_args[1],
-	   strerror(errno)); exit(EXIT_FAILURE);
-	        }
-	        _exit(EXIT_SUCCESS);
-	    } else {
-	        if (waitpid(p, &status, 0) < 0) {
-	            LOG_ERROR("Failed to waitpid(%d): %s\n", (int)p, strerror(errno));
-	            return false;
-	        }
-	        if (!WIFEXITED(status)) {
-	            LOG_ERROR("Child process '%s' exited abnormally\n", exec_args[0]);
-	        }
-	    }
-
-	    if ((ret = WEXITSTATUS(status)) != 0) {
-	        LOG_ERROR("Failed to update cpu governor policy\n");
-	*/
+	if (run_external_process(exec_args) != 0) {
+		LOG_ERROR("ERROR: Failed to call gpuclockctl, could not apply optimisations!\n");
+		return -1;
+	}
 
 	return 0;
 }
