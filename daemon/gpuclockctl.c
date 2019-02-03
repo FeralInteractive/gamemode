@@ -33,6 +33,7 @@ POSSIBILITY OF SUCH DAMAGE.
 
 #include "logging.h"
 
+#include "external-helper.h"
 #include "gpu-control.h"
 
 // TODO
@@ -66,14 +67,39 @@ int get_gpu_state(struct GameModeGPUInfo *info)
  */
 int set_gpu_state_nv(struct GameModeGPUInfo *info)
 {
-	if(info->vendor != Vendor_NVIDIA )
+	if (info->vendor != Vendor_NVIDIA)
 		return -1;
 
-	// Running these commands:
-	// nvidia-settings -a '[gpu:0]/GPUMemoryTransferRateOffset[3]=1400'
-	// nvidia-settings -a '[gpu:0]/GPUGraphicsClockOffset[3]=50'
+	// These commands don't technically even need root
 
-	fprintf(stderr, "Setting GPU parameters on NVIDIA is currently unimplemented!\n");
+	/* Set the GPUGraphicsClockOffset parameter */
+	char core_arg[64];
+	snprintf(core_arg,
+	         64,
+	         "[gpu:%ld]/GPUGraphicsClockOffset[%ld]=%ld",
+	         info->device,
+	         info->nv_perf_level,
+	         info->core);
+	const char *exec_args_core[] = { "/usr/bin/nvidia-settings", "-a", core_arg, NULL };
+	if (run_external_process(exec_args_core) != 0) {
+		LOG_ERROR("ERROR: Failed to set %s!\n", core_arg);
+		return -1;
+	}
+
+	/* Set the GPUMemoryTransferRateOffset parameter */
+	char mem_arg[64];
+	snprintf(mem_arg,
+	         64,
+	         "[gpu:%ld]/GPUMemoryTransferRateOffset[%ld]=%ld",
+	         info->device,
+	         info->nv_perf_level,
+	         info->mem);
+	const char *exec_args_mem[] = { "/usr/bin/nvidia-settings", "-a", mem_arg, NULL };
+	if (run_external_process(exec_args_mem) != 0) {
+		LOG_ERROR("ERROR: Failed to set %s!\n", mem_arg);
+		return -1;
+	}
+
 	return 0;
 }
 

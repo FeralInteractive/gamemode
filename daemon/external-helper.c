@@ -31,7 +31,6 @@ POSSIBILITY OF SUCH DAMAGE.
 
 #define _GNU_SOURCE
 
-#include "config.h"
 #include "logging.h"
 
 #include <linux/limits.h>
