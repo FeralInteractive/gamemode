@@ -177,10 +177,25 @@ int game_mode_apply_gpu(const GameModeGPUInfo *info, bool apply)
 	        info->core,
 	        info->mem);
 
+	/* Generate the input strings */
+	char vendor[7];
+	snprintf(vendor, 7, "0x%04x", (short)info->vendor);
+	char device[4];
+	snprintf(device, 4, "%ld", info->device);
+	char core[8];
+	snprintf(core, 8, "%ld", info->core);
+	char mem[8];
+	snprintf(mem, 8, "%ld", info->mem);
+
 	// TODO: Actually pass right arguments
 	const char *const exec_args[] = {
 		"/usr/bin/pkexec",
 		LIBEXECDIR "/gpuclockctl",
+		vendor,
+		device,
+		"set",
+		apply ? core : "0", /* For now simply reset to zero */
+		apply ? mem : "0",  /* could in the future store default values for reset */
 		NULL,
 	};
 
