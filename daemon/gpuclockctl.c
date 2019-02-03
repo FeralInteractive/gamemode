@@ -35,6 +35,24 @@ POSSIBILITY OF SUCH DAMAGE.
 
 #include "gpu-control.h"
 
+// TODO
+// Apply Nvidia GPU settings (CoolBits will be needed)
+// Apply AMD GPU settings (Will need user changing pwm1_enable)
+// Provide documentation on optimisations
+// Intel?
+// Gather GPU type and information automatically if possible
+
+// NVIDIA
+// Running these commands:
+// nvidia-settings -a '[gpu:0]/GPUMemoryTransferRateOffset[3]=1400'
+// nvidia-settings -a '[gpu:0]/GPUGraphicsClockOffset[3]=50'
+
+// AMD
+// We'll want to set both the following:
+// core: device/pp_sclk_od (0%+ additional)
+// mem: device/pp_mclk_od (0%+ additional)
+// Guide from https://www.maketecheasier.com/overclock-amd-gpu-linux/
+
 /* Helper to quit with usage */
 static const char *usage_text =
     "usage: gpuclockctl PCI_ID DEVICE [get] [set CORE MEM [PERF_LEVEL]]]";
@@ -42,6 +60,36 @@ static void print_usage_and_exit(void)
 {
 	fprintf(stderr, "%s\n", usage_text);
 	exit(EXIT_FAILURE);
+}
+
+/**
+ * Get the gpu state
+ * Populates the struct with the GPU info on the system
+ */
+int get_gpu_state(struct GameModeGPUInfo *info)
+{
+	fprintf(stderr, "Fetching GPU state is currently unimplemented!\n");
+	return -1;
+}
+
+/**
+ * Set the gpu state based on input parameters
+ * Only works when run as root
+ */
+int set_gpu_state(struct GameModeGPUInfo *info)
+{
+	if (!info)
+		return -1;
+
+	switch (info->vendor) {
+	case Vendor_NVIDIA:
+		break;
+	case Vendor_Intel:
+		break;
+	default:
+		break;
+	}
+	return 0;
 }
 
 /* Helper to get and verify vendor value */
