@@ -49,7 +49,7 @@ int main(int argc, char *argv[])
 
 		get_gpu_state(&info);
 
-		printf("%d %d\n", info.core, info.mem);
+		printf("%ld %ld\n", info.core, info.mem);
 
 	} else if (argc == 6 && strncmp(argv[3], "set", 3) == 0) {
 		const char *vendor = argv[1];
