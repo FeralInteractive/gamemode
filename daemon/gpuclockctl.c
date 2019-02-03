@@ -33,7 +33,7 @@ POSSIBILITY OF SUCH DAMAGE.
 
 #include "logging.h"
 
-#include "gpu-query.h"
+#include "gpu-control.h"
 
 /* Helper to quit with usage */
 static const char *usage_text = "usage: gpuclockctl PCI_ID DEVICE [get] [set CORE MEM]";

@@ -31,7 +31,7 @@ POSSIBILITY OF SUCH DAMAGE.
 
 #define _GNU_SOURCE
 
-#include "gpu-query.h"
+#include "gpu-control.h"
 #include "logging.h"
 
 // NVIDIA
