@@ -103,20 +103,51 @@ int set_gpu_state_nv(struct GameModeGPUInfo *info)
 	return 0;
 }
 
+/*
+ * Sets the value in a file in the AMDGPU driver config
+ * Files are:
+ * /sys/class/drm/card0/device/pp_sclk_od
+ * /sys/class/drm/card0/device/pp_mclk_od
+ */
+static int set_gpu_state_amd_file(const char *filename, long device, long value)
+{
+	const char *drm_path = "/sys/class/drm/card%ld/device/%s";
+	char path[64];
+	snprintf(path, 64, drm_path, device, filename);
+
+	FILE *file = fopen(path, "w");
+	if (!file) {
+		LOG_ERROR("ERROR: Could not open %s for write (%s)!\n", path, strerror(errno));
+		return -1;
+	}
+
+	if (fprintf(file, "%ld", value) < 0) {
+		LOG_ERROR("ERROR: Could not write to %s (%s)!\n", path, strerror(errno));
+		return -1;
+	}
+
+	if (fclose(file) != 0) {
+		LOG_ERROR("ERROR: Could not close %s after writing (%s)!\n", path, strerror(errno));
+		return -1;
+	}
+
+	return 0;
+}
+
 /**
- * Set the gpu state based on input parameters on amd 
+ * Set the gpu state based on input parameters on amd
  */
 int set_gpu_state_amd(struct GameModeGPUInfo *info)
 {
-	if(info->vendor != Vendor_AMD)
+	if (info->vendor != Vendor_AMD)
 		return -1;
 
-	// We'll want to set both the following:
-	// core: device/pp_sclk_od (0%+ additional)
-	// mem: device/pp_mclk_od (0%+ additional)
-	// Guide from https://www.maketecheasier.com/overclock-amd-gpu-linux/
+	// Set the the core and mem clock speeds using the OverDrive files
+	if (set_gpu_state_amd_file("pp_sclk_od", info->device, info->core) != 0)
+		return -1;
+	if (set_gpu_state_amd_file("pp_mclk_od", info->device, info->mem) != 0)
+		return -1;
 
-	fprintf(stderr, "Setting GPU parameters on AMD is currently unimplemented!\n");
 	return 0;
 }
 
