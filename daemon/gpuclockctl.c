@@ -37,11 +37,9 @@ POSSIBILITY OF SUCH DAMAGE.
 #include "gpu-control.h"
 
 // TODO
-// Apply Nvidia GPU settings (CoolBits will be needed)
-// Apply AMD GPU settings (Will need user changing pwm1_enable)
-// Provide documentation on optimisations
-// Intel?
-// Gather GPU type and information automatically if possible
+// Intel support - https://blog.ffwll.ch/2013/03/overclocking-your-intel-gpu-on-linux.html
+// AMD - Allow setting fan speed as well
+// Store baseline values with get_gpu_state to apply when leaving gamemode
 
 /* Helper to quit with usage */
 static const char *usage_text =

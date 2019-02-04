@@ -73,8 +73,6 @@ int game_mode_initialise_gpu(GameModeConfig *config, GameModeGPUInfo **info)
 	config_get_gpu_vendor(config, &new_info->vendor);
 	config_get_gpu_device(config, &new_info->device);
 
-	/* TODO: Detect the GPU vendor and device automatically when these aren't set */
-
 	/* verify device ID */
 	if (new_info->device == -1) {
 		LOG_ERROR(
@@ -202,15 +200,15 @@ int game_mode_apply_gpu(const GameModeGPUInfo *info, bool apply)
 	char nv_perf_level[4];
 	snprintf(nv_perf_level, 4, "%ld", info->nv_perf_level);
 
-	// TODO: Actually pass right arguments
+	// Set up our command line to pass to gpuclockctl
 	const char *const exec_args[] = {
 		"/usr/bin/pkexec",
 		LIBEXECDIR "/gpuclockctl",
 		vendor,
 		device,
 		"set",
-		apply ? core : "0", /* For now simply reset to zero */
-		apply ? mem : "0",  /* could in the future store default values for reset */
+		apply ? core : "0",
+		apply ? mem : "0",
 		info->vendor == Vendor_NVIDIA ? nv_perf_level : NULL, /* Only use this if Nvidia */
 		NULL,
 	};
