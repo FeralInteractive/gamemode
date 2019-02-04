@@ -126,7 +126,7 @@ int game_mode_initialise_gpu(GameModeConfig *config, GameModeGPUInfo **info)
 		config_get_nv_perf_level(config, &new_info->nv_perf_level);
 		if (new_info->nv_perf_level < 0 || new_info->nv_perf_level > 16) {
 			LOG_ERROR(
-			    "ERROR: NVIDIA Performance level value invalid (%ld), will not apply "
+			    "ERROR: NVIDIA Performance level value likely invalid (%ld), will not apply "
 			    "optimisations!\n",
 			    new_info->nv_perf_level);
 			free(new_info);
@@ -138,13 +138,15 @@ int game_mode_initialise_gpu(GameModeConfig *config, GameModeGPUInfo **info)
 		config_get_amd_core_clock_percentage(config, &new_info->core);
 		config_get_amd_mem_clock_percentage(config, &new_info->mem);
 
-		/* Reject values over 25%
+		/* Reject values over 20%
 		 * If a user wants to go into very unsafe levels they can recompile
+		 * As far as I can tell the driver doesn't allow values over 20 anyway
 		 */
-		const int amd_hard_limit = 25;
+		const int amd_hard_limit = 20;
 		if (new_info->core > amd_hard_limit || new_info->mem > amd_hard_limit) {
-			LOG_ERROR("ERROR AMD Overclock value above safety level of %d%%, will not overclock!\n",
-			          amd_hard_limit);
+			LOG_ERROR(
+			    "ERROR: AMD Overclock value above safety level of %d%%, will not overclock!\n",
+			    amd_hard_limit);
 			LOG_ERROR("amd_core_clock_percentage:%ld amd_mem_clock_percentage:%ld\n",
 			          new_info->core,
 			          new_info->mem);
