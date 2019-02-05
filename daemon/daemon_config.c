@@ -281,7 +281,7 @@ static void load_config_files(GameModeConfig *self)
 	memset(self->softrealtime, 0, sizeof(self->softrealtime));
 	memset(self->apply_gpu_optimisations, 0, sizeof(self->apply_gpu_optimisations));
 	self->inhibit_screensaver = 1; /* Defaults to on */
-	self->renice = 4; /* default value of 4 */
+	self->renice = 4;              /* default value of 4 */
 	self->reaper_frequency = DEFAULT_REAPER_FREQ;
 	self->gpu_vendor = 0;
 	self->gpu_device = -1; /* 0 is a valid device ID so use -1 to indicate no value */
