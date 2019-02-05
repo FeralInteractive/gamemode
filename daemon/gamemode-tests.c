@@ -182,8 +182,11 @@ static int run_dual_client_tests(void)
 	int child = fork();
 	if (child == 0) {
 		/* Relaunch self with -r (request and wait for signal) */
-		if (execl(mypath, mypath, "-r") == -1) {
-			fprintf(stderr, "ERROR: failed to re-launch self with execv: %s\n", strerror(errno));
+		if (execl(mypath, mypath, "-r", (char *)NULL) == -1) {
+			fprintf(stderr,
+			        "ERROR: failed to re-launch self (%s) with execv: %s\n",
+			        mypath,
+			        strerror(errno));
 			return -1;
 		}
 	}
