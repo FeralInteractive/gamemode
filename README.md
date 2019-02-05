@@ -60,14 +60,18 @@ ninja uninstall
 
 After installing `libgamemodeauto.so.0` simply preload it into the game:
 ```bash
-LD_PRELOAD=/usr/\$LIB/libgamemodeauto.so.0 ./game
+gamemoderun ./game
 ```
 Or edit the steam launch options:
 ```bash
-LD_PRELOAD=$LD_PRELOAD:/usr/\$LIB/libgamemodeauto.so.0 %command%
+gamemoderun %command%
 ```
 Please note the backslash here in `\$LIB` is required.
 
+Note: for older versions of GameMode (1.2) use this string in place of `gamemoderun`:
+```
+LD_PRELOAD="$LD_PRELOAD:/usr/\$LIB/libgamemodeauto.so.0"
+```
 ---
 ## Configuration
 

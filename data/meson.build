@@ -1,6 +1,7 @@
 data_conf = configuration_data()
 data_conf.set('BINDIR', path_bindir)
 data_conf.set('LIBEXECDIR', path_libexecdir)
+data_conf.set('GAMEMODE_LIB_DIR', path_libdir)
 
 if with_systemd == true
     # Install systemd user unit
@@ -27,6 +28,15 @@ configure_file(
     output: 'com.feralinteractive.GameMode.policy',
     configuration: data_conf,
     install_dir: path_polkit_action_dir,
+)
+
+# Install the helper run script
+configure_file(
+    input: 'gamemoderun.in',
+    output: 'gamemoderun',
+    configuration: data_conf,
+    install_dir: 'bin',
+    install_mode: 'rwxr-xr-x',
 )
 
 # Install the man page
