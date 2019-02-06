@@ -246,7 +246,7 @@ static int run_dual_client_tests(void)
 static int game_mode_run_feature_tests(void)
 {
 	int status = 0;
-	fprintf(stdout, "   *feature tests*\n");
+	LOG_MSG("   *feature tests*\n");
 
 	/* If we reach here, we should assume the basic requests and register functions are working */
 
@@ -272,7 +272,7 @@ static int game_mode_run_feature_tests(void)
 	/* TODO */
 
 	if (status != -1)
-		fprintf(stdout, "       *passed*%s\n", status > 0 ? " (with optional failures)" : "");
+		LOG_MSG("       *passed*%s\n", status > 0 ? " (with optional failures)" : "");
 
 	return status;
 }
