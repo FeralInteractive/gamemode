@@ -80,7 +80,7 @@ int set_gpu_state_nv(struct GameModeGPUInfo *info)
 	         info->core);
 	const char *exec_args_core[] = { "/usr/bin/nvidia-settings", "-a", core_arg, NULL };
 	if (run_external_process(exec_args_core) != 0) {
-		LOG_ERROR("ERROR: Failed to set %s!\n", core_arg);
+		LOG_ERROR("Failed to set %s!\n", core_arg);
 		return -1;
 	}
 
@@ -94,7 +94,7 @@ int set_gpu_state_nv(struct GameModeGPUInfo *info)
 	         info->mem);
 	const char *exec_args_mem[] = { "/usr/bin/nvidia-settings", "-a", mem_arg, NULL };
 	if (run_external_process(exec_args_mem) != 0) {
-		LOG_ERROR("ERROR: Failed to set %s!\n", mem_arg);
+		LOG_ERROR("Failed to set %s!\n", mem_arg);
 		return -1;
 	}
 
@@ -115,17 +115,17 @@ static int set_gpu_state_amd_file(const char *filename, long device, long value)
 
 	FILE *file = fopen(path, "w");
 	if (!file) {
-		LOG_ERROR("ERROR: Could not open %s for write (%s)!\n", path, strerror(errno));
+		LOG_ERROR("Could not open %s for write (%s)!\n", path, strerror(errno));
 		return -1;
 	}
 
 	if (fprintf(file, "%ld", value) < 0) {
-		LOG_ERROR("ERROR: Could not write to %s (%s)!\n", path, strerror(errno));
+		LOG_ERROR("Could not write to %s (%s)!\n", path, strerror(errno));
 		return -1;
 	}
 
 	if (fclose(file) != 0) {
-		LOG_ERROR("ERROR: Could not close %s after writing (%s)!\n", path, strerror(errno));
+		LOG_ERROR("Could not close %s after writing (%s)!\n", path, strerror(errno));
 		return -1;
 	}
 
@@ -155,7 +155,7 @@ static long get_vendor(const char *val)
 	char *end;
 	long ret = strtol(val, &end, 0);
 	if (!GPUVendorValid(ret) || end == val) {
-		LOG_ERROR("ERROR: Invalid GPU Vendor passed (0x%04x)!\n", (unsigned short)ret);
+		LOG_ERROR("Invalid GPU Vendor passed (0x%04x)!\n", (unsigned short)ret);
 		print_usage_and_exit();
 	}
 	return ret;
@@ -167,7 +167,7 @@ static long get_device(const char *val)
 	char *end;
 	long ret = strtol(val, &end, 10);
 	if (ret < 0 || end == val) {
-		LOG_ERROR("ERROR: Invalid GPU device passed (%ld)!\n", ret);
+		LOG_ERROR("Invalid GPU device passed (%ld)!\n", ret);
 		print_usage_and_exit();
 	}
 	return ret;
@@ -179,7 +179,7 @@ static long get_generic_value(const char *val)
 	char *end;
 	long ret = strtol(val, &end, 10);
 	if (ret < 0 || end == val) {
-		LOG_ERROR("ERROR: Invalid value passed (%ld)!\n", ret);
+		LOG_ERROR("Invalid value passed (%ld)!\n", ret);
 		print_usage_and_exit();
 	}
 	return ret;
