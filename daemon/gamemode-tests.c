@@ -40,7 +40,9 @@ POSSIBILITY OF SUCH DAMAGE.
 #include <sys/wait.h>
 #include <unistd.h>
 
+#include "daemon_config.h"
 #include "gamemode_client.h"
+#include "governors-query.h"
 
 /* Initial verify step to ensure gamemode isn't already active */
 static int verify_gamemode_initial(void)
@@ -250,8 +252,62 @@ static int game_mode_run_feature_tests(void)
 
 	/* If we reach here, we should assume the basic requests and register functions are working */
 
+	/* Grab the config */
+	/* Note: this config may pick up a local gamemode.ini, or the daemon may have one, we may need
+	 * to cope with that */
+	GameModeConfig *config = config_create();
+	config_init(config);
+
 	/* Does the CPU governor get set properly? */
-	/* TODO */
+	int cpustatus = 0;
+	{
+		/* get the two config parameters we care about */
+		char desiredgov[CONFIG_VALUE_MAX] = { 0 };
+		config_get_desired_governor(config, desiredgov);
+
+		if (desiredgov[0] == '\0')
+			strcpy(desiredgov, "performance");
+
+		char defaultgov[CONFIG_VALUE_MAX] = { 0 };
+		config_get_default_governor(config, defaultgov);
+
+		if (desiredgov[0] == '\0') {
+			const char *currentgov = get_gov_state();
+			if (currentgov) {
+				strncpy(desiredgov, currentgov, CONFIG_VALUE_MAX);
+			} else {
+				LOG_ERROR(
+				    "Could not get current CPU governor state, this indicates an error! See rest "
+				    "of log.\n");
+				cpustatus = -1;
+			}
+		}
+
+		/* Only continue if we had no error before */
+		if (cpustatus == 0) {
+			/* Start gamemode */
+			gamemode_request_start();
+
+			/* Verify the governor is the desired one */
+			const char *currentgov = get_gov_state();
+			if (strncmp(currentgov, desiredgov, CONFIG_VALUE_MAX) != 0) {
+				LOG_ERROR("Govenor was not set to %s (was actually %s)!", desiredgov, currentgov);
+				cpustatus = -1;
+			}
+
+			/* End gamemode */
+			gamemode_request_end();
+
+			/* Verify the governor has been set back */
+			currentgov = get_gov_state();
+			if (strncmp(currentgov, defaultgov, CONFIG_VALUE_MAX) != 0) {
+				LOG_ERROR("Govenor was not set back to %s (was actually %s)!",
+				          defaultgov,
+				          currentgov);
+				cpustatus = -1;
+			}
+		}
+	}
 
 	/* Do custom scripts run? */
 	/* TODO */
