@@ -36,10 +36,11 @@ POSSIBILITY OF SUCH DAMAGE.
 #include "external-helper.h"
 #include "gpu-control.h"
 
-// TODO
-// Intel support - https://blog.ffwll.ch/2013/03/overclocking-your-intel-gpu-on-linux.html
-// AMD - Allow setting fan speed as well
-// Store baseline values with get_gpu_state to apply when leaving gamemode
+/* Plausible extras to add:
+ * Intel support - https://blog.ffwll.ch/2013/03/overclocking-your-intel-gpu-on-linux.html
+ * AMD - Allow setting fan speed as well
+ * Store baseline values with get_gpu_state to apply when leaving gamemode
+ */
 
 /* Helper to quit with usage */
 static const char *usage_text =
