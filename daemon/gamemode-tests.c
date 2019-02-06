@@ -240,6 +240,44 @@ static int run_dual_client_tests(void)
 }
 
 /**
+ * game_mode_run_feature_tests runs a set of tests for each current feature (based on the current
+ * config) returns 0 for success, -1 for failure
+ */
+static int game_mode_run_feature_tests(void)
+{
+	int status = 0;
+	fprintf(stdout, "   *feature tests*\n");
+
+	/* If we reach here, we should assume the basic requests and register functions are working */
+
+	/* Does the CPU governor get set properly? */
+	/* TODO */
+
+	/* Do custom scripts run? */
+	/* TODO */
+
+	/* Does the screensaver get inhibited? */
+	/* TODO */
+
+	/* Do GPU optimisations get applied? */
+	/* TODO */
+
+	/* Was the process reniced? */
+	/* TODO */
+
+	/* Was the scheduling applied? */
+	/* TODO */
+
+	/* Were io priorities changed? */
+	/* TODO */
+
+	if (status != -1)
+		fprintf(stdout, "       *passed*%s\n", status > 0 ? " (with optional failures)" : "");
+
+	return status;
+}
+
+/**
  * game_mode_run_client_tests runs a set of tests of the client code
  * we simply verify that the client can request the status and recieves the correct results
  *
@@ -256,6 +294,10 @@ int game_mode_run_client_tests()
 
 	/* Run the dual client tests */
 	if (run_dual_client_tests() != 0)
+		return -1;
+
+	/* Run the feature tests */
+	if (game_mode_run_feature_tests() != 0)
 		return -1;
 
 	return status;
