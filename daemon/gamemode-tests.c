@@ -167,6 +167,7 @@ static int run_dual_client_tests(void)
 
 	/* Get the current path to this binary */
 	char mypath[PATH_MAX];
+	memset(mypath, 0, sizeof(mypath));
 	if (readlink("/proc/self/exe", mypath, PATH_MAX) == -1) {
 		LOG_ERROR("could not read current exe path: %s\n", strerror(errno));
 		return -1;
@@ -177,7 +178,7 @@ static int run_dual_client_tests(void)
 	if (child == 0) {
 		/* Relaunch self with -r (request and wait for signal) */
 		if (execl(mypath, mypath, "-r", (char *)NULL) == -1) {
-			LOG_ERROR("failed to re-launch self (%s) with execv: %s\n", mypath, strerror(errno));
+			LOG_ERROR("failed to re-launch self (%s) with execl: %s\n", mypath, strerror(errno));
 			return -1;
 		}
 	}
