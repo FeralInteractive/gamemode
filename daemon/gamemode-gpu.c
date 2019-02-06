@@ -34,9 +34,10 @@ POSSIBILITY OF SUCH DAMAGE.
 
 #include "config.h"
 #include "external-helper.h"
-#include "gamemode.h"
 #include "helpers.h"
 #include "logging.h"
+
+#include "gamemode.h"
 
 #include "daemon_config.h"
 #include "gpu-control.h"
