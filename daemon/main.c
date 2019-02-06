@@ -63,7 +63,7 @@ POSSIBILITY OF SUCH DAMAGE.
 #include <unistd.h>
 
 #define USAGE_TEXT                                                                                 \
-	"Usage: %s [-d] [-l] [-h] [-v]\n\n"                                                            \
+	"Usage: %s [-d] [-l] [-r] [-t] [-h] [-v]\n\n"                                                  \
 	"  -d  daemonize self after launch\n"                                                          \
 	"  -l  log to syslog\n"                                                                        \
 	"  -r  request gamemode and pause\n"                                                           \
