@@ -3,6 +3,13 @@ data_conf.set('BINDIR', path_bindir)
 data_conf.set('LIBEXECDIR', path_libexecdir)
 data_conf.set('GAMEMODE_LIB_DIR', path_libdir)
 
+# Pull in the example config
+config_example = run_command(
+    'cat',
+    join_paths(meson.source_root(), 'example', 'gamemode.ini')
+).stdout().strip()
+data_conf.set('GAMEMODE_EXAMPLE_CONFIG', config_example)
+
 if with_systemd == true
     # Install systemd user unit
     configure_file(
@@ -39,5 +46,10 @@ configure_file(
     install_mode: 'rwxr-xr-x',
 )
 
-# Install the man page
-install_man('gamemoded.8')
+# Configure and install the man page
+manpage = configure_file(
+    input: files('gamemoded.8.in'),
+    output: 'gamemoded.8',
+    configuration: data_conf,
+)
+install_man(manpage)
