@@ -113,12 +113,12 @@ int main(int argc, char *argv[])
 			break;
 		case 's': {
 			if ((status = gamemode_query_status()) < 0) {
-				fprintf(stderr, "gamemode status request failed: %s\n", gamemode_error_string());
+				LOG_ERROR("gamemode status request failed: %s\n", gamemode_error_string());
 				exit(EXIT_FAILURE);
 			} else if (status > 0) {
-				fprintf(stdout, "gamemode is active\n");
+				LOG_MSG("gamemode is active\n");
 			} else {
-				fprintf(stdout, "gamemode is inactive\n");
+				LOG_MSG("gamemode is inactive\n");
 			}
 
 			exit(EXIT_SUCCESS);
@@ -126,18 +126,17 @@ int main(int argc, char *argv[])
 		}
 		case 'r':
 			if (gamemode_request_start() < 0) {
-				fprintf(stderr, "gamemode request failed: %s\n", gamemode_error_string());
+				LOG_ERROR("gamemode request failed: %s\n", gamemode_error_string());
 				exit(EXIT_FAILURE);
 			}
 
 			if ((status = gamemode_query_status()) == 2) {
-				fprintf(stdout, "gamemode request succeeded and is active\n");
+				LOG_MSG("gamemode request succeeded and is active\n");
 			} else if (status == 1) {
-				fprintf(stderr,
-				        "gamemode request succeeded and is active but registration failed\n");
+				LOG_ERROR("gamemode request succeeded and is active but registration failed\n");
 				exit(EXIT_FAILURE);
 			} else {
-				fprintf(stderr, "gamemode request succeeded but is not active\n");
+				LOG_ERROR("gamemode request succeeded but is not active\n");
 				exit(EXIT_FAILURE);
 			}
 
@@ -149,7 +148,7 @@ int main(int argc, char *argv[])
 
 			// Explicitly clean up
 			if (gamemode_request_end() < 0) {
-				fprintf(stderr, "gamemode request failed: %s\n", gamemode_error_string());
+				LOG_ERROR("gamemode request failed: %s\n", gamemode_error_string());
 				exit(EXIT_FAILURE);
 			}
 
@@ -157,22 +156,22 @@ int main(int argc, char *argv[])
 			break;
 		case 't':
 			if ((status = game_mode_run_client_tests()) == 0) {
-				fprintf(stdout, "gamemode tests succeeded\n");
+				LOG_MSG("gamemode tests succeeded\n");
 				exit(EXIT_SUCCESS);
 			} else if (status == -1) {
-				fprintf(stderr, "gamemode tests failed\n");
+				LOG_ERROR("gamemode tests failed\n");
 				exit(EXIT_FAILURE);
 			} else {
-				fprintf(stderr, "gamemode test results unknown: %d\n", status);
+				LOG_ERROR("gamemode test results unknown: %d\n", status);
 				exit(EXIT_FAILURE);
 			}
 			break;
 		case 'v':
-			fprintf(stdout, VERSION_TEXT);
+			LOG_MSG(VERSION_TEXT);
 			exit(EXIT_SUCCESS);
 			break;
 		case 'h':
-			fprintf(stdout, USAGE_TEXT, argv[0]);
+			LOG_MSG(USAGE_TEXT, argv[0]);
 			exit(EXIT_SUCCESS);
 			break;
 		default:

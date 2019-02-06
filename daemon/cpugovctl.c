@@ -79,7 +79,7 @@ int main(int argc, char *argv[])
 
 		/* Must be root to set the state */
 		if (geteuid() != 0) {
-			fprintf(stderr, "This program must be run as root\n");
+			LOG_ERROR("This program must be run as root\n");
 			return EXIT_FAILURE;
 		}
 
