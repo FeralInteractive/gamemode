@@ -214,7 +214,7 @@ int game_mode_apply_gpu(const GameModeGPUInfo *info, bool apply)
 	};
 
 	if (run_external_process(exec_args) != 0) {
-		LOG_ERROR("ERROR: Failed to call gpuclockctl, could not apply optimisations!\n");
+		LOG_ERROR("Failed to call gpuclockctl, could not apply optimisations!\n");
 		return -1;
 	}
 
