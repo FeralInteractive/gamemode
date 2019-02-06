@@ -56,9 +56,9 @@ POSSIBILITY OF SUCH DAMAGE.
 #define LOG_ERROR(...)                                                                             \
 	do {                                                                                           \
 		if (get_use_syslog()) {                                                                    \
-			SYSLOG_MSG(__VA_ARGS__);                                                               \
+			SYSLOG_ERROR(__VA_ARGS__);                                                             \
 		} else {                                                                                   \
-			PLOG_MSG(__VA_ARGS__);                                                                 \
+			PLOG_ERROR(__VA_ARGS__);                                                               \
 		}                                                                                          \
 	} while (0)
 
