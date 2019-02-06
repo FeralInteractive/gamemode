@@ -8,6 +8,7 @@ Currently GameMode includes support for optimisations including:
 * I/O Priority
 * Kernel Scheduler (`SCHED_ISO`)
 * Screensaver inhibiting
+* GPU Overclocking (Nvidia and AMD)
 * Custom scripts
 
 Issues with GameMode should be reported here in the issues section, and not reported to Feral directly.
@@ -105,6 +106,9 @@ If you have an AMD CPU and have disabled Cool'n'Quiet, or you have an Intel CPU 
 If you are unsure, `bootstrap.sh` will warn you if your system lacks CPU governor control.
 
 Scripts and other features will still work.
+
+### GPU Optimisations
+GameMode is able to automatically apply GPU overclocks when activated. AMD overclocking currently requires the amdgpu kernel module, and Nvidia requires the `coolbits` extension to be enabled in the Nvidia settings. It is very much encouraged for users to find out their own overclocking limits manually before venturing into configuring them in gamemode, and activating this feature in gamemode assumes you take responsibility for the effects of said overclocks. More information can be found in the `example/gamemoded.ini` file.
 
 ---
 ## Developers
