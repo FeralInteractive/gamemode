@@ -259,8 +259,8 @@ static int game_mode_run_feature_tests(void)
 	config_init(config);
 
 	/* Does the CPU governor get set properly? */
-	int cpustatus = 0;
 	{
+		int cpustatus = 0;
 		LOG_MSG("::: Verifying CPU governor setting\n");
 
 		/* get the two config parameters we care about */
@@ -308,6 +308,13 @@ static int game_mode_run_feature_tests(void)
 				          currentgov);
 				cpustatus = -1;
 			}
+		}
+
+		if (cpustatus == 0)
+			LOG_MSG("::: Passed\n");
+		else {
+			LOG_MSG("::: Failed!\n");
+			status = 1;
 		}
 	}
 
