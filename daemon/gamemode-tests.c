@@ -124,7 +124,7 @@ static int verify_other_client_connected(void)
  */
 static int run_basic_client_tests(void)
 {
-	LOG_MSG("   *basic client tests*\n");
+	LOG_MSG(":: Basic client tests\n");
 
 	/* First verify that gamemode is not currently active on the system
 	 * As well as it being currently installed and queryable
@@ -152,7 +152,7 @@ static int run_basic_client_tests(void)
 	if (verify_deactivated() != 0)
 		return -1;
 
-	LOG_MSG("       *passed*\n");
+	LOG_MSG(":: Passed\n\n");
 
 	return 0;
 }
@@ -165,7 +165,7 @@ static int run_dual_client_tests(void)
 	int status = 0;
 
 	/* Try running some process interop tests */
-	LOG_MSG("   *dual clients tests*\n");
+	LOG_MSG(":: Dual client tests\n");
 
 	/* Get the current path to this binary */
 	char mypath[PATH_MAX];
@@ -227,7 +227,7 @@ static int run_dual_client_tests(void)
 	// Wait for the child to finish up
 	int wstatus;
 	while (waitpid(child, &wstatus, WNOHANG) == 0) {
-		LOG_MSG("   Waiting for child to quit...\n");
+		LOG_MSG("...Waiting for child to quit...\n");
 		usleep(10000);
 	}
 
@@ -236,7 +236,7 @@ static int run_dual_client_tests(void)
 		return -1;
 
 	if (status == 0)
-		LOG_MSG("       *passed*\n");
+		LOG_MSG(":: Passed\n\n");
 
 	return status;
 }
@@ -248,7 +248,7 @@ static int run_dual_client_tests(void)
 static int game_mode_run_feature_tests(void)
 {
 	int status = 0;
-	LOG_MSG("   *feature tests*\n");
+	LOG_MSG(":: Feature tests\n");
 
 	/* If we reach here, we should assume the basic requests and register functions are working */
 
@@ -261,6 +261,8 @@ static int game_mode_run_feature_tests(void)
 	/* Does the CPU governor get set properly? */
 	int cpustatus = 0;
 	{
+		LOG_MSG("::: Verifying CPU governor setting\n");
+
 		/* get the two config parameters we care about */
 		char desiredgov[CONFIG_VALUE_MAX] = { 0 };
 		config_get_desired_governor(config, desiredgov);
@@ -312,6 +314,8 @@ static int game_mode_run_feature_tests(void)
 	/* Do custom scripts run? */
 	int scriptstatus = 0;
 	{
+		LOG_MSG("::: Verifying Scripts\n");
+
 		/* Grab the scripts */
 		char scripts[CONFIG_LIST_MAX][CONFIG_VALUE_MAX];
 		memset(scripts, 0, sizeof(scripts));
@@ -347,7 +351,9 @@ static int game_mode_run_feature_tests(void)
 	/* TODO */
 
 	if (status != -1)
-		LOG_MSG("       *passed*%s\n", status > 0 ? " (with optional failures)" : "");
+		LOG_MSG(":: Passed%s\n\n", status > 0 ? " (with optional failures)" : "");
+	else
+		LOG_ERROR(":: Failed!\n");
 
 	return status;
 }
@@ -361,19 +367,27 @@ static int game_mode_run_feature_tests(void)
 int game_mode_run_client_tests()
 {
 	int status = 0;
-	LOG_MSG("Running tests...\n");
+	LOG_MSG(": Running tests\n\n");
 
 	/* Run the basic tests */
 	if (run_basic_client_tests() != 0)
-		return -1;
+		status = -1;
 
 	/* Run the dual client tests */
 	if (run_dual_client_tests() != 0)
-		return -1;
+		status = -1;
 
-	/* Run the feature tests */
-	if (game_mode_run_feature_tests() != 0)
-		return -1;
+	if (status != 0) {
+		LOG_MSG(": Client tests failed, skipping feature tests\n");
+	} else {
+		/* Run the feature tests */
+		status = game_mode_run_feature_tests();
+	}
+
+	if (status >= 0)
+		LOG_MSG(": All Tests Passed%s!\n", status > 0 ? " (with optional failures)" : "");
+	else
+		LOG_MSG(": Tests Failed!\n");
 
 	return status;
 }
