@@ -155,16 +155,8 @@ int main(int argc, char *argv[])
 			exit(EXIT_SUCCESS);
 			break;
 		case 't':
-			if ((status = game_mode_run_client_tests()) == 0) {
-				LOG_MSG("gamemode tests succeeded\n");
-				exit(EXIT_SUCCESS);
-			} else if (status == -1) {
-				LOG_ERROR("gamemode tests failed\n");
-				exit(EXIT_FAILURE);
-			} else {
-				LOG_ERROR("gamemode test results unknown: %d\n", status);
-				exit(EXIT_FAILURE);
-			}
+			status = game_mode_run_client_tests();
+			exit(status);
 			break;
 		case 'v':
 			LOG_MSG(VERSION_TEXT);
