@@ -310,7 +310,26 @@ static int game_mode_run_feature_tests(void)
 	}
 
 	/* Do custom scripts run? */
-	/* TODO */
+	int scriptstatus = 0;
+	{
+		/* Grab the scripts */
+		char scripts[CONFIG_LIST_MAX][CONFIG_VALUE_MAX];
+		memset(scripts, 0, sizeof(scripts));
+		config_get_gamemode_start_scripts(config, scripts);
+
+		if (scripts[0][0] != '\0') {
+			/* Print out the scripts to run */
+			LOG_MSG("Custom scripts:\n");
+
+			int i = 0;
+			while (*scripts[i] != '\0' && i < CONFIG_LIST_MAX)
+				LOG_MSG("%s\n", scripts[i]);
+		}
+
+		/* TODO: Somehow verify these get run
+		 * Possibly by watching if the the binary part gets run?
+		 */
+	}
 
 	/* Does the screensaver get inhibited? */
 	/* TODO */
