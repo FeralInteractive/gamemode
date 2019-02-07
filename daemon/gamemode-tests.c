@@ -312,27 +312,62 @@ static int game_mode_run_feature_tests(void)
 	}
 
 	/* Do custom scripts run? */
-	int scriptstatus = 0;
 	{
+		int scriptstatus = 0;
 		LOG_MSG("::: Verifying Scripts\n");
 
-		/* Grab the scripts */
-		char scripts[CONFIG_LIST_MAX][CONFIG_VALUE_MAX];
-		memset(scripts, 0, sizeof(scripts));
-		config_get_gamemode_start_scripts(config, scripts);
+		/* Grab and test the start scripts */
+		char startscripts[CONFIG_LIST_MAX][CONFIG_VALUE_MAX];
+		memset(startscripts, 0, sizeof(startscripts));
+		config_get_gamemode_start_scripts(config, startscripts);
 
-		if (scripts[0][0] != '\0') {
-			/* Print out the scripts to run */
-			LOG_MSG("Custom scripts:\n");
-
+		if (startscripts[0][0] != '\0') {
 			int i = 0;
-			while (*scripts[i] != '\0' && i < CONFIG_LIST_MAX)
-				LOG_MSG("%s\n", scripts[i]);
+			while (*startscripts[i] != '\0' && i < CONFIG_LIST_MAX) {
+				LOG_MSG(":::: Running start script [%s]\n", startscripts[i]);
+
+				int ret = system(startscripts[i]);
+
+				if (ret == 0)
+					LOG_MSG(":::: Passed\n");
+				else {
+					LOG_MSG(":::: Failed!\n");
+					scriptstatus = -1;
+				}
+				i++;
+			}
 		}
 
-		/* TODO: Somehow verify these get run
-		 * Possibly by watching if the the binary part gets run?
-		 */
+		/* Grab and test the end scripts */
+		char endscripts[CONFIG_LIST_MAX][CONFIG_VALUE_MAX];
+		memset(endscripts, 0, sizeof(endscripts));
+		config_get_gamemode_end_scripts(config, endscripts);
+
+		if (endscripts[0][0] != '\0') {
+			int i = 0;
+			while (*endscripts[i] != '\0' && i < CONFIG_LIST_MAX) {
+				LOG_MSG(":::: Running end script [%s]\n", endscripts[i]);
+
+				int ret = system(endscripts[i]);
+
+				if (ret == 0)
+					LOG_MSG(":::: Passed\n");
+				else {
+					LOG_MSG(":::: Failed!\n");
+					scriptstatus = -1;
+				}
+				i++;
+			}
+		}
+
+		if (endscripts[0][0] == '\0' && startscripts[0][0] == '\0')
+			LOG_MSG("::: Passed (no scripts configured to run)\n");
+		else if (scriptstatus == 0)
+			LOG_MSG("::: Passed\n");
+		else {
+			LOG_MSG("::: Failed!\n");
+			status = 1;
+		}
 	}
 
 	/* Does the screensaver get inhibited? */
