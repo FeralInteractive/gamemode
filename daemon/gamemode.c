@@ -503,6 +503,28 @@ int game_mode_context_query_status(GameModeContext *self, pid_t client)
 }
 
 /**
+ * Stub to register on behalf of caller
+ */
+int game_mode_context_register_by_pid(GameModeContext *self, pid_t callerpid, pid_t gamepid)
+{
+	(void)self;
+	(void)callerpid;
+	(void)gamepid;
+	return 0;
+}
+
+/**
+ * Stub to unregister on behalf of caller
+ */
+int game_mode_context_unregister_by_pid(GameModeContext *self, pid_t callerpid, pid_t gamepid)
+{
+	(void)self;
+	(void)callerpid;
+	(void)gamepid;
+	return 0;
+}
+
+/**
  * Construct a new GameModeClient for the given process ID
  *
  * This is deliberately OOM safe
