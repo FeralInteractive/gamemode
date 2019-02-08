@@ -72,16 +72,14 @@ static char internal_gamemode_client_error_string[512] = { 0 };
 static volatile int internal_libgamemode_loaded = 1;
 
 /* Typedefs for the functions to load */
-typedef int (*internal_gamemode_request_start)(void);
-typedef int (*internal_gamemode_request_end)(void);
-typedef int (*internal_gamemode_query_status)(void);
-typedef const char *(*internal_gamemode_error_string)(void);
+typedef int (*api_call_return_int)(void);
+typedef const char *(*api_call_return_cstring)(void);
 
 /* Storage for functors */
-static internal_gamemode_request_start REAL_internal_gamemode_request_start = NULL;
-static internal_gamemode_request_end REAL_internal_gamemode_request_end = NULL;
-static internal_gamemode_query_status REAL_internal_gamemode_query_status = NULL;
-static internal_gamemode_error_string REAL_internal_gamemode_error_string = NULL;
+static api_call_return_int REAL_internal_gamemode_request_start = NULL;
+static api_call_return_int REAL_internal_gamemode_request_end = NULL;
+static api_call_return_int REAL_internal_gamemode_query_status = NULL;
+static api_call_return_cstring REAL_internal_gamemode_error_string = NULL;
 
 /**
  * Internal helper to perform the symbol binding safely.
