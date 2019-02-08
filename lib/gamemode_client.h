@@ -101,10 +101,8 @@ static api_call_pid_return_int REAL_internal_gamemode_request_end_for = NULL;
  *
  * Returns 0 on success and -1 on failure
  */
-__attribute__((always_inline)) static inline int internal_bind_libgamemode_symbol(void *handle,
-                                                                                  const char *name,
-                                                                                  void **out_func,
-                                                                                  size_t func_size)
+__attribute__((always_inline)) static inline int internal_bind_libgamemode_symbol(
+    void *handle, const char *name, void **out_func, size_t func_size, bool required)
 {
 	void *symbol_lookup = NULL;
 	char *dl_error = NULL;
@@ -112,7 +110,7 @@ __attribute__((always_inline)) static inline int internal_bind_libgamemode_symbo
 	/* Safely look up the symbol */
 	symbol_lookup = dlsym(handle, name);
 	dl_error = dlerror();
-	if (dl_error || !symbol_lookup) {
+	if (required && (dl_error || !symbol_lookup)) {
 		snprintf(internal_gamemode_client_error_string,
 		         sizeof(internal_gamemode_client_error_string),
 		         "dlsym failed - %s",
@@ -196,8 +194,8 @@ __attribute__((always_inline)) static inline int internal_load_libgamemode(void)
 		if (internal_bind_libgamemode_symbol(libgamemode,
 		                                     binder->name,
 		                                     binder->functor,
-		                                     binder->func_size) != 0 &&
-		    binder->required) {
+		                                     binder->func_size,
+		                                     binder->required)) {
 			internal_libgamemode_loaded = -1;
 			return -1;
 		};
