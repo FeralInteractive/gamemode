@@ -378,18 +378,15 @@ static int game_mode_run_feature_tests(void)
 	}
 
 	/* Does the screensaver get inhibited? */
-	/* TODO */
+	/* TODO: Unknown if this is testable, org.freedesktop.ScreenSaver has no query method */
 
 	/* Do GPU optimisations get applied? */
 	/* TODO */
 
 	/* Was the process reniced? */
-	/* TODO */
-
 	/* Was the scheduling applied? */
-	/* TODO */
-
 	/* Were io priorities changed? */
+	/* Note: These don't get cleared up on un-register, so will have already been applied */
 	/* TODO */
 
 	if (status != -1)
