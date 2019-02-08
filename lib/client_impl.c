@@ -43,7 +43,7 @@ POSSIBILITY OF SUCH DAMAGE.
 static char error_string[512] = { 0 };
 
 // Simple requestor function for a gamemode
-static int gamemode_request(const char *function)
+static int gamemode_request(const char *function, int arg)
 {
 	sd_bus_message *msg = NULL;
 	sd_bus *bus = NULL;
@@ -66,8 +66,9 @@ static int gamemode_request(const char *function)
 		                         function,
 		                         NULL,
 		                         &msg,
-		                         "i",
-		                         getpid());
+		                         arg ? "ii" : "i",
+		                         getpid(),
+		                         arg);
 		if (ret < 0) {
 			snprintf(error_string,
 			         sizeof(error_string),
@@ -97,17 +98,29 @@ extern const char *real_gamemode_error_string(void)
 // Wrapper to call RegisterGame
 extern int real_gamemode_request_start(void)
 {
-	return gamemode_request("RegisterGame");
+	return gamemode_request("RegisterGame", 0);
 }
 
 // Wrapper to call UnregisterGame
 extern int real_gamemode_request_end(void)
 {
-	return gamemode_request("UnregisterGame");
+	return gamemode_request("UnregisterGame", 0);
 }
 
-// Wrapper to call UnregisterGame
+// Wrapper to call QueryStatus
 extern int real_gamemode_query_status(void)
 {
-	return gamemode_request("QueryStatus");
+	return gamemode_request("QueryStatus", 0);
+}
+
+// Wrapper to call RegisterGameByPID
+extern int real_gamemode_register_start_for(pid_t pid)
+{
+	return gamemode_request("RegisterGameByPID", pid);
+}
+
+// Wrapper to call UnregisterGameByPID
+extern int real_gamemode_register_end_for(pid_t pid)
+{
+	return gamemode_request("UnregisterGameByPID", pid);
 }

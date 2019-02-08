@@ -90,6 +90,28 @@ bool game_mode_context_unregister(GameModeContext *self, pid_t pid);
 int game_mode_context_query_status(GameModeContext *self, pid_t pid);
 
 /**
+ * Register a new game client with the context on behalf of another process
+ *
+ * @param callerpid Process ID for the remote client making the request
+ * @param gamepid Process ID for the process to be registered
+ * @returns 0 if the request was accepted and the client could be registered
+ *          -1 if the request was accepted but the client could not be registered
+ *          -2 if the request was rejected
+ */
+int game_mode_context_register_by_pid(GameModeContext *self, pid_t callerpid, pid_t gamepid);
+
+/**
+ * Unregister an existing remote game client from the context on behalf of another process
+ *
+ * @param callerpid Process ID for the remote client making the request
+ * @param gamepid Process ID for the process to be registered
+ * @returns 0 if the request was accepted and the client existed
+ *          -1 if the request was accepted but the client did not exist
+ *          -2 if the request was rejected
+ */
+int game_mode_context_unregister_by_pid(GameModeContext *self, pid_t callerpid, pid_t gamepid);
+
+/**
  * Query the config of a gamemode context
  *
  * @param context A gamemode context
