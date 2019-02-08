@@ -48,6 +48,16 @@ POSSIBILITY OF SUCH DAMAGE.
  *   2 if gamemode is active and this client is registered
  *   -1 if the query failed
  *
+ * int gamemode_request_start_for(pid_t pid) - Request gamemode starts for another process
+ *   0 if the request was sent successfully
+ *   -1 if the request failed
+ *   -2 if the request was rejected
+ *
+ * int gamemode_request_end_for(pid_t pid) - Request gamemode ends for another process
+ *   0 if the request was sent successfully
+ *   -1 if the request failed
+ *   -2 if the request was rejected
+ *
  * const char* gamemode_error_string() - Get an error string
  *   returns a string describing any of the above errors
  */
@@ -60,6 +70,8 @@ POSSIBILITY OF SUCH DAMAGE.
 #include <dlfcn.h>
 #include <errno.h>
 #include <string.h>
+
+#include <sys/types.h>
 
 static char internal_gamemode_client_error_string[512] = { 0 };
 
@@ -74,12 +86,15 @@ static volatile int internal_libgamemode_loaded = 1;
 /* Typedefs for the functions to load */
 typedef int (*api_call_return_int)(void);
 typedef const char *(*api_call_return_cstring)(void);
+typedef int (*api_call_pid_return_int)(pid_t);
 
 /* Storage for functors */
 static api_call_return_int REAL_internal_gamemode_request_start = NULL;
 static api_call_return_int REAL_internal_gamemode_request_end = NULL;
 static api_call_return_int REAL_internal_gamemode_query_status = NULL;
 static api_call_return_cstring REAL_internal_gamemode_error_string = NULL;
+static api_call_pid_return_int REAL_internal_gamemode_request_start_for = NULL;
+static api_call_pid_return_int REAL_internal_gamemode_request_end_for = NULL;
 
 /**
  * Internal helper to perform the symbol binding safely.
@@ -145,6 +160,14 @@ __attribute__((always_inline)) static inline int internal_load_libgamemode(void)
 		  (void **)&REAL_internal_gamemode_error_string,
 		  sizeof(REAL_internal_gamemode_error_string),
 		  true },
+		{ "real_gamemode_request_start_for",
+		  (void **)&REAL_internal_gamemode_request_start_for,
+		  sizeof(REAL_internal_gamemode_request_start_for),
+		  false },
+		{ "real_gamemode_request_end_for",
+		  (void **)&REAL_internal_gamemode_request_end_for,
+		  sizeof(REAL_internal_gamemode_request_end_for),
+		  false },
 	};
 
 	void *libgamemode = NULL;
@@ -271,6 +294,42 @@ __attribute__((always_inline)) static inline int gamemode_query_status(void)
 	}
 
 	return REAL_internal_gamemode_query_status();
+}
+
+/* Redirect to the real libgamemode */
+__attribute__((always_inline)) static inline int gamemode_request_start_for(pid_t pid)
+{
+	/* Need to load gamemode */
+	if (internal_load_libgamemode() < 0) {
+		return -1;
+	}
+
+	if (REAL_internal_gamemode_request_start_for == NULL) {
+		snprintf(internal_gamemode_client_error_string,
+		         sizeof(internal_gamemode_client_error_string),
+		         "gamemode_request_start_for missing (older host?)");
+		return -1;
+	}
+
+	return REAL_internal_gamemode_request_start_for(pid);
+}
+
+/* Redirect to the real libgamemode */
+__attribute__((always_inline)) static inline int gamemode_request_end_for(pid_t pid)
+{
+	/* Need to load gamemode */
+	if (internal_load_libgamemode() < 0) {
+		return -1;
+	}
+
+	if (REAL_internal_gamemode_request_end_for == NULL) {
+		snprintf(internal_gamemode_client_error_string,
+		         sizeof(internal_gamemode_client_error_string),
+		         "gamemode_request_end_for missing (older host?)");
+		return -1;
+	}
+
+	return REAL_internal_gamemode_request_end_for(pid);
 }
 
 #endif // CLIENT_GAMEMODE_H
