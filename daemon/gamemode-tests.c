@@ -347,6 +347,8 @@ static int run_custom_scripts_tests(struct GameModeConfig *config)
 
 int run_gpu_optimisation_tests(struct GameModeConfig *config)
 {
+	int gpustatus = 0;
+
 	/* First check if these are turned on */
 	char apply[CONFIG_VALUE_MAX];
 	config_get_apply_gpu_optimisations(config, apply);
@@ -374,8 +376,74 @@ int run_gpu_optimisation_tests(struct GameModeConfig *config)
 		return -1;
 	}
 
-	/* TODO continue to run gamemode and check GPU stats */
-	return 0;
+	/* Store the original values */
+	long original_core = gpuinfo.core;
+	long original_mem = gpuinfo.mem;
+
+	/* Grab the expected values */
+	long expected_core = 0;
+	long expected_mem = 0;
+	switch (gpuinfo.vendor) {
+	case Vendor_NVIDIA:
+		expected_core = config_get_nv_core_clock_mhz_offset(config);
+		expected_mem = config_get_nv_mem_clock_mhz_offset(config);
+		break;
+	case Vendor_AMD:
+		expected_core = config_get_amd_core_clock_percentage(config);
+		expected_mem = config_get_amd_mem_clock_percentage(config);
+		break;
+	default:
+		LOG_ERROR("Configured for unsupported GPU vendor 0x%04x!\n", (unsigned int)gpuinfo.vendor);
+		return -1;
+	}
+
+	LOG_MSG("Configured with vendor:0x%04x device:%ld core:%ld mem:%ld (nv_perf_level:%ld)\n",
+	        (unsigned int)gpuinfo.vendor,
+	        gpuinfo.device,
+	        expected_core,
+	        expected_mem,
+	        gpuinfo.nv_perf_level);
+
+	/* Start gamemode and check the new values */
+	gamemode_request_start();
+
+	if (game_mode_get_gpu(&gpuinfo) != 0) {
+		LOG_ERROR("Could not get current GPU info, see above!\n");
+		gamemode_request_end();
+		return -1;
+	}
+
+	if (gpuinfo.core != expected_core || gpuinfo.mem != expected_mem) {
+		LOG_ERROR(
+		    "Current GPU clocks during gamemode do not match requested values!\n"
+		    "\tcore - expected:%ld was:%ld | mem - expected:%ld was:%ld\n",
+		    expected_core,
+		    gpuinfo.core,
+		    expected_mem,
+		    gpuinfo.mem);
+		gpustatus = -1;
+	}
+
+	/* End gamemode and check the values have returned */
+	gamemode_request_end();
+
+	if (game_mode_get_gpu(&gpuinfo) != 0) {
+		LOG_ERROR("Could not get current GPU info, see above!\n");
+		return -1;
+	}
+
+	if (gpuinfo.core != original_core || gpuinfo.mem != original_mem) {
+		LOG_ERROR(
+		    "Current GPU clocks after gamemode do not matcch original values!\n"
+		    "\tcore - original:%ld was:%ld | mem - original:%ld was:%ld\n",
+		    original_core,
+		    gpuinfo.core,
+		    original_mem,
+		    gpuinfo.mem);
+		gpustatus = -1;
+	}
+
+	return gpustatus;
 }
 
 /**
@@ -428,6 +496,7 @@ static int game_mode_run_feature_tests(void)
 
 	/* Do GPU optimisations get applied? */
 	{
+		LOG_MSG("::: Verifying GPU Optimisations\n");
 		int gpustatus = run_gpu_optimisation_tests(config);
 
 		if (gpustatus == 1)
