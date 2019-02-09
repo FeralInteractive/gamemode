@@ -49,6 +49,15 @@ POSSIBILITY OF SUCH DAMAGE.
 /* Default value for the reaper frequency */
 #define DEFAULT_REAPER_FREQ 5
 
+/* Helper macro for defining the config variable getter */
+#define DEFINE_CONFIG_GET(name)                                                                    \
+	long config_get_##name(GameModeConfig *self)                                                   \
+	{                                                                                              \
+		long value = 0;                                                                            \
+		memcpy_locked_config(self, &value, &self->name, sizeof(long));                             \
+		return value;                                                                              \
+	}
+
 /**
  * The config holds various details as needed
  * and a rwlock to allow config_reload to be called
@@ -438,12 +447,7 @@ bool config_get_client_blacklisted(GameModeConfig *self, const char *client)
 /*
  * Gets the reaper frequency
  */
-long config_get_reaper_frequency(GameModeConfig *self)
-{
-	long value = 0;
-	memcpy_locked_config(self, &value, &self->reaper_frequency, sizeof(long));
-	return value;
-}
+DEFINE_CONFIG_GET(reaper_frequency)
 
 /*
  * Gets the screensaver inhibit setting
@@ -535,51 +539,11 @@ void config_get_apply_gpu_optimisations(GameModeConfig *self, char value[CONFIG_
 	                     sizeof(self->apply_gpu_optimisations));
 }
 
-long config_get_gpu_vendor(GameModeConfig *self)
-{
-	long value = 0;
-	memcpy_locked_config(self, &value, &self->gpu_vendor, sizeof(long));
-	return value;
-}
-
-long config_get_gpu_device(GameModeConfig *self)
-{
-	long value = 0;
-	memcpy_locked_config(self, &value, &self->gpu_device, sizeof(long));
-	return value;
-}
-
-long config_get_nv_core_clock_mhz_offset(GameModeConfig *self)
-{
-	long value = 0;
-	memcpy_locked_config(self, &value, &self->nv_core_clock_mhz_offset, sizeof(long));
-	return value;
-}
-
-long config_get_nv_mem_clock_mhz_offset(GameModeConfig *self)
-{
-	long value = 0;
-	memcpy_locked_config(self, &value, &self->nv_mem_clock_mhz_offset, sizeof(long));
-	return value;
-}
-
-long config_get_nv_perf_level(GameModeConfig *self)
-{
-	long value = 0;
-	memcpy_locked_config(self, &value, &self->nv_perf_level, sizeof(long));
-	return value;
-}
-
-long config_get_amd_core_clock_percentage(GameModeConfig *self)
-{
-	long value = 0;
-	memcpy_locked_config(self, &value, &self->amd_core_clock_percentage, sizeof(long));
-	return value;
-}
-
-long config_get_amd_mem_clock_percentage(GameModeConfig *self)
-{
-	long value = 0;
-	memcpy_locked_config(self, &value, &self->amd_mem_clock_percentage, sizeof(long));
-	return value;
-}
+/* Define the getters for GPU values */
+DEFINE_CONFIG_GET(gpu_vendor)
+DEFINE_CONFIG_GET(gpu_device)
+DEFINE_CONFIG_GET(nv_core_clock_mhz_offset)
+DEFINE_CONFIG_GET(nv_mem_clock_mhz_offset)
+DEFINE_CONFIG_GET(nv_perf_level)
+DEFINE_CONFIG_GET(amd_core_clock_percentage)
+DEFINE_CONFIG_GET(amd_mem_clock_percentage)
