@@ -242,6 +242,142 @@ static int run_dual_client_tests(void)
 	return status;
 }
 
+static int run_cpu_governor_tests(struct GameModeConfig *config)
+{
+	/* get the two config parameters we care about */
+	char desiredgov[CONFIG_VALUE_MAX] = { 0 };
+	config_get_desired_governor(config, desiredgov);
+
+	if (desiredgov[0] == '\0')
+		strcpy(desiredgov, "performance");
+
+	char defaultgov[CONFIG_VALUE_MAX] = { 0 };
+	config_get_default_governor(config, defaultgov);
+
+	if (desiredgov[0] == '\0') {
+		const char *currentgov = get_gov_state();
+		if (currentgov) {
+			strncpy(desiredgov, currentgov, CONFIG_VALUE_MAX);
+		} else {
+			LOG_ERROR(
+			    "Could not get current CPU governor state, this indicates an error! See rest "
+			    "of log.\n");
+			return -1;
+		}
+	}
+
+	/* Start gamemode */
+	gamemode_request_start();
+
+	/* Verify the governor is the desired one */
+	const char *currentgov = get_gov_state();
+	if (strncmp(currentgov, desiredgov, CONFIG_VALUE_MAX) != 0) {
+		LOG_ERROR("Govenor was not set to %s (was actually %s)!", desiredgov, currentgov);
+		gamemode_request_end();
+		return -1;
+	}
+
+	/* End gamemode */
+	gamemode_request_end();
+
+	/* Verify the governor has been set back */
+	currentgov = get_gov_state();
+	if (strncmp(currentgov, defaultgov, CONFIG_VALUE_MAX) != 0) {
+		LOG_ERROR("Govenor was not set back to %s (was actually %s)!", defaultgov, currentgov);
+		return -1;
+	}
+
+	return 0;
+}
+
+static int run_custom_scripts_tests(struct GameModeConfig *config)
+{
+	int scriptstatus = 0;
+
+	/* Grab and test the start scripts */
+	char startscripts[CONFIG_LIST_MAX][CONFIG_VALUE_MAX];
+	memset(startscripts, 0, sizeof(startscripts));
+	config_get_gamemode_start_scripts(config, startscripts);
+
+	if (startscripts[0][0] != '\0') {
+		int i = 0;
+		while (*startscripts[i] != '\0' && i < CONFIG_LIST_MAX) {
+			LOG_MSG(":::: Running start script [%s]\n", startscripts[i]);
+
+			int ret = system(startscripts[i]);
+
+			if (ret == 0)
+				LOG_MSG(":::: Passed\n");
+			else {
+				LOG_MSG(":::: Failed!\n");
+				scriptstatus = -1;
+			}
+			i++;
+		}
+	}
+
+	/* Grab and test the end scripts */
+	char endscripts[CONFIG_LIST_MAX][CONFIG_VALUE_MAX];
+	memset(endscripts, 0, sizeof(endscripts));
+	config_get_gamemode_end_scripts(config, endscripts);
+
+	if (endscripts[0][0] != '\0') {
+		int i = 0;
+		while (*endscripts[i] != '\0' && i < CONFIG_LIST_MAX) {
+			LOG_MSG(":::: Running end script [%s]\n", endscripts[i]);
+
+			int ret = system(endscripts[i]);
+
+			if (ret == 0)
+				LOG_MSG(":::: Passed\n");
+			else {
+				LOG_MSG(":::: Failed!\n");
+				scriptstatus = -1;
+			}
+			i++;
+		}
+	}
+
+	/* Specal value for no scripts */
+	if (endscripts[0][0] == '\0' && startscripts[0][0] == '\0')
+		return 1;
+
+	return scriptstatus;
+}
+
+int run_gpu_optimisation_tests(struct GameModeConfig *config)
+{
+	/* First check if these are turned on */
+	char apply[CONFIG_VALUE_MAX];
+	config_get_apply_gpu_optimisations(config, apply);
+	if (strlen(apply) == 0) {
+		/* Special value for disabled */
+		return 1;
+	} else if (strncmp(apply, "accept-responsibility", CONFIG_VALUE_MAX) != 0) {
+		LOG_ERROR(
+		    "apply_gpu_optimisations set to value other than \"accept-responsibility\" (%s), will "
+		    "not apply GPU optimisations!\n",
+		    apply);
+		return -1;
+	}
+
+	/* Get current GPU values */
+	GameModeGPUInfo gpuinfo;
+	gpuinfo.device = config_get_gpu_device(config);
+	gpuinfo.vendor = config_get_gpu_vendor(config);
+
+	if (gpuinfo.vendor == Vendor_NVIDIA)
+		gpuinfo.nv_perf_level = config_get_nv_perf_level(config);
+
+	if (game_mode_get_gpu(&gpuinfo) != 0) {
+		LOG_ERROR("Could not get current GPU info, see above!\n");
+		return -1;
+	}
+
+	/* TODO continue to run gamemode and check GPU stats */
+	return 0;
+}
+
 /**
  * game_mode_run_feature_tests runs a set of tests for each current feature (based on the current
  * config) returns 0 for success, -1 for failure
@@ -261,144 +397,52 @@ static int game_mode_run_feature_tests(void)
 
 	/* Does the CPU governor get set properly? */
 	{
-		int cpustatus = 0;
 		LOG_MSG("::: Verifying CPU governor setting\n");
 
-		/* get the two config parameters we care about */
-		char desiredgov[CONFIG_VALUE_MAX] = { 0 };
-		config_get_desired_governor(config, desiredgov);
-
-		if (desiredgov[0] == '\0')
-			strcpy(desiredgov, "performance");
-
-		char defaultgov[CONFIG_VALUE_MAX] = { 0 };
-		config_get_default_governor(config, defaultgov);
-
-		if (desiredgov[0] == '\0') {
-			const char *currentgov = get_gov_state();
-			if (currentgov) {
-				strncpy(desiredgov, currentgov, CONFIG_VALUE_MAX);
-			} else {
-				LOG_ERROR(
-				    "Could not get current CPU governor state, this indicates an error! See rest "
-				    "of log.\n");
-				cpustatus = -1;
-			}
-		}
-
-		/* Only continue if we had no error before */
-		if (cpustatus == 0) {
-			/* Start gamemode */
-			gamemode_request_start();
-
-			/* Verify the governor is the desired one */
-			const char *currentgov = get_gov_state();
-			if (strncmp(currentgov, desiredgov, CONFIG_VALUE_MAX) != 0) {
-				LOG_ERROR("Govenor was not set to %s (was actually %s)!", desiredgov, currentgov);
-				cpustatus = -1;
-			}
-
-			/* End gamemode */
-			gamemode_request_end();
-
-			/* Verify the governor has been set back */
-			currentgov = get_gov_state();
-			if (strncmp(currentgov, defaultgov, CONFIG_VALUE_MAX) != 0) {
-				LOG_ERROR("Govenor was not set back to %s (was actually %s)!",
-				          defaultgov,
-				          currentgov);
-				cpustatus = -1;
-			}
-		}
+		int cpustatus = run_cpu_governor_tests(config);
 
 		if (cpustatus == 0)
 			LOG_MSG("::: Passed\n");
 		else {
 			LOG_MSG("::: Failed!\n");
+			// Consider the CPU governor feature required
 			status = 1;
 		}
 	}
 
 	/* Do custom scripts run? */
 	{
-		int scriptstatus = 0;
 		LOG_MSG("::: Verifying Scripts\n");
+		int scriptstatus = run_custom_scripts_tests(config);
 
-		/* Grab and test the start scripts */
-		char startscripts[CONFIG_LIST_MAX][CONFIG_VALUE_MAX];
-		memset(startscripts, 0, sizeof(startscripts));
-		config_get_gamemode_start_scripts(config, startscripts);
-
-		if (startscripts[0][0] != '\0') {
-			int i = 0;
-			while (*startscripts[i] != '\0' && i < CONFIG_LIST_MAX) {
-				LOG_MSG(":::: Running start script [%s]\n", startscripts[i]);
-
-				int ret = system(startscripts[i]);
-
-				if (ret == 0)
-					LOG_MSG(":::: Passed\n");
-				else {
-					LOG_MSG(":::: Failed!\n");
-					scriptstatus = -1;
-				}
-				i++;
-			}
-		}
-
-		/* Grab and test the end scripts */
-		char endscripts[CONFIG_LIST_MAX][CONFIG_VALUE_MAX];
-		memset(endscripts, 0, sizeof(endscripts));
-		config_get_gamemode_end_scripts(config, endscripts);
-
-		if (endscripts[0][0] != '\0') {
-			int i = 0;
-			while (*endscripts[i] != '\0' && i < CONFIG_LIST_MAX) {
-				LOG_MSG(":::: Running end script [%s]\n", endscripts[i]);
-
-				int ret = system(endscripts[i]);
-
-				if (ret == 0)
-					LOG_MSG(":::: Passed\n");
-				else {
-					LOG_MSG(":::: Failed!\n");
-					scriptstatus = -1;
-				}
-				i++;
-			}
-		}
-
-		if (endscripts[0][0] == '\0' && startscripts[0][0] == '\0')
+		if (scriptstatus == 1)
 			LOG_MSG("::: Passed (no scripts configured to run)\n");
 		else if (scriptstatus == 0)
 			LOG_MSG("::: Passed\n");
 		else {
 			LOG_MSG("::: Failed!\n");
+			// Any custom scripts should be expected to work
+			status = 1;
+		}
+	}
+
+	/* Do GPU optimisations get applied? */
+	{
+		int gpustatus = run_gpu_optimisation_tests(config);
+
+		if (gpustatus == 1)
+			LOG_MSG("::: Passed (gpu optimisations not configured to run)\n");
+		else if (gpustatus == 0)
+			LOG_MSG("::: Passed\n");
+		else {
+			LOG_MSG("::: Failed!\n");
+			// Any custom scripts should be expected to work
 			status = 1;
 		}
 	}
 
 	/* Does the screensaver get inhibited? */
 	/* TODO: Unknown if this is testable, org.freedesktop.ScreenSaver has no query method */
-
-	/* Do GPU optimisations get applied? */
-	{
-		/* First get current GPU values */
-		GameModeGPUInfo gpuinfo;
-		gpuinfo.device = config_get_gpu_device(config);
-		gpuinfo.vendor = config_get_gpu_vendor(config);
-
-		if( gpuinfo.vendor == Vendor_NVIDIA )
-			gpuinfo.nv_perf_level = config_get_nv_perf_level(config);
-
-		if( game_mode_get_gpu(&gpuinfo) != 0 )
-		{
-			LOG_ERROR("Could not get current GPU info, see above!\n");
-			status = 1;
-		}
-
-		/* TODO continue to run gamemode and check GPU stats */
-	}
 
 	/* Was the process reniced? */
 	/* Was the scheduling applied? */
