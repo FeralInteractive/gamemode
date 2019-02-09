@@ -283,17 +283,19 @@ int main(int argc, char *argv[])
 		info.vendor = get_vendor(argv[1]);
 		info.device = get_device(argv[2]);
 
-		if (info.vendor == Vendor_NVIDIA)
+		if (info.vendor == Vendor_NVIDIA && argc > 4)
 			info.nv_perf_level = get_generic_value(argv[4]);
 
 		/* Fetch the state and print it out */
 		switch (info.vendor) {
 		case Vendor_NVIDIA:
 			/* Get nvidia power level */
-			get_gpu_state_nv(&info);
+			if( get_gpu_state_nv(&info) != 0 )
+				exit(EXIT_FAILURE);
 			break;
 		case Vendor_AMD:
-			get_gpu_state_amd(&info);
+			if( get_gpu_state_amd(&info) != 0)
+				exit(EXIT_FAILURE);
 			break;
 		default:
 			printf("Currently unsupported GPU vendor 0x%04x, doing nothing!\n", (short)info.vendor);
@@ -316,7 +318,7 @@ int main(int argc, char *argv[])
 		info.core = get_generic_value(argv[4]);
 		info.mem = get_generic_value(argv[5]);
 
-		if (info.vendor == Vendor_NVIDIA)
+		if (info.vendor == Vendor_NVIDIA && argc > 6)
 			info.nv_perf_level = get_generic_value(argv[6]);
 
 		printf("gpuclockctl setting core:%ld mem:%ld on device:%ld with vendor 0x%04x\n",
