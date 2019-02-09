@@ -58,6 +58,10 @@ POSSIBILITY OF SUCH DAMAGE.
  *   -1 if the request failed
  *   -2 if the request was rejected
  *
+ * int gamemode_query_status_for(pid_t pid) - Query the current status of gamemode for another
+ * process 0 if gamemode is inactive 1 if gamemode is active 2 if gamemode is active and this client
+ * is registered -1 if the query failed
+ *
  * const char* gamemode_error_string() - Get an error string
  *   returns a string describing any of the above errors
  */
@@ -95,6 +99,7 @@ static api_call_return_int REAL_internal_gamemode_query_status = NULL;
 static api_call_return_cstring REAL_internal_gamemode_error_string = NULL;
 static api_call_pid_return_int REAL_internal_gamemode_request_start_for = NULL;
 static api_call_pid_return_int REAL_internal_gamemode_request_end_for = NULL;
+static api_call_pid_return_int REAL_internal_gamemode_query_status_for = NULL;
 
 /**
  * Internal helper to perform the symbol binding safely.
@@ -165,6 +170,10 @@ __attribute__((always_inline)) static inline int internal_load_libgamemode(void)
 		{ "real_gamemode_request_end_for",
 		  (void **)&REAL_internal_gamemode_request_end_for,
 		  sizeof(REAL_internal_gamemode_request_end_for),
+		  false },
+		{ "real_gamemode_query_status_for",
+		  (void **)&REAL_internal_gamemode_query_status_for,
+		  sizeof(REAL_internal_gamemode_query_status_for),
 		  false },
 	};
 
@@ -328,6 +337,24 @@ __attribute__((always_inline)) static inline int gamemode_request_end_for(pid_t 
 	}
 
 	return REAL_internal_gamemode_request_end_for(pid);
+}
+
+/* Redirect to the real libgamemode */
+__attribute__((always_inline)) static inline int gamemode_query_status_for(pid_t pid)
+{
+	/* Need to load gamemode */
+	if (internal_load_libgamemode() < 0) {
+		return -1;
+	}
+
+	if (REAL_internal_gamemode_query_status_for == NULL) {
+		snprintf(internal_gamemode_client_error_string,
+		         sizeof(internal_gamemode_client_error_string),
+		         "gamemode_query_status_for missing (older host?)");
+		return -1;
+	}
+
+	return REAL_internal_gamemode_query_status_for(pid);
 }
 
 #endif // CLIENT_GAMEMODE_H

@@ -124,3 +124,9 @@ extern int real_gamemode_register_end_for(pid_t pid)
 {
 	return gamemode_request("UnregisterGameByPID", pid);
 }
+
+// Wrapper to call QueryStatusFor
+extern int real_gamemode_query_status_for(pid_t pid)
+{
+	return gamemode_request("QueryStatusFor", pid);
+}
