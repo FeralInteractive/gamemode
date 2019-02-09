@@ -72,9 +72,9 @@ int set_gpu_state_nv(struct GameModeGPUInfo *info)
 	// These commands don't technically even need root
 
 	/* Set the GPUGraphicsClockOffset parameter */
-	char core_arg[64];
+	char core_arg[128];
 	snprintf(core_arg,
-	         64,
+	         128,
 	         "[gpu:%ld]/GPUGraphicsClockOffset[%ld]=%ld",
 	         info->device,
 	         info->nv_perf_level,
@@ -86,9 +86,9 @@ int set_gpu_state_nv(struct GameModeGPUInfo *info)
 	}
 
 	/* Set the GPUMemoryTransferRateOffset parameter */
-	char mem_arg[64];
+	char mem_arg[128];
 	snprintf(mem_arg,
-	         64,
+	         128,
 	         "[gpu:%ld]/GPUMemoryTransferRateOffset[%ld]=%ld",
 	         info->device,
 	         info->nv_perf_level,
