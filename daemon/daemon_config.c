@@ -438,9 +438,11 @@ bool config_get_client_blacklisted(GameModeConfig *self, const char *client)
 /*
  * Gets the reaper frequency
  */
-void config_get_reaper_thread_frequency(GameModeConfig *self, long *value)
+long config_get_reaper_thread_frequency(GameModeConfig *self)
 {
-	memcpy_locked_config(self, value, &self->reaper_frequency, sizeof(long));
+	long value = 0;
+	memcpy_locked_config(self, &value, &self->reaper_frequency, sizeof(long));
+	return value;
 }
 
 /*
@@ -498,24 +500,28 @@ void config_get_soft_realtime(GameModeConfig *self, char softrealtime[CONFIG_VAL
 /*
  * Get the renice value
  */
-void config_get_renice_value(GameModeConfig *self, long *value)
+long config_get_renice_value(GameModeConfig *self)
 {
-	memcpy_locked_config(self, value, &self->renice, sizeof(long));
+	long value = 0;
+	memcpy_locked_config(self, &value, &self->renice, sizeof(long));
+	return value;
 }
 
 /*
  * Get the ioprio value
  */
-void config_get_ioprio_value(GameModeConfig *self, int *value)
+long config_get_ioprio_value(GameModeConfig *self)
 {
+	long value = 0;
 	char ioprio_value[CONFIG_VALUE_MAX] = { 0 };
 	memcpy_locked_config(self, ioprio_value, &self->ioprio, sizeof(self->ioprio));
 	if (0 == strncmp(ioprio_value, "off", sizeof(self->ioprio)))
-		*value = IOPRIO_DONT_SET;
+		value = IOPRIO_DONT_SET;
 	else if (0 == strncmp(ioprio_value, "default", sizeof(self->ioprio)))
-		*value = IOPRIO_RESET_DEFAULT;
+		value = IOPRIO_RESET_DEFAULT;
 	else
-		*value = atoi(ioprio_value);
+		value = atoi(ioprio_value);
+	return value;
 }
 
 /*
@@ -529,36 +535,51 @@ void config_get_apply_gpu_optimisations(GameModeConfig *self, char value[CONFIG_
 	                     sizeof(self->apply_gpu_optimisations));
 }
 
-void config_get_gpu_vendor(GameModeConfig *self, long *value)
+long config_get_gpu_vendor(GameModeConfig *self)
 {
-	memcpy_locked_config(self, value, &self->gpu_vendor, sizeof(long));
+	long value = 0;
+	memcpy_locked_config(self, &value, &self->gpu_vendor, sizeof(long));
+	return value;
 }
 
-void config_get_gpu_device(GameModeConfig *self, long *value)
+long config_get_gpu_device(GameModeConfig *self)
 {
-	memcpy_locked_config(self, value, &self->gpu_device, sizeof(long));
+	long value = 0;
+	memcpy_locked_config(self, &value, &self->gpu_device, sizeof(long));
+	return value;
 }
 
-void config_get_nv_core_clock_mhz_offset(GameModeConfig *self, long *value)
+long config_get_nv_core_clock_mhz_offset(GameModeConfig *self)
 {
-	memcpy_locked_config(self, value, &self->nv_core_clock_mhz_offset, sizeof(long));
+	long value = 0;
+	memcpy_locked_config(self, &value, &self->nv_core_clock_mhz_offset, sizeof(long));
+	return value;
 }
 
-void config_get_nv_mem_clock_mhz_offset(GameModeConfig *self, long *value)
+long config_get_nv_mem_clock_mhz_offset(GameModeConfig *self)
 {
-	memcpy_locked_config(self, value, &self->nv_mem_clock_mhz_offset, sizeof(long));
-}
-void config_get_nv_perf_level(GameModeConfig *self, long *value)
-{
-	memcpy_locked_config(self, value, &self->nv_perf_level, sizeof(long));
+	long value = 0;
+	memcpy_locked_config(self, &value, &self->nv_mem_clock_mhz_offset, sizeof(long));
+	return value;
 }
 
-void config_get_amd_core_clock_percentage(GameModeConfig *self, long *value)
+long config_get_nv_perf_level(GameModeConfig *self)
 {
-	memcpy_locked_config(self, value, &self->amd_core_clock_percentage, sizeof(long));
+	long value = 0;
+	memcpy_locked_config(self, &value, &self->nv_perf_level, sizeof(long));
+	return value;
 }
 
-void config_get_amd_mem_clock_percentage(GameModeConfig *self, long *value)
+long config_get_amd_core_clock_percentage(GameModeConfig *self)
 {
-	memcpy_locked_config(self, value, &self->amd_mem_clock_percentage, sizeof(long));
+	long value = 0;
+	memcpy_locked_config(self, &value, &self->amd_core_clock_percentage, sizeof(long));
+	return value;
+}
+
+long config_get_amd_mem_clock_percentage(GameModeConfig *self)
+{
+	long value = 0;
+	memcpy_locked_config(self, &value, &self->amd_mem_clock_percentage, sizeof(long));
+	return value;
 }
