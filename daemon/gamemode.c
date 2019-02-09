@@ -569,6 +569,38 @@ error_cleanup:
 }
 
 /**
+ * Request status on behalf of caller
+ */
+int game_mode_context_query_status_for(GameModeContext *self, pid_t callerpid, pid_t gamepid)
+{
+	int status = 0;
+
+	/* Lookup the executable first */
+	char *executable = game_mode_context_find_exe(callerpid);
+	if (!executable) {
+		status = -1;
+		goto error_cleanup;
+	}
+
+	/* Check our blacklist and whitelist */
+	if (!config_get_supervisor_whitelisted(self->config, executable)) {
+		LOG_MSG("Supervisor [%s] was rejected (not in whitelist)\n", executable);
+		status = -2;
+		goto error_cleanup;
+	} else if (config_get_supervisor_blacklisted(self->config, executable)) {
+		LOG_MSG("Supervisor [%s] was rejected (in blacklist)\n", executable);
+		status = -2;
+		goto error_cleanup;
+	}
+	/* Checks cleared, call the original query */
+	return game_mode_context_query_status(self, gamepid);
+
+error_cleanup:
+	free(executable);
+	return status;
+}
+
+/**
  * Construct a new GameModeClient for the given process ID
  *
  * This is deliberately OOM safe

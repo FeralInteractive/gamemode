@@ -112,6 +112,17 @@ int game_mode_context_register_by_pid(GameModeContext *self, pid_t callerpid, pi
 int game_mode_context_unregister_by_pid(GameModeContext *self, pid_t callerpid, pid_t gamepid);
 
 /**
+ * Query the current status of gamemode for another process
+ *
+ * @param pid Process ID for the remote client
+ * @returns Positive if gamemode is active
+ *          1 if gamemode is active but the client is not registered
+ *          2 if gamemode is active and the client is registered
+ *          -2 if this supervisor was rejected
+ */
+int game_mode_context_query_status_for(GameModeContext *self, pid_t callerpid, pid_t gamepid);
+
+/**
  * Query the config of a gamemode context
  *
  * @param context A gamemode context
