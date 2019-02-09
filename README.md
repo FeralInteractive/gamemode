@@ -148,6 +148,18 @@ Developers can integrate the request directly into an app. Note that none of the
 
 Or, distribute `libgamemodeauto.so` and either add `-lgamemodeauto` to your linker arguments, or add it to an LD\_PRELOAD in a launch script.
 
+### Supervisor support
+Developers can also create apps that manage GameMode on the system, for other processes:
+
+```C
+#include "gamemode_client.h"
+
+	gamemode_request_start_for(gamePID);
+	gamemode_request_end_for(gamePID);
+```
+
+This functionality can also be controlled in the config file in the `supervisor` section.
+
 ---
 ## Contributions
 
