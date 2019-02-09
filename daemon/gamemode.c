@@ -504,13 +504,36 @@ int game_mode_context_query_status(GameModeContext *self, pid_t client)
 
 /**
  * Stub to register on behalf of caller
+ * TODO: long config_get_require_supervisor(GameModeConfig *self);
  */
 int game_mode_context_register_by_pid(GameModeContext *self, pid_t callerpid, pid_t gamepid)
 {
-	(void)self;
-	(void)callerpid;
-	(void)gamepid;
-	return 0;
+	int status = 0;
+
+	/* Lookup the executable first */
+	char *executable = game_mode_context_find_exe(callerpid);
+	if (!executable) {
+		status = -1;
+		goto error_cleanup;
+	}
+
+	/* Check our blacklist and whitelist */
+	if (!config_get_supervisor_whitelisted(self->config, executable)) {
+		LOG_MSG("Supervisor [%s] was rejected (not in whitelist)\n", executable);
+		status = -2;
+		goto error_cleanup;
+	} else if (config_get_supervisor_blacklisted(self->config, executable)) {
+		LOG_MSG("Supervisor [%s] was rejected (in blacklist)\n", executable);
+		status = -2;
+		goto error_cleanup;
+	}
+
+	/* Checks cleared, try and register the game */
+	return game_mode_context_register(self, gamepid);
+
+error_cleanup:
+	free(executable);
+	return status;
 }
 
 /**
@@ -518,10 +541,31 @@ int game_mode_context_register_by_pid(GameModeContext *self, pid_t callerpid, pi
  */
 int game_mode_context_unregister_by_pid(GameModeContext *self, pid_t callerpid, pid_t gamepid)
 {
-	(void)self;
-	(void)callerpid;
-	(void)gamepid;
-	return 0;
+	int status = 0;
+
+	/* Lookup the executable first */
+	char *executable = game_mode_context_find_exe(callerpid);
+	if (!executable) {
+		status = -1;
+		goto error_cleanup;
+	}
+
+	/* Check our blacklist and whitelist */
+	if (!config_get_supervisor_whitelisted(self->config, executable)) {
+		LOG_MSG("Supervisor [%s] was rejected (not in whitelist)\n", executable);
+		status = -2;
+		goto error_cleanup;
+	} else if (config_get_supervisor_blacklisted(self->config, executable)) {
+		LOG_MSG("Supervisor [%s] was rejected (in blacklist)\n", executable);
+		status = -2;
+		goto error_cleanup;
+	}
+	/* Checks cleared, try and register the game */
+	return game_mode_context_unregister(self, gamepid);
+
+error_cleanup:
+	free(executable);
+	return status;
 }
 
 /**

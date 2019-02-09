@@ -94,6 +94,10 @@ struct GameModeConfig {
 		long nv_perf_level;
 		long amd_core_clock_percentage;
 		long amd_mem_clock_percentage;
+
+		long require_supervisor;
+		char supervisor_whitelist[CONFIG_LIST_MAX][CONFIG_VALUE_MAX];
+		char supervisor_blacklist[CONFIG_LIST_MAX][CONFIG_VALUE_MAX];
 	} values;
 };
 
@@ -260,6 +264,15 @@ static int inih_handler(void *user, const char *section, const char *name, const
 			valid = get_long_value(name, value, &self->values.amd_core_clock_percentage);
 		} else if (strcmp(name, "amd_mem_clock_percentage") == 0) {
 			valid = get_long_value(name, value, &self->values.amd_mem_clock_percentage);
+		}
+	} else if (strcmp(section, "supervisor") == 0) {
+		/* Supervisor subsection */
+		if (strcmp(name, "supervisor_whitelist") == 0) {
+			valid = append_value_to_list(name, value, self->values.supervisor_whitelist);
+		} else if (strcmp(name, "supervisor_blacklist") == 0) {
+			valid = append_value_to_list(name, value, self->values.supervisor_blacklist);
+		} else if (strcmp(name, "require_supervisor") == 0) {
+			valid = get_long_value(name, value, &self->values.require_supervisor);
 		}
 	} else if (strcmp(section, "custom") == 0) {
 		/* Custom subsection */
@@ -568,3 +581,51 @@ DEFINE_CONFIG_GET(nv_mem_clock_mhz_offset)
 DEFINE_CONFIG_GET(nv_perf_level)
 DEFINE_CONFIG_GET(amd_core_clock_percentage)
 DEFINE_CONFIG_GET(amd_mem_clock_percentage)
+
+/*
+        char supervisor_whitelist[CONFIG_LIST_MAX][CONFIG_VALUE_MAX];
+        char supervisor_blacklist[CONFIG_LIST_MAX][CONFIG_VALUE_MAX];
+*/
+DEFINE_CONFIG_GET(require_supervisor)
+
+/*
+ * Checks if the supervisor is whitelisted
+ */
+bool config_get_supervisor_whitelisted(GameModeConfig *self, const char *supervisor)
+{
+	/* Take the read lock for the internal data */
+	pthread_rwlock_rdlock(&self->rwlock);
+
+	/* If the whitelist is empty then everything passes */
+	bool found = true;
+	if (self->values.supervisor_whitelist[0][0]) {
+		/*
+		 * Check if the value is found in our whitelist
+		 * Currently is a simple strstr check, but could be modified for wildcards etc.
+		 */
+		found = config_string_list_contains(supervisor, self->values.supervisor_whitelist);
+	}
+
+	/* release the lock */
+	pthread_rwlock_unlock(&self->rwlock);
+	return found;
+}
+
+/*
+ * Checks if the supervisor is blacklisted
+ */
+bool config_get_supervisor_blacklisted(GameModeConfig *self, const char *supervisor)
+{
+	/* Take the read lock for the internal data */
+	pthread_rwlock_rdlock(&self->rwlock);
+
+	/*
+	 * Check if the value is found in our whitelist
+	 * Currently is a simple strstr check, but could be modified for wildcards etc.
+	 */
+	bool found = config_string_list_contains(supervisor, self->values.supervisor_blacklist);
+
+	/* release the lock */
+	pthread_rwlock_unlock(&self->rwlock);
+	return found;
+}
