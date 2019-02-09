@@ -549,8 +549,7 @@ static void *game_mode_context_reaper(void *userdata)
 	/* Stack, not allocated, won't disappear. */
 	GameModeContext *self = userdata;
 
-	long reaper_interval = 0.0f;
-	config_get_reaper_thread_frequency(self->config, &reaper_interval);
+	long reaper_interval = config_get_reaper_thread_frequency(self->config);
 
 	struct timespec ts = { 0, 0 };
 	ts.tv_sec = time(NULL) + reaper_interval;

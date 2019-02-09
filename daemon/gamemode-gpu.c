@@ -71,8 +71,8 @@ int game_mode_initialise_gpu(GameModeConfig *config, GameModeGPUInfo **info)
 	memset(new_info, 0, sizeof(GameModeGPUInfo));
 
 	/* Get the config parameters */
-	config_get_gpu_vendor(config, &new_info->vendor);
-	config_get_gpu_device(config, &new_info->device);
+	new_info->vendor = config_get_gpu_vendor(config);
+	new_info->device = config_get_gpu_device(config);
 
 	/* verify device ID */
 	if (new_info->device == -1) {
@@ -100,8 +100,8 @@ int game_mode_initialise_gpu(GameModeConfig *config, GameModeGPUInfo **info)
 	/* Load the config based on GPU and also verify the values are sane */
 	switch (new_info->vendor) {
 	case Vendor_NVIDIA:
-		config_get_nv_core_clock_mhz_offset(config, &new_info->core);
-		config_get_nv_mem_clock_mhz_offset(config, &new_info->mem);
+		new_info->core = config_get_nv_core_clock_mhz_offset(config);
+		new_info->mem = config_get_nv_mem_clock_mhz_offset(config);
 
 		/* Reject values over some guessed values
 		 * If a user wants to go into very unsafe levels they can recompile
@@ -122,7 +122,7 @@ int game_mode_initialise_gpu(GameModeConfig *config, GameModeGPUInfo **info)
 		}
 
 		/* Sanity check the performance level value as well */
-		config_get_nv_perf_level(config, &new_info->nv_perf_level);
+		new_info->nv_perf_level = config_get_nv_perf_level(config);
 		if (new_info->nv_perf_level < 0 || new_info->nv_perf_level > 16) {
 			LOG_ERROR(
 			    "NVIDIA Performance level value likely invalid (%ld), will not apply "
@@ -134,8 +134,8 @@ int game_mode_initialise_gpu(GameModeConfig *config, GameModeGPUInfo **info)
 
 		break;
 	case Vendor_AMD:
-		config_get_amd_core_clock_percentage(config, &new_info->core);
-		config_get_amd_mem_clock_percentage(config, &new_info->mem);
+		new_info->core = config_get_amd_core_clock_percentage(config);
+		new_info->mem = config_get_amd_mem_clock_percentage(config);
 
 		/* Reject values over 20%
 		 * If a user wants to go into very unsafe levels they can recompile
