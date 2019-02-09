@@ -43,6 +43,7 @@ POSSIBILITY OF SUCH DAMAGE.
 #include "daemon_config.h"
 #include "gamemode_client.h"
 #include "governors-query.h"
+#include "gpu-control.h"
 
 /* Initial verify step to ensure gamemode isn't already active */
 static int verify_gamemode_initial(void)
@@ -381,7 +382,23 @@ static int game_mode_run_feature_tests(void)
 	/* TODO: Unknown if this is testable, org.freedesktop.ScreenSaver has no query method */
 
 	/* Do GPU optimisations get applied? */
-	/* TODO */
+	{
+		/* First get current GPU values */
+		GameModeGPUInfo gpuinfo;
+		gpuinfo.device = config_get_gpu_device(config);
+		gpuinfo.vendor = config_get_gpu_vendor(config);
+
+		if( gpuinfo.vendor == Vendor_NVIDIA )
+			gpuinfo.nv_perf_level = config_get_nv_perf_level(config);
+
+		if( game_mode_get_gpu(&gpuinfo) != 0 )
+		{
+			LOG_ERROR("Could not get current GPU info, see above!\n");
+			status = 1;
+		}
+
+		/* TODO continue to run gamemode and check GPU stats */
+	}
 
 	/* Was the process reniced? */
 	/* Was the scheduling applied? */
