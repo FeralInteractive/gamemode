@@ -64,9 +64,9 @@ static int get_gpu_state_nv(struct GameModeGPUInfo *info)
 	if (info->vendor != Vendor_NVIDIA)
 		return -1;
 
-	char cmd[128] = { 0 };
 	char arg[128] = { 0 };
-	char buf[128] = { 0 };
+	char buf[EXTERNAL_BUFFER_MAX] = { 0 };
+	char *end;
 
 	/* Set the GPUGraphicsClockOffset parameter */
 	snprintf(arg,
@@ -75,28 +75,15 @@ static int get_gpu_state_nv(struct GameModeGPUInfo *info)
 	         info->device,
 	         NV_CORE_OFFSET_ATTRIBUTE,
 	         info->nv_perf_level);
-	snprintf(cmd, 128, "/usr/bin/nvidia-settings -q %s -t", arg );
-
-	FILE* run = popen(cmd, "r");
-	if( run == NULL)
-	{
-		LOG_ERROR("Command [%s] failed to run!\n", cmd);
+	const char *exec_args_core[] = { "/usr/bin/nvidia-settings", "-q", arg, "-t", NULL };
+	if (run_external_process_get_output(exec_args_core, buf) != 0) {
+		LOG_ERROR("Failed to set %s!\n", arg);
 		return -1;
 	}
 
-	if( fgets( buf, sizeof(buf)-1, run) == NULL && buf[0] != '\0' )
-	{
-		LOG_ERROR("Failed to get output of [%s]!\n",cmd);
-		return -1;
-	}
-
-	char* end = NULL;
 	info->core = strtol(buf, &end, 10);
-	pclose(run);
-
-	if( end == buf )
-	{
-		LOG_ERROR("Failed to parse output of [%s] output [%s]!\n",cmd, buf);
+	if (end == buf) {
+		LOG_ERROR("Failed to parse output for \"%s\" output was \"%s\"!\n", arg, buf);
 		return -1;
 	}
 
@@ -107,28 +94,15 @@ static int get_gpu_state_nv(struct GameModeGPUInfo *info)
 	         info->device,
 	         NV_MEM_OFFSET_ATTRIBUTE,
 	         info->nv_perf_level);
-	snprintf(cmd, 128, "/usr/bin/nvidia-settings -q %s -t", arg );
-
-	run = popen(cmd, "r");
-	if( run == NULL)
-	{
-		LOG_ERROR("Command [%s] failed to run!\n", cmd);
+	const char *exec_args_mem[] = { "/usr/bin/nvidia-settings", "-q", arg, "-t", NULL };
+	if (run_external_process_get_output(exec_args_mem, buf) != 0) {
+		LOG_ERROR("Failed to set %s!\n", arg);
 		return -1;
 	}
 
-	if( fgets( buf, sizeof(buf)-1, run) == NULL && buf[0] != '\0' )
-	{
-		LOG_ERROR("Failed to get output of [%s]!\n",cmd);
-		return -1;
-	}
-
-	end = NULL;
 	info->mem = strtol(buf, &end, 10);
-	pclose(run);
-
-	if( end == buf )
-	{
-		LOG_ERROR("Failed to parse output of [%s] output [%s]!\n",cmd, buf);
+	if (end == buf) {
+		LOG_ERROR("Failed to parse output for \"%s\" output was \"%s\"!\n", arg, buf);
 		return -1;
 	}
 
@@ -290,11 +264,11 @@ int main(int argc, char *argv[])
 		switch (info.vendor) {
 		case Vendor_NVIDIA:
 			/* Get nvidia power level */
-			if( get_gpu_state_nv(&info) != 0 )
+			if (get_gpu_state_nv(&info) != 0)
 				exit(EXIT_FAILURE);
 			break;
 		case Vendor_AMD:
-			if( get_gpu_state_amd(&info) != 0)
+			if (get_gpu_state_amd(&info) != 0)
 				exit(EXIT_FAILURE);
 			break;
 		default:
