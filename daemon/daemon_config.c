@@ -171,6 +171,21 @@ static bool get_long_value_hex(const char *value_name, const char *value, long *
 	return true;
 }
 
+/**
+ * Simple strstr scheck
+ * Could be expanded for wildcard or regex
+ */
+static bool config_string_list_contains(const char *needle,
+                                        char haystack[CONFIG_LIST_MAX][CONFIG_VALUE_MAX])
+{
+	for (unsigned int i = 0; i < CONFIG_LIST_MAX && haystack[i][0]; i++) {
+		if (strstr(needle, haystack[i])) {
+			return true;
+		}
+	}
+	return false;
+}
+
 /*
  * Get a string value
  */
@@ -417,12 +432,7 @@ bool config_get_client_whitelisted(GameModeConfig *self, const char *client)
 		 * Check if the value is found in our whitelist
 		 * Currently is a simple strstr check, but could be modified for wildcards etc.
 		 */
-		found = false;
-		for (unsigned int i = 0; i < CONFIG_LIST_MAX && self->values.whitelist[i][0]; i++) {
-			if (strstr(client, self->values.whitelist[i])) {
-				found = true;
-			}
-		}
+		found = config_string_list_contains(client, self->values.whitelist);
 	}
 
 	/* release the lock */
@@ -442,12 +452,7 @@ bool config_get_client_blacklisted(GameModeConfig *self, const char *client)
 	 * Check if the value is found in our whitelist
 	 * Currently is a simple strstr check, but could be modified for wildcards etc.
 	 */
-	bool found = false;
-	for (unsigned int i = 0; i < CONFIG_LIST_MAX && self->values.blacklist[i][0]; i++) {
-		if (strstr(client, self->values.blacklist[i])) {
-			found = true;
-		}
-	}
+	bool found = config_string_list_contains(client, self->values.blacklist);
 
 	/* release the lock */
 	pthread_rwlock_unlock(&self->rwlock);
