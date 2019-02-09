@@ -120,7 +120,7 @@ int game_mode_context_unregister_by_pid(GameModeContext *self, pid_t callerpid, 
  *          2 if gamemode is active and the client is registered
  *          -2 if this supervisor was rejected
  */
-int game_mode_context_query_status_for(GameModeContext *self, pid_t callerpid, pid_t gamepid);
+int game_mode_context_query_status_by_pid(GameModeContext *self, pid_t callerpid, pid_t gamepid);
 
 /**
  * Query the config of a gamemode context
