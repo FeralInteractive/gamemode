@@ -220,3 +220,46 @@ int game_mode_apply_gpu(const GameModeGPUInfo *info, bool apply)
 
 	return 0;
 }
+
+int game_mode_get_gpu(GameModeGPUInfo *info)
+{
+	if (!info)
+		return 0;
+
+	/* Generate the input strings */
+	char vendor[7];
+	snprintf(vendor, 7, "0x%04x", (short)info->vendor);
+	char device[4];
+	snprintf(device, 4, "%ld", info->device);
+	char nv_perf_level[4];
+	snprintf(nv_perf_level, 4, "%ld", info->nv_perf_level);
+
+	// Set up our command line to pass to gpuclockctl
+	// This doesn't need pkexec as get does not need elevated perms
+	const char *const exec_args[] = {
+		LIBEXECDIR "/gpuclockctl",
+		vendor,
+		device,
+		"get",
+		info->vendor == Vendor_NVIDIA ? nv_perf_level : NULL, /* Only use this if Nvidia */
+		NULL,
+	};
+
+	char buffer[EXTERNAL_BUFFER_MAX] = { 0 };
+	if (run_external_process_get_output(exec_args, buffer) != 0) {
+		LOG_ERROR("Failed to call gpuclockctl, could get values!\n");
+		return -1;
+	}
+
+	int core = 0;
+	int mem = 0;
+	if (sscanf(buffer, "%i %i", &core, &mem) != 2) {
+		LOG_ERROR("Failed to parse gpuclockctl output: %s\n", buffer);
+		return -1;
+	}
+
+	info->core = core;
+	info->mem = mem;
+
+	return 0;
+}
