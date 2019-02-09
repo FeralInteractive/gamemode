@@ -503,7 +503,7 @@ int game_mode_context_query_status(GameModeContext *self, pid_t client)
 }
 
 /**
- * Stub to register on behalf of caller
+ * Register on behalf of caller
  * TODO: long config_get_require_supervisor(GameModeConfig *self);
  */
 int game_mode_context_register_by_pid(GameModeContext *self, pid_t callerpid, pid_t gamepid)
@@ -537,7 +537,7 @@ error_cleanup:
 }
 
 /**
- * Stub to unregister on behalf of caller
+ * Unregister on behalf of caller
  */
 int game_mode_context_unregister_by_pid(GameModeContext *self, pid_t callerpid, pid_t gamepid)
 {
