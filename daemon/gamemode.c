@@ -571,7 +571,7 @@ error_cleanup:
 /**
  * Request status on behalf of caller
  */
-int game_mode_context_query_status_for(GameModeContext *self, pid_t callerpid, pid_t gamepid)
+int game_mode_context_query_status_by_pid(GameModeContext *self, pid_t callerpid, pid_t gamepid)
 {
 	int status = 0;
 

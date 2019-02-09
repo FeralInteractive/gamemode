@@ -165,8 +165,8 @@ static int method_unregister_game_by_pid(sd_bus_message *m, void *userdata,
 /**
  * Handles the QueryStatus D-BUS Method
  */
-static int method_query_status_for(sd_bus_message *m, void *userdata,
-                                   __attribute__((unused)) sd_bus_error *ret_error)
+static int method_query_status_by_pid(sd_bus_message *m, void *userdata,
+                                      __attribute__((unused)) sd_bus_error *ret_error)
 {
 	int callerpid = 0;
 	int gamepid = 0;
@@ -178,7 +178,7 @@ static int method_query_status_for(sd_bus_message *m, void *userdata,
 		return ret;
 	}
 
-	int status = game_mode_context_query_status_for(context, (pid_t)callerpid, (pid_t)gamepid);
+	int status = game_mode_context_query_status_by_pid(context, (pid_t)callerpid, (pid_t)gamepid);
 
 	return sd_bus_reply_method_return(m, "i", status);
 }
@@ -195,7 +195,7 @@ static const sd_bus_vtable gamemode_vtable[] =
 	                SD_BUS_VTABLE_UNPRIVILEGED),
 	  SD_BUS_METHOD("UnregisterGameByPID", "ii", "i", method_unregister_game_by_pid,
 	                SD_BUS_VTABLE_UNPRIVILEGED),
-	  SD_BUS_METHOD("QueryStatusFor", "ii", "i", method_query_status_for,
+	  SD_BUS_METHOD("QueryStatusByPID", "ii", "i", method_query_status_by_pid,
 	                SD_BUS_VTABLE_UNPRIVILEGED),
 	  SD_BUS_VTABLE_END };
 
