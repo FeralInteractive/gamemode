@@ -438,7 +438,7 @@ bool config_get_client_blacklisted(GameModeConfig *self, const char *client)
 /*
  * Gets the reaper frequency
  */
-long config_get_reaper_thread_frequency(GameModeConfig *self)
+long config_get_reaper_frequency(GameModeConfig *self)
 {
 	long value = 0;
 	memcpy_locked_config(self, &value, &self->reaper_frequency, sizeof(long));
