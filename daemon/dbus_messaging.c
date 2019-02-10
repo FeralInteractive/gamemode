@@ -75,9 +75,9 @@ static int method_register_game(sd_bus_message *m, void *userdata,
 		return ret;
 	}
 
-	game_mode_context_register(context, (pid_t)pid);
+	int status = game_mode_context_register(context, (pid_t)pid, (pid_t)pid);
 
-	return sd_bus_reply_method_return(m, "i", 0);
+	return sd_bus_reply_method_return(m, "i", status);
 }
 
 /**
@@ -95,9 +95,9 @@ static int method_unregister_game(sd_bus_message *m, void *userdata,
 		return ret;
 	}
 
-	game_mode_context_unregister(context, (pid_t)pid);
+	int status = game_mode_context_unregister(context, (pid_t)pid, (pid_t)pid);
 
-	return sd_bus_reply_method_return(m, "i", 0);
+	return sd_bus_reply_method_return(m, "i", status);
 }
 
 /**
@@ -115,7 +115,7 @@ static int method_query_status(sd_bus_message *m, void *userdata,
 		return ret;
 	}
 
-	int status = game_mode_context_query_status(context, (pid_t)pid);
+	int status = game_mode_context_query_status(context, (pid_t)pid, (pid_t)pid);
 
 	return sd_bus_reply_method_return(m, "i", status);
 }
@@ -136,7 +136,7 @@ static int method_register_game_by_pid(sd_bus_message *m, void *userdata,
 		return ret;
 	}
 
-	int reply = game_mode_context_register_by_pid(context, (pid_t)callerpid, (pid_t)gamepid);
+	int reply = game_mode_context_register(context, (pid_t)gamepid, (pid_t)callerpid);
 
 	return sd_bus_reply_method_return(m, "i", reply);
 }
@@ -157,7 +157,7 @@ static int method_unregister_game_by_pid(sd_bus_message *m, void *userdata,
 		return ret;
 	}
 
-	int reply = game_mode_context_unregister_by_pid(context, (pid_t)callerpid, (pid_t)gamepid);
+	int reply = game_mode_context_unregister(context, (pid_t)gamepid, (pid_t)callerpid);
 
 	return sd_bus_reply_method_return(m, "i", reply);
 }
@@ -178,7 +178,7 @@ static int method_query_status_by_pid(sd_bus_message *m, void *userdata,
 		return ret;
 	}
 
-	int status = game_mode_context_query_status_by_pid(context, (pid_t)callerpid, (pid_t)gamepid);
+	int status = game_mode_context_query_status(context, (pid_t)gamepid, (pid_t)callerpid);
 
 	return sd_bus_reply_method_return(m, "i", status);
 }
