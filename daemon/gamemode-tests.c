@@ -223,13 +223,13 @@ static int run_dual_client_tests(void)
 	}
 
 	/* Give the child a chance to finish */
-	usleep(10000);
+	usleep(100000);
 
 	// Wait for the child to finish up
 	int wstatus;
 	while (waitpid(child, &wstatus, WNOHANG) == 0) {
 		LOG_MSG("...Waiting for child to quit...\n");
-		usleep(10000);
+		usleep(100000);
 	}
 
 	/* Verify that gamemode is now innactive */
