@@ -599,14 +599,14 @@ static int run_supervisor_tests(void)
 	ret = gamemode_query_status();
 	if(ret != 1)
 	{
-		LOG_ERROR("gamemode_query_status gave unexpected value %d, (expected 1)!\n", ret);
+		LOG_ERROR("gamemode_query_status after start request gave unexpected value %d, (expected 1)!\n", ret);
 		supervisortests = -1;
 	}
 
 	/* Check it's active for the dummy */
 	ret = gamemode_query_status_for(pid);
 	if (ret != 2) {
-		LOG_ERROR("gamemode_query_status_for gave unexpected value %d, (expected 2)!\n", ret);
+		LOG_ERROR("gamemode_query_status_for after start request gave unexpected value %d, (expected 2)!\n", ret);
 		supervisortests = -1;
 	}
 
@@ -614,7 +614,7 @@ static int run_supervisor_tests(void)
 	ret = gamemode_request_end_for(pid);
 	if(ret != 0)
 	{
-		LOG_ERROR("gamemode_request_start_for gave unexpected value %d, (expected 0)!\n", ret);
+		LOG_ERROR("gamemode_request_end_for gave unexpected value %d, (expected 0)!\n", ret);
 		supervisortests = -1;
 	}
 
@@ -622,7 +622,7 @@ static int run_supervisor_tests(void)
 	ret = gamemode_query_status();
 	if(ret != 0)
 	{
-		LOG_ERROR("gamemode_query_status gave unexpected value %d, (expected 0)!\n", ret);
+		LOG_ERROR("gamemode_query_status after end request gave unexpected value %d, (expected 0)!\n", ret);
 		supervisortests = -1;
 	}
 
