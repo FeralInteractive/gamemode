@@ -429,7 +429,7 @@ int game_mode_context_register(GameModeContext *self, pid_t client, pid_t reques
 	/* Apply io priorities */
 	game_mode_apply_ioprio(self, client);
 
-	return true;
+	return 0;
 
 error_cleanup:
 	if (errno != 0)
@@ -511,7 +511,7 @@ int game_mode_context_unregister(GameModeContext *self, pid_t client, pid_t requ
 		game_mode_context_leave(self);
 	}
 
-	return true;
+	return 0;
 }
 
 int game_mode_context_query_status(GameModeContext *self, pid_t client, pid_t requester)

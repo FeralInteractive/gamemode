@@ -114,13 +114,13 @@ extern int real_gamemode_query_status(void)
 }
 
 // Wrapper to call RegisterGameByPID
-extern int real_gamemode_register_start_for(pid_t pid)
+extern int real_gamemode_request_start_for(pid_t pid)
 {
 	return gamemode_request("RegisterGameByPID", pid);
 }
 
 // Wrapper to call UnregisterGameByPID
-extern int real_gamemode_register_end_for(pid_t pid)
+extern int real_gamemode_request_end_for(pid_t pid)
 {
 	return gamemode_request("UnregisterGameByPID", pid);
 }
