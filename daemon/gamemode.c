@@ -361,6 +361,8 @@ int game_mode_context_register(GameModeContext *self, pid_t client, pid_t reques
 			free(executable);
 			return -2;
 		}
+	} else if (config_get_require_supervisor(self->config)) {
+		LOG_ERROR("Direct request made but require_supervisor was set, rejecting request!\n");
 	}
 
 	/* Cap the total number of active clients */
@@ -463,6 +465,8 @@ int game_mode_context_unregister(GameModeContext *self, pid_t client, pid_t requ
 		}
 
 		free(executable);
+	} else if (config_get_require_supervisor(self->config)) {
+		LOG_ERROR("Direct request made but require_supervisor was set, rejecting request!\n");
 	}
 
 	/* Requires locking. */
