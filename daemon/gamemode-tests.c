@@ -632,6 +632,14 @@ static int run_supervisor_tests(void)
 		supervisortests = -1;
 	}
 
+	// Wait for the child to finish up
+	int wstatus;
+	usleep(100000);
+	while (waitpid(pid, &wstatus, WNOHANG) == 0) {
+		LOG_MSG("...Waiting for child to quit...\n");
+		usleep(100000);
+	}
+
 	if (supervisortests == 0)
 		LOG_MSG(":: Passed\n\n");
 	else
