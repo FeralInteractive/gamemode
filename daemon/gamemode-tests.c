@@ -580,8 +580,7 @@ static int run_supervisor_tests(void)
 
 	/* Launch an external dummy process we can leave running and request gamemode for it */
 	pid_t pid = fork();
-	if( pid == 0 )
-	{
+	if (pid == 0) {
 		/* Child simply pauses and exits */
 		pause();
 		exit(EXIT_SUCCESS);
@@ -589,40 +588,43 @@ static int run_supervisor_tests(void)
 
 	/* Request gamemode for our dummy process */
 	ret = gamemode_request_start_for(pid);
-	if(ret != 0)
-	{
+	if (ret != 0) {
 		LOG_ERROR("gamemode_request_start_for gave unexpected value %d, (expected 0)!\n", ret);
 		supervisortests = -1;
 	}
 
 	/* Check it's active */
 	ret = gamemode_query_status();
-	if(ret != 1)
-	{
-		LOG_ERROR("gamemode_query_status after start request gave unexpected value %d, (expected 1)!\n", ret);
+	if (ret != 1) {
+		LOG_ERROR(
+		    "gamemode_query_status after start request gave unexpected value %d, (expected 1)!\n",
+		    ret);
 		supervisortests = -1;
 	}
 
 	/* Check it's active for the dummy */
 	ret = gamemode_query_status_for(pid);
 	if (ret != 2) {
-		LOG_ERROR("gamemode_query_status_for after start request gave unexpected value %d, (expected 2)!\n", ret);
+		LOG_ERROR(
+		    "gamemode_query_status_for after start request gave unexpected value %d, (expected "
+		    "2)!\n",
+		    ret);
 		supervisortests = -1;
 	}
 
 	/* request gamemode end for the client */
 	ret = gamemode_request_end_for(pid);
-	if(ret != 0)
-	{
+	if (ret != 0) {
 		LOG_ERROR("gamemode_request_end_for gave unexpected value %d, (expected 0)!\n", ret);
 		supervisortests = -1;
 	}
 
 	/* Verify it's not active */
 	ret = gamemode_query_status();
-	if(ret != 0)
-	{
-		LOG_ERROR("gamemode_query_status after end request gave unexpected value %d, (expected 0)!\n", ret);
+	if (ret != 0) {
+		LOG_ERROR(
+		    "gamemode_query_status after end request gave unexpected value %d, (expected 0)!\n",
+		    ret);
 		supervisortests = -1;
 	}
 
@@ -675,8 +677,7 @@ int game_mode_run_client_tests()
 
 	/* Controls whether we require a supervisor to actually make requests */
 	/* TODO: This effects all tests below */
-	if( config_get_require_supervisor(config) != 0 )
-	{
+	if (config_get_require_supervisor(config) != 0) {
 		LOG_ERROR("Tests currently unsupported when require_supervisor is set\n");
 		return -1;
 	}
