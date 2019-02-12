@@ -28,6 +28,9 @@ Query the current status of gamemode
 .B \-h
 Print help text
 .TP 8
+.B \-t
+Run diagnostic tests on the current installation
+.TP 8
 .B \-v
 Print the version
 
@@ -35,13 +38,19 @@ Print the version
 \fBlibgamemodeauto.so.0\fR can be pre-loaded into any program to request \fBgamemoded\fR begin or end the mode, like so:
 
 .RS 4
-LD_PRELOAD=/usr/\e$LIB/libgamemodeauto.so.0 \./game
+gamemoderun \./game
 .RE
 
 Or by setting the steam launch options for a game:
 
 .RS 4
-LD_PRELOAD=$LD_PRELOAD:/usr/\e$LIB/libgamemodeauto.so.0 %command%
+gamemoderun %command%
+.RE
+
+The library can be manually preloaded if needed:
+
+.RS 4
+LD_PRELOAD=$LD_PRELOAD:/usr/\e$LIB/libgamemodeauto.so.0 ./game
 .RE
 
 The \fBgamemode_client.h\fR header can be used by developers to build the requests into a program:
@@ -93,49 +102,9 @@ Behaviour of the config file can be explained by presenting a commented example:
 
 .RS 4
 .nf
-[general]
-; The reaper thread will check every 10 seconds for exited clients
-reaper_freq=10
-
-; The desired governor is used when entering GameMode instead of "performance"
-desiredgov=performance
-; The default governer is used when leaving GameMode instead of restoring the original value
-defaultgov=powersave
-
-; By default, GameMode changes the scheduler policy to SCHED_ISO with 4 or more CPU cores,
-; force enable or disable with "on" or "off"
-softrealtime=auto
-
-; By default, GameMode renices the client to -4, you can put any value between 1 and 20 here,
-; the value will be negated and applied as a nice value
-renice = 4
-
-; By default, GameMode adjusts the iopriority of clients to BE/0, you can put any value
-; between 0 and 7 here (with 0 being highest priority), or one of the special values
-; "off" (to disable) or "reset" (to restore Linux default behavior based on CPU priority),
-; currently, only the best-effort class is supported thus you cannot set it here
-ioprio = 0
-
-[filter]
-; If "whitelist" entry has a value(s)
-; gamemode will reject anything not in the whitelist
-;whitelist=RiseOfTheTombRaider
-
-; Gamemode will always reject anything in the blacklist
-blacklist=HalfLife3
-    glxgears
-
-[custom]
-; Custom scripts (executed using the shell) when gamemode starts and ends
-start=notify-send "GameMode started"
-    /home/me/bin/stop_ethmining.sh
-
-end=notify-send "GameMode ended"
-    /home/me/bin/start_ethmining.sh
+@GAMEMODE_EXAMPLE_CONFIG@
 .fi
 .RE
-
-This config file will currently reject any games that match \fIHalfLife3\fR or \fIglxgears\fR, but can be modified to only accept \fIRiseOfTheTombRaider\fR by removing the semicolon preceding the fourth line.
 
 .SH SEE ALSO
 systemd(1)
