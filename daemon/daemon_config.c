@@ -72,6 +72,8 @@ struct GameModeConfig {
 
 	char ioprio[CONFIG_VALUE_MAX];
 
+	long inhibit_screensaver;
+
 	long reaper_frequency;
 };
 
@@ -168,6 +170,8 @@ static int inih_handler(void *user, const char *section, const char *name, const
 			valid = get_long_value(name, value, &self->renice);
 		} else if (strcmp(name, "ioprio") == 0) {
 			valid = get_string_value(value, self->ioprio);
+		} else if (strcmp(name, "inhibit_screensaver") == 0) {
+			valid = get_long_value(name, value, &self->inhibit_screensaver);
 		}
 	} else if (strcmp(section, "custom") == 0) {
 		/* Custom subsection */
@@ -227,8 +231,9 @@ static void load_config_files(GameModeConfig *self)
 	memset(self->defaultgov, 0, sizeof(self->defaultgov));
 	memset(self->desiredgov, 0, sizeof(self->desiredgov));
 	memset(self->softrealtime, 0, sizeof(self->softrealtime));
-	self->renice = 0; /* 0 = use default */
+	self->renice = 4; /* default value of 4 */
 	self->reaper_frequency = DEFAULT_REAPER_FREQ;
+	self->inhibit_screensaver = 1; /* Defaults to on */
 
 	/*
 	 * Locations to load, in order
@@ -380,6 +385,16 @@ bool config_get_client_blacklisted(GameModeConfig *self, const char *client)
 void config_get_reaper_thread_frequency(GameModeConfig *self, long *value)
 {
 	memcpy_locked_config(self, value, &self->reaper_frequency, sizeof(long));
+}
+
+/*
+ * Gets the screensaver inhibit setting
+ */
+bool config_get_inhibit_screensaver(GameModeConfig *self)
+{
+	long val;
+	memcpy_locked_config(self, &val, &self->inhibit_screensaver, sizeof(long));
+	return val == 1;
 }
 
 /*

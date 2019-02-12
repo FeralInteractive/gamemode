@@ -48,7 +48,6 @@ static int set_gov_state(const char *value)
 	int retval = EXIT_SUCCESS;
 	int res = 0;
 
-	LOG_MSG("Setting governors to %s\n", value);
 	for (int i = 0; i < num; i++) {
 		const char *gov = governors[i];
 		FILE *f = fopen(gov, "w");
@@ -80,7 +79,7 @@ int main(int argc, char *argv[])
 
 		/* Must be root to set the state */
 		if (geteuid() != 0) {
-			fprintf(stderr, "This program must be run as root\n");
+			LOG_ERROR("This program must be run as root\n");
 			return EXIT_FAILURE;
 		}
 

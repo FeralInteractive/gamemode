@@ -51,14 +51,14 @@ POSSIBILITY OF SUCH DAMAGE.
 		}                                                                                          \
 	} while (0)
 
-#define PLOG_ERROR(...) fprintf(stderr, __VA_ARGS__)
+#define PLOG_ERROR(...) fprintf(stderr, "ERROR: " __VA_ARGS__)
 #define SYSLOG_ERROR(...) syslog(LOG_ERR, __VA_ARGS__)
 #define LOG_ERROR(...)                                                                             \
 	do {                                                                                           \
 		if (get_use_syslog()) {                                                                    \
-			SYSLOG_MSG(__VA_ARGS__);                                                               \
+			SYSLOG_ERROR(__VA_ARGS__);                                                             \
 		} else {                                                                                   \
-			PLOG_MSG(__VA_ARGS__);                                                                 \
+			PLOG_ERROR(__VA_ARGS__);                                                               \
 		}                                                                                          \
 	} while (0)
 

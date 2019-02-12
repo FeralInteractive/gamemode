@@ -1,0 +1,11 @@
+#!/bin/bash
+# Helper script to launch games with gamemode
+
+# Path to install gamemoded auto script
+CONFIG_LIB_DIR="@GAMEMODE_LIB_DIR@/libgamemodeauto.so.0"
+
+# Set the ld library path prefixed libgamemodeauto
+export LD_LIBRARY_PATH=${CONFIG_LIB_DIR}${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}
+
+# Launch
+exec "$@"
