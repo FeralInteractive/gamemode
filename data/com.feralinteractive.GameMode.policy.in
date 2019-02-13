@@ -24,7 +24,7 @@
   </action>
 
   <action id="com.feralinteractive.GameMode.gpu-helper">
-    <description>Modify the GPU clock statesr</description>
+    <description>Modify the GPU clock states</description>
     <message>Authentication is required to modify the GPU clock states</message>
     <defaults>
       <allow_any>no</allow_any>
