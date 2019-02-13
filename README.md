@@ -108,7 +108,7 @@ If you are unsure, `bootstrap.sh` will warn you if your system lacks CPU governo
 Scripts and other features will still work.
 
 ### GPU Optimisations
-GameMode is able to automatically apply GPU overclocks when activated. AMD overclocking currently requires the amdgpu kernel module, and Nvidia requires the `coolbits` extension to be enabled in the Nvidia settings. It is very much encouraged for users to find out their own overclocking limits manually before venturing into configuring them in gamemode, and activating this feature in gamemode assumes you take responsibility for the effects of said overclocks. More information can be found in the `example/gamemoded.ini` file. Note that both Nvidia (GPUBoost) and AMD (Overdrive) devices and drivers already attempt to internally overclock if possible, but it is still common for enthusiasts to want to manually push the upper threshold.
+GameMode is able to automatically apply GPU overclocks when activated. AMD overclocking currently requires the amdgpu kernel module, and Nvidia requires the `coolbits` extension to be enabled in the Nvidia settings. It is very much encouraged for users to find out their own overclocking limits manually before venturing into configuring them in GameMode, and activating this feature in GameMode assumes you take responsibility for the effects of said overclocks. More information can be found in the `example/gamemode.ini` file. Note that both Nvidia (GPUBoost) and AMD (Overdrive) devices and drivers already attempt to internally overclock if possible, but it is still common for enthusiasts to want to manually push the upper threshold.
 
 ---
 ## Developers
