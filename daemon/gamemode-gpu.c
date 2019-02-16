@@ -71,8 +71,10 @@ int game_mode_initialise_gpu(GameModeConfig *config, GameModeGPUInfo **info)
 	memset(new_info, 0, sizeof(GameModeGPUInfo));
 
 	/* Get the config parameters */
-	new_info->vendor = config_get_gpu_vendor(config);
 	new_info->device = config_get_gpu_device(config);
+
+	/* TODO fill in GPU vendor */
+	new_info->vendor = 0;
 
 	/* verify device ID */
 	if (new_info->device == -1) {
@@ -86,10 +88,9 @@ int game_mode_initialise_gpu(GameModeConfig *config, GameModeGPUInfo **info)
 	/* verify GPU vendor */
 	if (!GPUVendorValid(new_info->vendor)) {
 		LOG_ERROR(
-		    "Invalid gpu_vendor value (0x%04x) set in configuration, will not apply "
-		    "optimisations!\n",
+		    "Unknown vendor value (0x%04x) found, cannot apply optimisations!\n",
 		    (unsigned int)new_info->vendor);
-		LOG_ERROR("Possible values are: 0x%04x (NVIDIA) 0x%04x (AMD) 0x%04x (Intel)\n",
+		LOG_ERROR("Known values are: 0x%04x (NVIDIA) 0x%04x (AMD) 0x%04x (Intel)\n",
 		          Vendor_NVIDIA,
 		          Vendor_AMD,
 		          Vendor_Intel);

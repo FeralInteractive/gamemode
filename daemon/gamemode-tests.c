@@ -421,15 +421,14 @@ int run_gpu_optimisation_tests(struct GameModeConfig *config)
 	/* Get current GPU values */
 	GameModeGPUInfo gpuinfo;
 	gpuinfo.device = config_get_gpu_device(config);
-	gpuinfo.vendor = config_get_gpu_vendor(config);
-
-	if (gpuinfo.vendor == Vendor_NVIDIA)
-		gpuinfo.nv_perf_level = config_get_nv_perf_level(config);
 
 	if (game_mode_get_gpu(&gpuinfo) != 0) {
 		LOG_ERROR("Could not get current GPU info, see above!\n");
 		return -1;
 	}
+
+	if (gpuinfo.vendor == Vendor_NVIDIA)
+		gpuinfo.nv_perf_level = config_get_nv_perf_level(config);
 
 	/* Store the original values */
 	long original_core = gpuinfo.core;
