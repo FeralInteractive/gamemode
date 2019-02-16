@@ -64,6 +64,9 @@ static int get_gpu_state_nv(struct GameModeGPUInfo *info)
 	if (info->vendor != Vendor_NVIDIA)
 		return -1;
 
+	if (!getenv("DISPLAY"))
+		LOG_ERROR("Getting Nvidia parameters requires DISPLAY to be set - will likely fail!\n");
+
 	char arg[128] = { 0 };
 	char buf[EXTERNAL_BUFFER_MAX] = { 0 };
 	char *end;
@@ -127,7 +130,10 @@ static int set_gpu_state_nv(struct GameModeGPUInfo *info)
 	if (info->vendor != Vendor_NVIDIA)
 		return -1;
 
-	// These commands don't technically even need root
+	if (!getenv("DISPLAY") || !getenv("XAUTHORITY"))
+		LOG_ERROR(
+		    "Setting Nvidia parameters requires DISPLAY and XAUTHORITY to be set - will likely "
+		    "fail!\n");
 
 	/* Set the GPUGraphicsClockOffset parameter */
 	char core_arg[128];
@@ -199,6 +205,12 @@ static int set_gpu_state_amd(struct GameModeGPUInfo *info)
 {
 	if (info->vendor != Vendor_AMD)
 		return -1;
+
+	/* Must be root to set the state */
+	if (geteuid() != 0) {
+		fprintf(stderr, "gpuclockctl must be run as root to set AMD values\n");
+		print_usage_and_exit();
+	}
 
 	// Set the the core and mem clock speeds using the OverDrive files
 	if (set_gpu_state_amd_file("pp_sclk_od", info->device, info->core) != 0)
@@ -278,12 +290,6 @@ int main(int argc, char *argv[])
 		printf("%ld %ld\n", info.core, info.mem);
 
 	} else if (argc >= 6 && argc <= 7 && strncmp(argv[3], "set", 3) == 0) {
-		/* Must be root to set the state */
-		if (geteuid() != 0) {
-			fprintf(stderr, "gpuclockctl must be run as root to set values\n");
-			print_usage_and_exit();
-		}
-
 		/* Get and verify the vendor and device */
 		struct GameModeGPUInfo info;
 		memset(&info, 0, sizeof(info));
