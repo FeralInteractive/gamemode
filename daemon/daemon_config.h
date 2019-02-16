@@ -134,7 +134,6 @@ long config_get_ioprio_value(GameModeConfig *self);
  * Get various config info for gpu optimisations
  */
 void config_get_apply_gpu_optimisations(GameModeConfig *self, char value[CONFIG_VALUE_MAX]);
-long config_get_gpu_vendor(GameModeConfig *self);
 long config_get_gpu_device(GameModeConfig *self);
 long config_get_nv_core_clock_mhz_offset(GameModeConfig *self);
 long config_get_nv_mem_clock_mhz_offset(GameModeConfig *self);
