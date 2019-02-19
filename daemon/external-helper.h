@@ -31,10 +31,5 @@ POSSIBILITY OF SUCH DAMAGE.
 
 #pragma once
 
-#include <stdbool.h>
-
-/**
- * Update all governors to the given value. If this is NULL, restore the
- * initial governor.
- */
-bool set_governors(const char *value);
+/* Run an external process and capture the return value */
+int run_external_process(const char *const *exec_args);

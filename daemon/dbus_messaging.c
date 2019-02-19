@@ -34,7 +34,6 @@ POSSIBILITY OF SUCH DAMAGE.
 #include "dbus_messaging.h"
 #include "daemonize.h"
 #include "gamemode.h"
-#include "governors.h"
 #include "logging.h"
 
 #include <stdlib.h>

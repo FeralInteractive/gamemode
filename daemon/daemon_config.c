@@ -75,6 +75,15 @@ struct GameModeConfig {
 	long inhibit_screensaver;
 
 	long reaper_frequency;
+
+	char apply_gpu_optimisations[CONFIG_VALUE_MAX];
+	long gpu_vendor;
+	long gpu_device;
+	long nv_core_clock_mhz_offset;
+	long nv_mem_clock_mhz_offset;
+	long nv_perf_level;
+	long amd_core_clock_percentage;
+	long amd_mem_clock_percentage;
 };
 
 /*
@@ -111,7 +120,7 @@ static bool append_value_to_list(const char *list_name, const char *value,
 }
 
 /*
- * Get a positive long value from a string
+ * Get a long value from a string
  */
 static bool get_long_value(const char *value_name, const char *value, long *output)
 {
@@ -121,7 +130,27 @@ static bool get_long_value(const char *value_name, const char *value, long *outp
 	if (errno == ERANGE) {
 		LOG_ERROR("Config: %s overflowed, given [%s]\n", value_name, value);
 		return false;
-	} else if (config_value <= 0 || !(*value != '\0' && end && *end == '\0')) {
+	} else if (!(*value != '\0' && end && *end == '\0')) {
+		LOG_ERROR("Config: %s was invalid, given [%s]\n", value_name, value);
+		return false;
+	} else {
+		*output = config_value;
+	}
+
+	return true;
+}
+/*
+ * Get a long value from a hex string
+ */
+static bool get_long_value_hex(const char *value_name, const char *value, long *output)
+{
+	char *end = NULL;
+	long config_value = strtol(value, &end, 16);
+
+	if (errno == ERANGE) {
+		LOG_ERROR("Config: %s overflowed, given [%s]\n", value_name, value);
+		return false;
+	} else if (!(*value != '\0' && end && *end == '\0')) {
 		LOG_ERROR("Config: %s was invalid, given [%s]\n", value_name, value);
 		return false;
 	} else {
@@ -172,6 +201,25 @@ static int inih_handler(void *user, const char *section, const char *name, const
 			valid = get_string_value(value, self->ioprio);
 		} else if (strcmp(name, "inhibit_screensaver") == 0) {
 			valid = get_long_value(name, value, &self->inhibit_screensaver);
+		}
+	} else if (strcmp(section, "gpu") == 0) {
+		/* GPU subsection */
+		if (strcmp(name, "apply_gpu_optimisations") == 0) {
+			valid = get_string_value(value, self->apply_gpu_optimisations);
+		} else if (strcmp(name, "gpu_vendor") == 0) {
+			valid = get_long_value_hex(name, value, &self->gpu_vendor);
+		} else if (strcmp(name, "gpu_device") == 0) {
+			valid = get_long_value(name, value, &self->gpu_device);
+		} else if (strcmp(name, "nv_core_clock_mhz_offset") == 0) {
+			valid = get_long_value(name, value, &self->nv_core_clock_mhz_offset);
+		} else if (strcmp(name, "nv_mem_clock_mhz_offset") == 0) {
+			valid = get_long_value(name, value, &self->nv_mem_clock_mhz_offset);
+		} else if (strcmp(name, "nv_perf_level") == 0) {
+			valid = get_long_value(name, value, &self->nv_perf_level);
+		} else if (strcmp(name, "amd_core_clock_percentage") == 0) {
+			valid = get_long_value(name, value, &self->amd_core_clock_percentage);
+		} else if (strcmp(name, "amd_mem_clock_percentage") == 0) {
+			valid = get_long_value(name, value, &self->amd_mem_clock_percentage);
 		}
 	} else if (strcmp(section, "custom") == 0) {
 		/* Custom subsection */
@@ -231,9 +279,17 @@ static void load_config_files(GameModeConfig *self)
 	memset(self->defaultgov, 0, sizeof(self->defaultgov));
 	memset(self->desiredgov, 0, sizeof(self->desiredgov));
 	memset(self->softrealtime, 0, sizeof(self->softrealtime));
-	self->renice = 4; /* default value of 4 */
-	self->reaper_frequency = DEFAULT_REAPER_FREQ;
+	memset(self->apply_gpu_optimisations, 0, sizeof(self->apply_gpu_optimisations));
 	self->inhibit_screensaver = 1; /* Defaults to on */
+	self->renice = 4;              /* default value of 4 */
+	self->reaper_frequency = DEFAULT_REAPER_FREQ;
+	self->gpu_vendor = 0;
+	self->gpu_device = -1; /* 0 is a valid device ID so use -1 to indicate no value */
+	self->nv_core_clock_mhz_offset = 0;
+	self->nv_mem_clock_mhz_offset = 0;
+	self->nv_perf_level = -1;
+	self->amd_core_clock_percentage = 0;
+	self->amd_mem_clock_percentage = 0;
 
 	/*
 	 * Locations to load, in order
@@ -460,4 +516,49 @@ void config_get_ioprio_value(GameModeConfig *self, int *value)
 		*value = IOPRIO_RESET_DEFAULT;
 	else
 		*value = atoi(ioprio_value);
+}
+
+/*
+ * Get various config info for gpu optimisations
+ */
+void config_get_apply_gpu_optimisations(GameModeConfig *self, char value[CONFIG_VALUE_MAX])
+{
+	memcpy_locked_config(self,
+	                     value,
+	                     &self->apply_gpu_optimisations,
+	                     sizeof(self->apply_gpu_optimisations));
+}
+
+void config_get_gpu_vendor(GameModeConfig *self, long *value)
+{
+	memcpy_locked_config(self, value, &self->gpu_vendor, sizeof(long));
+}
+
+void config_get_gpu_device(GameModeConfig *self, long *value)
+{
+	memcpy_locked_config(self, value, &self->gpu_device, sizeof(long));
+}
+
+void config_get_nv_core_clock_mhz_offset(GameModeConfig *self, long *value)
+{
+	memcpy_locked_config(self, value, &self->nv_core_clock_mhz_offset, sizeof(long));
+}
+
+void config_get_nv_mem_clock_mhz_offset(GameModeConfig *self, long *value)
+{
+	memcpy_locked_config(self, value, &self->nv_mem_clock_mhz_offset, sizeof(long));
+}
+void config_get_nv_perf_level(GameModeConfig *self, long *value)
+{
+	memcpy_locked_config(self, value, &self->nv_perf_level, sizeof(long));
+}
+
+void config_get_amd_core_clock_percentage(GameModeConfig *self, long *value)
+{
+	memcpy_locked_config(self, value, &self->amd_core_clock_percentage, sizeof(long));
+}
+
+void config_get_amd_mem_clock_percentage(GameModeConfig *self, long *value)
+{
+	memcpy_locked_config(self, value, &self->amd_mem_clock_percentage, sizeof(long));
 }

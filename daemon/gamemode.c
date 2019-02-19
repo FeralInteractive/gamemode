@@ -32,10 +32,11 @@ POSSIBILITY OF SUCH DAMAGE.
 #define _GNU_SOURCE
 
 #include "gamemode.h"
+#include "config.h"
 #include "daemon_config.h"
 #include "dbus_messaging.h"
+#include "external-helper.h"
 #include "governors-query.h"
-#include "governors.h"
 #include "helpers.h"
 #include "logging.h"
 
@@ -62,6 +63,8 @@ struct GameModeContext {
 	GameModeConfig *config; /**<Pointer to config object */
 
 	char initial_cpu_mode[64]; /**<Only updates when we can */
+
+	struct GameModeGPUInfo *gpu_info; /**<Stored GPU info for the current GPU */
 
 	/* Reaper control */
 	struct {
@@ -107,6 +110,9 @@ void game_mode_context_init(GameModeContext *self)
 	self->config = config_create();
 	config_init(self->config);
 
+	/* Initialise the current GPU info */
+	game_mode_initialise_gpu(self->config, &self->gpu_info);
+
 	pthread_rwlock_init(&self->rwlock, NULL);
 	pthread_mutex_init(&self->reaper.mutex, NULL);
 	pthread_cond_init(&self->reaper.condition, NULL);
@@ -143,6 +149,9 @@ void game_mode_context_destroy(GameModeContext *self)
 
 	pthread_cond_destroy(&self->reaper.condition);
 	pthread_mutex_destroy(&self->reaper.mutex);
+
+	/* Destroy the gpu object */
+	game_mode_free_gpu(&self->gpu_info);
 
 	/* Destroy the config object */
 	config_destroy(self->config);
@@ -189,8 +198,13 @@ static void game_mode_context_enter(GameModeContext *self)
 		config_get_desired_governor(self->config, desired);
 		const char *desiredGov = desired[0] != '\0' ? desired : "performance";
 
-		/* set the governor to performance */
-		if (!set_governors(desiredGov)) {
+		const char *const exec_args[] = {
+			"/usr/bin/pkexec", LIBEXECDIR "/cpugovctl", "set", desiredGov, NULL,
+		};
+
+		LOG_MSG("Requesting update of governor policy to %s\n", desiredGov);
+		if (run_external_process(exec_args) != 0) {
+			LOG_ERROR("Failed to update cpu governor policy\n");
 			/* if the set fails, clear the initial mode so we don't try and reset it back and fail
 			 * again, presumably */
 			memset(self->initial_cpu_mode, 0, sizeof(self->initial_cpu_mode));
@@ -200,6 +214,9 @@ static void game_mode_context_enter(GameModeContext *self)
 	/* Inhibit the screensaver */
 	if (config_get_inhibit_screensaver(self->config))
 		game_mode_inhibit_screensaver(true);
+
+	/* Apply GPU optimisations */
+	game_mode_apply_gpu(self->gpu_info, true);
 }
 
 /**
@@ -213,6 +230,9 @@ static void game_mode_context_leave(GameModeContext *self)
 	LOG_MSG("Leaving Game Mode...\n");
 	sd_notifyf(0, "STATUS=%sGameMode is currently deactivated.%s\n", "\x1B[1;36m", "\x1B[0m");
 
+	/* Remove GPU optimisations */
+	game_mode_apply_gpu(self->gpu_info, false);
+
 	/* UnInhibit the screensaver */
 	if (config_get_inhibit_screensaver(self->config))
 		game_mode_inhibit_screensaver(false);
@@ -224,7 +244,15 @@ static void game_mode_context_leave(GameModeContext *self)
 		config_get_default_governor(self->config, defaultgov);
 		const char *gov_mode = defaultgov[0] != '\0' ? defaultgov : self->initial_cpu_mode;
 
-		set_governors(gov_mode);
+		const char *const exec_args[] = {
+			"/usr/bin/pkexec", LIBEXECDIR "/cpugovctl", "set", gov_mode, NULL,
+		};
+
+		LOG_MSG("Requesting update of governor policy to %s\n", gov_mode);
+		if (run_external_process(exec_args) != 0) {
+			LOG_ERROR("Failed to update cpu governor policy\n");
+		}
+
 		memset(self->initial_cpu_mode, 0, sizeof(self->initial_cpu_mode));
 	}
 
