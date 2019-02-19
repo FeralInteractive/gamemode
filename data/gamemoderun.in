@@ -4,8 +4,8 @@
 # Path to install gamemoded auto script
 CONFIG_LIB_DIR="@GAMEMODE_LIB_DIR@/libgamemodeauto.so.0"
 
-# Set the ld library path prefixed libgamemodeauto
-export LD_LIBRARY_PATH=${CONFIG_LIB_DIR}${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}
+# Set the ld preload path prefixed libgamemodeauto
+export LD_PRELOAD="${CONFIG_LIB_DIR}${LD_PRELOAD:+:$LD_PRELOAD}"
 
 # Launch
 exec "$@"
