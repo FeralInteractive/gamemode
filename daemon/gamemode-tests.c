@@ -242,6 +242,61 @@ static int run_dual_client_tests(void)
 	return status;
 }
 
+/* Check gamemoderun works */
+static int run_gamemoderun_and_reaper_tests(struct GameModeConfig *config)
+{
+	int status = 0;
+
+	LOG_MSG(":: Gamemoderun and reaper thread tests\n");
+
+	/* Fork so that the child can request gamemode */
+	int child = fork();
+	if (child == 0) {
+		/* Close stdout, we don't care if sh prints anything */
+		fclose(stdout);
+		/* Preload into sh and then kill it */
+		if (execl("/usr/bin/gamemoderun", "/usr/bin/gamemoderun", "sh", (char *)NULL) == -1) {
+			LOG_ERROR("failed to launch gamemoderun with execl: %s\n", strerror(errno));
+			return -1;
+		}
+	}
+
+	/* Give the child a chance to reqeust gamemode */
+	usleep(10000);
+
+	/* Check that when we request gamemode, it replies that the other client is connected */
+	if (verify_other_client_connected() != 0)
+		status = -1;
+
+	/* Send SIGTERM to the child to stop it*/
+	if (kill(child, SIGTERM) == -1) {
+		LOG_ERROR("failed to send continue signal to other client: %s\n", strerror(errno));
+		status = -1;
+	}
+
+	/* Wait for the child to clean up */
+	int wstatus;
+	while (waitpid(child, &wstatus, WNOHANG) == 0) {
+		LOG_MSG("...Waiting for child to quit...\n");
+		usleep(100000);
+	}
+
+	/* And give gamemode a chance to reap the process */
+	long freq = config_get_reaper_frequency(config);
+	LOG_MSG("...Waiting for reaper thread (reaper_frequency set to %ld seconds)...\n", freq);
+	sleep((unsigned int)freq);
+
+	/* Verify that gamemode is now innactive */
+	if (verify_deactivated() != 0)
+		return -1;
+
+	if (status == 0)
+		LOG_MSG(":: Passed\n\n");
+
+	return status;
+}
+
+/* Check the cpu governor setting works */
 static int run_cpu_governor_tests(struct GameModeConfig *config)
 {
 	/* get the two config parameters we care about */
@@ -450,18 +505,12 @@ int run_gpu_optimisation_tests(struct GameModeConfig *config)
  * game_mode_run_feature_tests runs a set of tests for each current feature (based on the current
  * config) returns 0 for success, -1 for failure
  */
-static int game_mode_run_feature_tests(void)
+static int game_mode_run_feature_tests(struct GameModeConfig *config)
 {
 	int status = 0;
 	LOG_MSG(":: Feature tests\n");
 
 	/* If we reach here, we should assume the basic requests and register functions are working */
-
-	/* Grab the config */
-	/* Note: this config may pick up a local gamemode.ini, or the daemon may have one, we may need
-	 * to cope with that */
-	GameModeConfig *config = config_create();
-	config_init(config);
 
 	/* Does the CPU governor get set properly? */
 	{
@@ -536,6 +585,14 @@ static int game_mode_run_feature_tests(void)
 int game_mode_run_client_tests()
 {
 	int status = 0;
+
+	LOG_MSG(": Loading config\n");
+	/* Grab the config */
+	/* Note: this config may pick up a local gamemode.ini, or the daemon may have one, we may need
+	 * to cope with that */
+	GameModeConfig *config = config_create();
+	config_init(config);
+
 	LOG_MSG(": Running tests\n\n");
 
 	/* Run the basic tests */
@@ -546,11 +603,15 @@ int game_mode_run_client_tests()
 	if (run_dual_client_tests() != 0)
 		status = -1;
 
+	/* Check gamemoderun and the reaper thread work */
+	if (run_gamemoderun_and_reaper_tests(config) != 0)
+		status = -1;
+
 	if (status != 0) {
 		LOG_MSG(": Client tests failed, skipping feature tests\n");
 	} else {
 		/* Run the feature tests */
-		status = game_mode_run_feature_tests();
+		status = game_mode_run_feature_tests(config);
 	}
 
 	if (status >= 0)
