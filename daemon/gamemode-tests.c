@@ -419,81 +419,68 @@ int run_gpu_optimisation_tests(struct GameModeConfig *config)
 	}
 
 	/* Get current GPU values */
-	GameModeGPUInfo gpuinfo;
-	gpuinfo.device = config_get_gpu_device(config);
+	GameModeGPUInfo *gpuinfo;
+	game_mode_initialise_gpu(config, &gpuinfo);
 
-	if (game_mode_get_gpu(&gpuinfo) != 0) {
-		LOG_ERROR("Could not get current GPU info, see above!\n");
+	if (!gpuinfo) {
+		LOG_ERROR("Failed to initialise gpuinfo!\n");
 		return -1;
 	}
-
-	if (gpuinfo.vendor == Vendor_NVIDIA)
-		gpuinfo.nv_perf_level = config_get_nv_perf_level(config);
-
-	/* Store the original values */
-	long original_core = gpuinfo.core;
-	long original_mem = gpuinfo.mem;
 
 	/* Grab the expected values */
-	long expected_core = 0;
-	long expected_mem = 0;
-	switch (gpuinfo.vendor) {
-	case Vendor_NVIDIA:
-		expected_core = config_get_nv_core_clock_mhz_offset(config);
-		expected_mem = config_get_nv_mem_clock_mhz_offset(config);
-		break;
-	case Vendor_AMD:
-		expected_core = config_get_amd_core_clock_percentage(config);
-		expected_mem = config_get_amd_mem_clock_percentage(config);
-		break;
-	default:
-		LOG_ERROR("Configured for unsupported GPU vendor 0x%04x!\n", (unsigned int)gpuinfo.vendor);
-		return -1;
-	}
+	long expected_core = gpuinfo->core;
+	long expected_mem = gpuinfo->mem;
+
+	/* Get current stats */
+	game_mode_get_gpu(gpuinfo);
+	long original_core = gpuinfo->core;
+	long original_mem = gpuinfo->mem;
 
 	LOG_MSG("Configured with vendor:0x%04x device:%ld core:%ld mem:%ld (nv_perf_level:%ld)\n",
-	        (unsigned int)gpuinfo.vendor,
-	        gpuinfo.device,
+	        (unsigned int)gpuinfo->vendor,
+	        gpuinfo->device,
 	        expected_core,
 	        expected_mem,
-	        gpuinfo.nv_perf_level);
+	        gpuinfo->nv_perf_level);
 
 	/* Start gamemode and check the new values */
 	gamemode_request_start();
 
-	if (game_mode_get_gpu(&gpuinfo) != 0) {
+	if (game_mode_get_gpu(gpuinfo) != 0) {
 		LOG_ERROR("Could not get current GPU info, see above!\n");
 		gamemode_request_end();
+		game_mode_free_gpu(&gpuinfo);
 		return -1;
 	}
 
-	if (gpuinfo.core != expected_core || gpuinfo.mem != expected_mem) {
+	if (gpuinfo->core != expected_core || gpuinfo->mem != expected_mem) {
 		LOG_ERROR(
 		    "Current GPU clocks during gamemode do not match requested values!\n"
 		    "\tcore - expected:%ld was:%ld | mem - expected:%ld was:%ld\n",
 		    expected_core,
-		    gpuinfo.core,
+		    gpuinfo->core,
 		    expected_mem,
-		    gpuinfo.mem);
+		    gpuinfo->mem);
 		gpustatus = -1;
 	}
 
 	/* End gamemode and check the values have returned */
 	gamemode_request_end();
 
-	if (game_mode_get_gpu(&gpuinfo) != 0) {
+	if (game_mode_get_gpu(gpuinfo) != 0) {
 		LOG_ERROR("Could not get current GPU info, see above!\n");
+		game_mode_free_gpu(&gpuinfo);
 		return -1;
 	}
 
-	if (gpuinfo.core != original_core || gpuinfo.mem != original_mem) {
+	if (gpuinfo->core != original_core || gpuinfo->mem != original_mem) {
 		LOG_ERROR(
 		    "Current GPU clocks after gamemode do not matcch original values!\n"
 		    "\tcore - original:%ld was:%ld | mem - original:%ld was:%ld\n",
 		    original_core,
-		    gpuinfo.core,
+		    gpuinfo->core,
 		    original_mem,
-		    gpuinfo.mem);
+		    gpuinfo->mem);
 		gpustatus = -1;
 	}
 
