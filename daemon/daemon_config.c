@@ -49,6 +49,15 @@ POSSIBILITY OF SUCH DAMAGE.
 /* Default value for the reaper frequency */
 #define DEFAULT_REAPER_FREQ 5
 
+/* Helper macro for defining the config variable getter */
+#define DEFINE_CONFIG_GET(name)                                                                    \
+	long config_get_##name(GameModeConfig *self)                                                   \
+	{                                                                                              \
+		long value = 0;                                                                            \
+		memcpy_locked_config(self, &value, &self->values.name, sizeof(long));                      \
+		return value;                                                                              \
+	}
+
 /**
  * The config holds various details as needed
  * and a rwlock to allow config_reload to be called
@@ -58,32 +67,34 @@ struct GameModeConfig {
 	int inotfd;
 	int inotwd;
 
-	char whitelist[CONFIG_LIST_MAX][CONFIG_VALUE_MAX];
-	char blacklist[CONFIG_LIST_MAX][CONFIG_VALUE_MAX];
+	struct {
+		char whitelist[CONFIG_LIST_MAX][CONFIG_VALUE_MAX];
+		char blacklist[CONFIG_LIST_MAX][CONFIG_VALUE_MAX];
 
-	char startscripts[CONFIG_LIST_MAX][CONFIG_VALUE_MAX];
-	char endscripts[CONFIG_LIST_MAX][CONFIG_VALUE_MAX];
+		char startscripts[CONFIG_LIST_MAX][CONFIG_VALUE_MAX];
+		char endscripts[CONFIG_LIST_MAX][CONFIG_VALUE_MAX];
 
-	char defaultgov[CONFIG_VALUE_MAX];
-	char desiredgov[CONFIG_VALUE_MAX];
+		char defaultgov[CONFIG_VALUE_MAX];
+		char desiredgov[CONFIG_VALUE_MAX];
 
-	char softrealtime[CONFIG_VALUE_MAX];
-	long renice;
+		char softrealtime[CONFIG_VALUE_MAX];
+		long renice;
 
-	char ioprio[CONFIG_VALUE_MAX];
+		char ioprio[CONFIG_VALUE_MAX];
 
-	long inhibit_screensaver;
+		long inhibit_screensaver;
 
-	long reaper_frequency;
+		long reaper_frequency;
 
-	char apply_gpu_optimisations[CONFIG_VALUE_MAX];
-	long gpu_vendor;
-	long gpu_device;
-	long nv_core_clock_mhz_offset;
-	long nv_mem_clock_mhz_offset;
-	long nv_perf_level;
-	long amd_core_clock_percentage;
-	long amd_mem_clock_percentage;
+		char apply_gpu_optimisations[CONFIG_VALUE_MAX];
+		long gpu_vendor;
+		long gpu_device;
+		long nv_core_clock_mhz_offset;
+		long nv_mem_clock_mhz_offset;
+		long nv_perf_level;
+		long amd_core_clock_percentage;
+		long amd_mem_clock_percentage;
+	} values;
 };
 
 /*
@@ -181,52 +192,52 @@ static int inih_handler(void *user, const char *section, const char *name, const
 	if (strcmp(section, "filter") == 0) {
 		/* Filter subsection */
 		if (strcmp(name, "whitelist") == 0) {
-			valid = append_value_to_list(name, value, self->whitelist);
+			valid = append_value_to_list(name, value, self->values.whitelist);
 		} else if (strcmp(name, "blacklist") == 0) {
-			valid = append_value_to_list(name, value, self->blacklist);
+			valid = append_value_to_list(name, value, self->values.blacklist);
 		}
 	} else if (strcmp(section, "general") == 0) {
 		/* General subsection */
 		if (strcmp(name, "reaper_freq") == 0) {
-			valid = get_long_value(name, value, &self->reaper_frequency);
+			valid = get_long_value(name, value, &self->values.reaper_frequency);
 		} else if (strcmp(name, "defaultgov") == 0) {
-			valid = get_string_value(value, self->defaultgov);
+			valid = get_string_value(value, self->values.defaultgov);
 		} else if (strcmp(name, "desiredgov") == 0) {
-			valid = get_string_value(value, self->desiredgov);
+			valid = get_string_value(value, self->values.desiredgov);
 		} else if (strcmp(name, "softrealtime") == 0) {
-			valid = get_string_value(value, self->softrealtime);
+			valid = get_string_value(value, self->values.softrealtime);
 		} else if (strcmp(name, "renice") == 0) {
-			valid = get_long_value(name, value, &self->renice);
+			valid = get_long_value(name, value, &self->values.renice);
 		} else if (strcmp(name, "ioprio") == 0) {
-			valid = get_string_value(value, self->ioprio);
+			valid = get_string_value(value, self->values.ioprio);
 		} else if (strcmp(name, "inhibit_screensaver") == 0) {
-			valid = get_long_value(name, value, &self->inhibit_screensaver);
+			valid = get_long_value(name, value, &self->values.inhibit_screensaver);
 		}
 	} else if (strcmp(section, "gpu") == 0) {
 		/* GPU subsection */
 		if (strcmp(name, "apply_gpu_optimisations") == 0) {
-			valid = get_string_value(value, self->apply_gpu_optimisations);
+			valid = get_string_value(value, self->values.apply_gpu_optimisations);
 		} else if (strcmp(name, "gpu_vendor") == 0) {
-			valid = get_long_value_hex(name, value, &self->gpu_vendor);
+			valid = get_long_value_hex(name, value, &self->values.gpu_vendor);
 		} else if (strcmp(name, "gpu_device") == 0) {
-			valid = get_long_value(name, value, &self->gpu_device);
+			valid = get_long_value(name, value, &self->values.gpu_device);
 		} else if (strcmp(name, "nv_core_clock_mhz_offset") == 0) {
-			valid = get_long_value(name, value, &self->nv_core_clock_mhz_offset);
+			valid = get_long_value(name, value, &self->values.nv_core_clock_mhz_offset);
 		} else if (strcmp(name, "nv_mem_clock_mhz_offset") == 0) {
-			valid = get_long_value(name, value, &self->nv_mem_clock_mhz_offset);
+			valid = get_long_value(name, value, &self->values.nv_mem_clock_mhz_offset);
 		} else if (strcmp(name, "nv_perf_level") == 0) {
-			valid = get_long_value(name, value, &self->nv_perf_level);
+			valid = get_long_value(name, value, &self->values.nv_perf_level);
 		} else if (strcmp(name, "amd_core_clock_percentage") == 0) {
-			valid = get_long_value(name, value, &self->amd_core_clock_percentage);
+			valid = get_long_value(name, value, &self->values.amd_core_clock_percentage);
 		} else if (strcmp(name, "amd_mem_clock_percentage") == 0) {
-			valid = get_long_value(name, value, &self->amd_mem_clock_percentage);
+			valid = get_long_value(name, value, &self->values.amd_mem_clock_percentage);
 		}
 	} else if (strcmp(section, "custom") == 0) {
 		/* Custom subsection */
 		if (strcmp(name, "start") == 0) {
-			valid = append_value_to_list(name, value, self->startscripts);
+			valid = append_value_to_list(name, value, self->values.startscripts);
 		} else if (strcmp(name, "end") == 0) {
-			valid = append_value_to_list(name, value, self->endscripts);
+			valid = append_value_to_list(name, value, self->values.endscripts);
 		}
 	}
 
@@ -271,25 +282,14 @@ static void load_config_files(GameModeConfig *self)
 	pthread_rwlock_wrlock(&self->rwlock);
 
 	/* Clear our config values */
-	memset(self->ioprio, 0, sizeof(self->ioprio));
-	memset(self->whitelist, 0, sizeof(self->whitelist));
-	memset(self->blacklist, 0, sizeof(self->blacklist));
-	memset(self->startscripts, 0, sizeof(self->startscripts));
-	memset(self->endscripts, 0, sizeof(self->endscripts));
-	memset(self->defaultgov, 0, sizeof(self->defaultgov));
-	memset(self->desiredgov, 0, sizeof(self->desiredgov));
-	memset(self->softrealtime, 0, sizeof(self->softrealtime));
-	memset(self->apply_gpu_optimisations, 0, sizeof(self->apply_gpu_optimisations));
-	self->inhibit_screensaver = 1; /* Defaults to on */
-	self->renice = 4;              /* default value of 4 */
-	self->reaper_frequency = DEFAULT_REAPER_FREQ;
-	self->gpu_vendor = 0;
-	self->gpu_device = -1; /* 0 is a valid device ID so use -1 to indicate no value */
-	self->nv_core_clock_mhz_offset = 0;
-	self->nv_mem_clock_mhz_offset = 0;
-	self->nv_perf_level = -1;
-	self->amd_core_clock_percentage = 0;
-	self->amd_mem_clock_percentage = 0;
+	memset(&self->values, 0, sizeof(self->values));
+
+	/* Set some non-zero defaults */
+	self->values.inhibit_screensaver = 1; /* Defaults to on */
+	self->values.renice = 4;              /* default value of 4 */
+	self->values.reaper_frequency = DEFAULT_REAPER_FREQ;
+	self->values.gpu_device = -1; /* 0 is a valid device ID so use -1 to indicate no value */
+	self->values.nv_perf_level = -1;
 
 	/*
 	 * Locations to load, in order
@@ -393,14 +393,14 @@ bool config_get_client_whitelisted(GameModeConfig *self, const char *client)
 
 	/* If the whitelist is empty then everything passes */
 	bool found = true;
-	if (self->whitelist[0][0]) {
+	if (self->values.whitelist[0][0]) {
 		/*
 		 * Check if the value is found in our whitelist
 		 * Currently is a simple strstr check, but could be modified for wildcards etc.
 		 */
 		found = false;
-		for (unsigned int i = 0; i < CONFIG_LIST_MAX && self->whitelist[i][0]; i++) {
-			if (strstr(client, self->whitelist[i])) {
+		for (unsigned int i = 0; i < CONFIG_LIST_MAX && self->values.whitelist[i][0]; i++) {
+			if (strstr(client, self->values.whitelist[i])) {
 				found = true;
 			}
 		}
@@ -424,8 +424,8 @@ bool config_get_client_blacklisted(GameModeConfig *self, const char *client)
 	 * Currently is a simple strstr check, but could be modified for wildcards etc.
 	 */
 	bool found = false;
-	for (unsigned int i = 0; i < CONFIG_LIST_MAX && self->blacklist[i][0]; i++) {
-		if (strstr(client, self->blacklist[i])) {
+	for (unsigned int i = 0; i < CONFIG_LIST_MAX && self->values.blacklist[i][0]; i++) {
+		if (strstr(client, self->values.blacklist[i])) {
 			found = true;
 		}
 	}
@@ -438,10 +438,7 @@ bool config_get_client_blacklisted(GameModeConfig *self, const char *client)
 /*
  * Gets the reaper frequency
  */
-void config_get_reaper_thread_frequency(GameModeConfig *self, long *value)
-{
-	memcpy_locked_config(self, value, &self->reaper_frequency, sizeof(long));
-}
+DEFINE_CONFIG_GET(reaper_frequency)
 
 /*
  * Gets the screensaver inhibit setting
@@ -449,7 +446,7 @@ void config_get_reaper_thread_frequency(GameModeConfig *self, long *value)
 bool config_get_inhibit_screensaver(GameModeConfig *self)
 {
 	long val;
-	memcpy_locked_config(self, &val, &self->inhibit_screensaver, sizeof(long));
+	memcpy_locked_config(self, &val, &self->values.inhibit_screensaver, sizeof(long));
 	return val == 1;
 }
 
@@ -459,7 +456,10 @@ bool config_get_inhibit_screensaver(GameModeConfig *self)
 void config_get_gamemode_start_scripts(GameModeConfig *self,
                                        char scripts[CONFIG_LIST_MAX][CONFIG_VALUE_MAX])
 {
-	memcpy_locked_config(self, scripts, self->startscripts, sizeof(self->startscripts));
+	memcpy_locked_config(self,
+	                     scripts,
+	                     self->values.startscripts,
+	                     sizeof(self->values.startscripts));
 }
 
 /*
@@ -468,7 +468,7 @@ void config_get_gamemode_start_scripts(GameModeConfig *self,
 void config_get_gamemode_end_scripts(GameModeConfig *self,
                                      char scripts[CONFIG_LIST_MAX][CONFIG_VALUE_MAX])
 {
-	memcpy_locked_config(self, scripts, self->endscripts, sizeof(self->startscripts));
+	memcpy_locked_config(self, scripts, self->values.endscripts, sizeof(self->values.startscripts));
 }
 
 /*
@@ -476,7 +476,7 @@ void config_get_gamemode_end_scripts(GameModeConfig *self,
  */
 void config_get_default_governor(GameModeConfig *self, char governor[CONFIG_VALUE_MAX])
 {
-	memcpy_locked_config(self, governor, self->defaultgov, sizeof(self->defaultgov));
+	memcpy_locked_config(self, governor, self->values.defaultgov, sizeof(self->values.defaultgov));
 }
 
 /*
@@ -484,7 +484,7 @@ void config_get_default_governor(GameModeConfig *self, char governor[CONFIG_VALU
  */
 void config_get_desired_governor(GameModeConfig *self, char governor[CONFIG_VALUE_MAX])
 {
-	memcpy_locked_config(self, governor, self->desiredgov, sizeof(self->desiredgov));
+	memcpy_locked_config(self, governor, self->values.desiredgov, sizeof(self->values.desiredgov));
 }
 
 /*
@@ -492,30 +492,37 @@ void config_get_desired_governor(GameModeConfig *self, char governor[CONFIG_VALU
  */
 void config_get_soft_realtime(GameModeConfig *self, char softrealtime[CONFIG_VALUE_MAX])
 {
-	memcpy_locked_config(self, softrealtime, self->softrealtime, sizeof(self->softrealtime));
+	memcpy_locked_config(self,
+	                     softrealtime,
+	                     self->values.softrealtime,
+	                     sizeof(self->values.softrealtime));
 }
 
 /*
  * Get the renice value
  */
-void config_get_renice_value(GameModeConfig *self, long *value)
+long config_get_renice_value(GameModeConfig *self)
 {
-	memcpy_locked_config(self, value, &self->renice, sizeof(long));
+	long value = 0;
+	memcpy_locked_config(self, &value, &self->values.renice, sizeof(long));
+	return value;
 }
 
 /*
  * Get the ioprio value
  */
-void config_get_ioprio_value(GameModeConfig *self, int *value)
+long config_get_ioprio_value(GameModeConfig *self)
 {
+	long value = 0;
 	char ioprio_value[CONFIG_VALUE_MAX] = { 0 };
-	memcpy_locked_config(self, ioprio_value, &self->ioprio, sizeof(self->ioprio));
-	if (0 == strncmp(ioprio_value, "off", sizeof(self->ioprio)))
-		*value = IOPRIO_DONT_SET;
-	else if (0 == strncmp(ioprio_value, "default", sizeof(self->ioprio)))
-		*value = IOPRIO_RESET_DEFAULT;
+	memcpy_locked_config(self, ioprio_value, &self->values.ioprio, sizeof(self->values.ioprio));
+	if (0 == strncmp(ioprio_value, "off", sizeof(self->values.ioprio)))
+		value = IOPRIO_DONT_SET;
+	else if (0 == strncmp(ioprio_value, "default", sizeof(self->values.ioprio)))
+		value = IOPRIO_RESET_DEFAULT;
 	else
-		*value = atoi(ioprio_value);
+		value = atoi(ioprio_value);
+	return value;
 }
 
 /*
@@ -525,40 +532,15 @@ void config_get_apply_gpu_optimisations(GameModeConfig *self, char value[CONFIG_
 {
 	memcpy_locked_config(self,
 	                     value,
-	                     &self->apply_gpu_optimisations,
-	                     sizeof(self->apply_gpu_optimisations));
+	                     &self->values.apply_gpu_optimisations,
+	                     sizeof(self->values.apply_gpu_optimisations));
 }
 
-void config_get_gpu_vendor(GameModeConfig *self, long *value)
-{
-	memcpy_locked_config(self, value, &self->gpu_vendor, sizeof(long));
-}
-
-void config_get_gpu_device(GameModeConfig *self, long *value)
-{
-	memcpy_locked_config(self, value, &self->gpu_device, sizeof(long));
-}
-
-void config_get_nv_core_clock_mhz_offset(GameModeConfig *self, long *value)
-{
-	memcpy_locked_config(self, value, &self->nv_core_clock_mhz_offset, sizeof(long));
-}
-
-void config_get_nv_mem_clock_mhz_offset(GameModeConfig *self, long *value)
-{
-	memcpy_locked_config(self, value, &self->nv_mem_clock_mhz_offset, sizeof(long));
-}
-void config_get_nv_perf_level(GameModeConfig *self, long *value)
-{
-	memcpy_locked_config(self, value, &self->nv_perf_level, sizeof(long));
-}
-
-void config_get_amd_core_clock_percentage(GameModeConfig *self, long *value)
-{
-	memcpy_locked_config(self, value, &self->amd_core_clock_percentage, sizeof(long));
-}
-
-void config_get_amd_mem_clock_percentage(GameModeConfig *self, long *value)
-{
-	memcpy_locked_config(self, value, &self->amd_mem_clock_percentage, sizeof(long));
-}
+/* Define the getters for GPU values */
+DEFINE_CONFIG_GET(gpu_vendor)
+DEFINE_CONFIG_GET(gpu_device)
+DEFINE_CONFIG_GET(nv_core_clock_mhz_offset)
+DEFINE_CONFIG_GET(nv_mem_clock_mhz_offset)
+DEFINE_CONFIG_GET(nv_perf_level)
+DEFINE_CONFIG_GET(amd_core_clock_percentage)
+DEFINE_CONFIG_GET(amd_mem_clock_percentage)
