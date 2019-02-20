@@ -102,8 +102,7 @@ void game_mode_apply_ioprio(const GameModeContext *self, const pid_t client)
 	/*
 	 * read configuration "ioprio" (0..7)
 	 */
-	int ioprio = 0;
-	config_get_ioprio_value(config, &ioprio);
+	int ioprio = (int)config_get_ioprio_value(config);
 	if (IOPRIO_RESET_DEFAULT == ioprio) {
 		LOG_MSG("IO priority will be reset to default behavior (based on CPU priority).\n");
 		ioprio = 0;

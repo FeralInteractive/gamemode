@@ -87,7 +87,7 @@ bool config_get_client_blacklisted(GameModeConfig *self, const char *client);
 /*
  * Get the frequency (in seconds) for the reaper thread
  */
-void config_get_reaper_thread_frequency(GameModeConfig *self, long *value);
+long config_get_reaper_frequency(GameModeConfig *self);
 
 /*
  * Get whether we want to inhibit the screensaver (defaults to true)
@@ -123,21 +123,21 @@ void config_get_soft_realtime(GameModeConfig *self, char softrealtime[CONFIG_VAL
 /*
  * Get the renice value
  */
-void config_get_renice_value(GameModeConfig *self, long *value);
+long config_get_renice_value(GameModeConfig *self);
 
 /*
  * Get the ioprio value
  */
-void config_get_ioprio_value(GameModeConfig *self, int *value);
+long config_get_ioprio_value(GameModeConfig *self);
 
 /*
  * Get various config info for gpu optimisations
  */
 void config_get_apply_gpu_optimisations(GameModeConfig *self, char value[CONFIG_VALUE_MAX]);
-void config_get_gpu_vendor(GameModeConfig *self, long *value);
-void config_get_gpu_device(GameModeConfig *self, long *value);
-void config_get_nv_core_clock_mhz_offset(GameModeConfig *self, long *value);
-void config_get_nv_mem_clock_mhz_offset(GameModeConfig *self, long *value);
-void config_get_nv_perf_level(GameModeConfig *self, long *value);
-void config_get_amd_core_clock_percentage(GameModeConfig *self, long *value);
-void config_get_amd_mem_clock_percentage(GameModeConfig *self, long *value);
+long config_get_gpu_vendor(GameModeConfig *self);
+long config_get_gpu_device(GameModeConfig *self);
+long config_get_nv_core_clock_mhz_offset(GameModeConfig *self);
+long config_get_nv_mem_clock_mhz_offset(GameModeConfig *self);
+long config_get_nv_perf_level(GameModeConfig *self);
+long config_get_amd_core_clock_percentage(GameModeConfig *self);
+long config_get_amd_mem_clock_percentage(GameModeConfig *self);
