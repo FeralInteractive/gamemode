@@ -46,22 +46,39 @@ POSSIBILITY OF SUCH DAMAGE.
 #include "gpu-control.h"
 
 /* Initial verify step to ensure gamemode isn't already active */
-static int verify_gamemode_initial(void)
+static int verify_gamemode_initial(struct GameModeConfig *config)
 {
 	int status = 0;
 
 	if ((status = gamemode_query_status()) != 0 && status != -1) {
-		LOG_ERROR("gamemode is currently active, tests require gamemode to start deactivated!\n");
-		status = -1;
+		long reaper = config_get_reaper_frequency(config);
+		LOG_MSG("GameMode was active, waiting for the reaper thread (%ld seconds)!\n", reaper);
+		sleep(1);
+
+		/* Try again after waiting */
+		for (int i = 0; i < reaper; i++) {
+			if ((status = gamemode_query_status()) == 0) {
+				status = 0;
+				break;
+			} else if (status == -1) {
+				goto status_error;
+			}
+			LOG_MSG("Waiting...\n");
+			sleep(1);
+		}
+		if (status == 1)
+			LOG_ERROR("GameMode still active, cannot run tests!\n");
 	} else if (status == -1) {
-		LOG_ERROR("gamemode_query_status failed: %s!\n", gamemode_error_string());
-		LOG_ERROR("is gamemode installed correctly?\n");
-		status = -1;
+		goto status_error;
 	} else {
 		status = 0;
 	}
 
 	return status;
+status_error:
+	LOG_ERROR("gamemode_query_status failed: %s!\n", gamemode_error_string());
+	LOG_ERROR("is gamemode installed correctly?\n");
+	return -1;
 }
 
 /* Check if gamemode is active and this client is registered */
@@ -668,7 +685,7 @@ int game_mode_run_client_tests()
 	/* First verify that gamemode is not currently active on the system
 	 * As well as it being currently installed and queryable
 	 */
-	if (verify_gamemode_initial() != 0)
+	if (verify_gamemode_initial(config) != 0)
 		return -1;
 
 	/* Controls whether we require a supervisor to actually make requests */
