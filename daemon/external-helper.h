@@ -34,7 +34,4 @@ POSSIBILITY OF SUCH DAMAGE.
 #define EXTERNAL_BUFFER_MAX 1024
 
 /* Run an external process and capture the return value */
-int run_external_process(const char *const *exec_args);
-
-/* Run an external process and capture the return value as well as output */
-int run_external_process_get_output(const char *const *exec_args, char buffer[EXTERNAL_BUFFER_MAX]);
+int run_external_process(const char *const *exec_args, char buffer[EXTERNAL_BUFFER_MAX]);
