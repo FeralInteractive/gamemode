@@ -152,7 +152,8 @@ static bool get_long_value(const char *value_name, const char *value, long *outp
 /*
  * Get a long value from a hex string
  */
-static bool get_long_value_hex(const char *value_name, const char *value, long *output)
+__attribute__((unused)) static bool get_long_value_hex(const char *value_name, const char *value,
+                                                       long *output)
 {
 	char *end = NULL;
 	long config_value = strtol(value, &end, 16);
