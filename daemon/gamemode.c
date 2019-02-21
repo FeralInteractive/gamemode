@@ -189,7 +189,7 @@ static void game_mode_context_enter(GameModeContext *self)
 		};
 
 		LOG_MSG("Requesting update of governor policy to %s\n", desiredGov);
-		if (run_external_process(exec_args) != 0) {
+		if (run_external_process(exec_args, NULL) != 0) {
 			LOG_ERROR("Failed to update cpu governor policy\n");
 			/* if the set fails, clear the initial mode so we don't try and reset it back and fail
 			 * again, presumably */
@@ -242,7 +242,7 @@ static void game_mode_context_leave(GameModeContext *self)
 		};
 
 		LOG_MSG("Requesting update of governor policy to %s\n", gov_mode);
-		if (run_external_process(exec_args) != 0) {
+		if (run_external_process(exec_args, NULL) != 0) {
 			LOG_ERROR("Failed to update cpu governor policy\n");
 		}
 
@@ -693,7 +693,7 @@ static void game_mode_execute_scripts(char scripts[CONFIG_LIST_MAX][CONFIG_VALUE
 		LOG_MSG("Executing script [%s]\n", scripts[i]);
 		int err;
 		const char *args[] = { "/bin/sh", "-c", scripts[i], NULL };
-		if ((err = run_external_process(args)) != 0) {
+		if ((err = run_external_process(args, NULL)) != 0) {
 			/* Log the failure, but this is not fatal */
 			LOG_ERROR("Script [%s] failed with error %d\n", scripts[i], err);
 		}

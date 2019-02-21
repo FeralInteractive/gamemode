@@ -43,10 +43,16 @@ POSSIBILITY OF SUCH DAMAGE.
 /**
  * Call an external process
  */
-int run_external_process(const char *const *exec_args)
+int run_external_process(const char *const *exec_args, char buffer[EXTERNAL_BUFFER_MAX])
 {
 	pid_t p;
 	int status = 0;
+	int pipes[2];
+
+	if (pipe(pipes) == -1) {
+		LOG_ERROR("Could not create pipe: %s!\n", strerror(errno));
+		return -1;
+	}
 
 	/* set up our signaling for the child and the timout */
 	sigset_t mask;
@@ -62,6 +68,10 @@ int run_external_process(const char *const *exec_args)
 		LOG_ERROR("Failed to fork(): %s\n", strerror(errno));
 		return false;
 	} else if (p == 0) {
+		/* Send STDOUT to the pipe */
+		dup2(pipes[1], STDOUT_FILENO);
+		close(pipes[0]);
+		close(pipes[1]);
 		/* Execute the command */
 		/* Note about cast:
 		 *   The statement about argv[] and envp[] being constants is
@@ -97,54 +107,8 @@ int run_external_process(const char *const *exec_args)
 		break;
 	}
 
-	if (waitpid(p, &status, 0) < 0) {
-		LOG_ERROR("Failed to waitpid(%d): %s\n", (int)p, strerror(errno));
-		return -1;
-	}
-
-	/* i.e. sigsev */
-	if (!WIFEXITED(status)) {
-		LOG_ERROR("Child process '%s' exited abnormally\n", exec_args[0]);
-	} else if (WEXITSTATUS(status) != 0) {
-		LOG_ERROR("External process failed\n");
-		return -1;
-	}
-
-	return 0;
-}
-
-/**
- * Call an external process and get output
- */
-int run_external_process_get_output(const char *const *exec_args, char buffer[EXTERNAL_BUFFER_MAX])
-{
-	pid_t p;
-	int status = 0;
-	int pipes[2];
-
-	if (pipe(pipes) == -1) {
-		LOG_ERROR("Could not create pipe: %s!\n", strerror(errno));
-		return -1;
-	}
-
-	if ((p = fork()) < 0) {
-		LOG_ERROR("Failed to fork(): %s\n", strerror(errno));
-		return false;
-	} else if (p == 0) {
-		/* Send STDOUT to the pipe */
-		dup2(pipes[1], STDOUT_FILENO);
-		close(pipes[0]);
-		close(pipes[1]);
-		/* Launch the process */
-		if (execv(exec_args[0], (char *const *)exec_args) != 0) {
-			LOG_ERROR("Failed to execute external process %s: %s\n", exec_args[0], strerror(errno));
-			exit(EXIT_FAILURE);
-		}
-		_exit(EXIT_SUCCESS);
-	}
-
 	close(pipes[1]);
-	if (read(pipes[0], buffer, EXTERNAL_BUFFER_MAX) < 0) {
+	if (buffer && read(pipes[0], buffer, EXTERNAL_BUFFER_MAX) < 0) {
 		LOG_ERROR("Failed to read from process %s: %s\n", exec_args[0], strerror(errno));
 		return -1;
 	}
