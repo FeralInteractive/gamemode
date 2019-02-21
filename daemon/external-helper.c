@@ -50,6 +50,7 @@ int run_external_process(const char *const *exec_args, char buffer[EXTERNAL_BUFF
 	pid_t p;
 	int status = 0;
 	int pipes[2];
+	char internal[EXTERNAL_BUFFER_MAX] = { 0 };
 
 	if (pipe(pipes) == -1) {
 		LOG_ERROR("Could not create pipe: %s!\n", strerror(errno));
@@ -116,7 +117,7 @@ int run_external_process(const char *const *exec_args, char buffer[EXTERNAL_BUFF
 	}
 
 	close(pipes[1]);
-	if (buffer && read(pipes[0], buffer, EXTERNAL_BUFFER_MAX) < 0) {
+	if (read(pipes[0], internal, EXTERNAL_BUFFER_MAX) < 0) {
 		LOG_ERROR("Failed to read from process %s: %s\n", exec_args[0], strerror(errno));
 		return -1;
 	}
@@ -130,9 +131,13 @@ int run_external_process(const char *const *exec_args, char buffer[EXTERNAL_BUFF
 	if (!WIFEXITED(status)) {
 		LOG_ERROR("Child process '%s' exited abnormally\n", exec_args[0]);
 	} else if (WEXITSTATUS(status) != 0) {
-		LOG_ERROR("External process failed\n");
+		LOG_ERROR("External process failed with exit code %u\n", WEXITSTATUS(status));
+		LOG_ERROR("Output was: %s\n", buffer ? buffer : internal);
 		return -1;
 	}
+
+	if (buffer)
+		memcpy(buffer, internal, EXTERNAL_BUFFER_MAX);
 
 	return 0;
 }
