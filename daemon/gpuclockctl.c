@@ -36,6 +36,14 @@ POSSIBILITY OF SUCH DAMAGE.
 #include "external-helper.h"
 #include "gpu-control.h"
 
+/* NV constants */
+#define NV_CORE_OFFSET_ATTRIBUTE "GPUGraphicsClockOffset"
+#define NV_MEM_OFFSET_ATTRIBUTE "GPUMemoryTransferRateOffset"
+#define NV_ATTRIBUTE_FORMAT "[gpu:%ld]/%s[%ld]"
+
+/* AMD constants */
+#define AMD_DRM_PATH "/sys/class/drm/card%ld/device/%s"
+
 /* Plausible extras to add:
  * Intel support - https://blog.ffwll.ch/2013/03/overclocking-your-intel-gpu-on-linux.html
  * AMD - Allow setting fan speed as well
@@ -51,32 +59,89 @@ static void print_usage_and_exit(void)
 	exit(EXIT_FAILURE);
 }
 
+static int get_gpu_state_nv(struct GameModeGPUInfo *info)
+{
+	if (info->vendor != Vendor_NVIDIA)
+		return -1;
+
+	if (!getenv("DISPLAY"))
+		LOG_ERROR("Getting Nvidia parameters requires DISPLAY to be set - will likely fail!\n");
+
+	char arg[128] = { 0 };
+	char buf[EXTERNAL_BUFFER_MAX] = { 0 };
+	char *end;
+
+	/* Set the GPUGraphicsClockOffset parameter */
+	snprintf(arg,
+	         128,
+	         NV_ATTRIBUTE_FORMAT,
+	         info->device,
+	         NV_CORE_OFFSET_ATTRIBUTE,
+	         info->nv_perf_level);
+	const char *exec_args_core[] = { "/usr/bin/nvidia-settings", "-q", arg, "-t", NULL };
+	if (run_external_process_get_output(exec_args_core, buf) != 0) {
+		LOG_ERROR("Failed to set %s!\n", arg);
+		return -1;
+	}
+
+	info->core = strtol(buf, &end, 10);
+	if (end == buf) {
+		LOG_ERROR("Failed to parse output for \"%s\" output was \"%s\"!\n", arg, buf);
+		return -1;
+	}
+
+	/* Set the GPUMemoryTransferRateOffset parameter */
+	snprintf(arg,
+	         128,
+	         NV_ATTRIBUTE_FORMAT,
+	         info->device,
+	         NV_MEM_OFFSET_ATTRIBUTE,
+	         info->nv_perf_level);
+	const char *exec_args_mem[] = { "/usr/bin/nvidia-settings", "-q", arg, "-t", NULL };
+	if (run_external_process_get_output(exec_args_mem, buf) != 0) {
+		LOG_ERROR("Failed to set %s!\n", arg);
+		return -1;
+	}
+
+	info->mem = strtol(buf, &end, 10);
+	if (end == buf) {
+		LOG_ERROR("Failed to parse output for \"%s\" output was \"%s\"!\n", arg, buf);
+		return -1;
+	}
+
+	return 0;
+}
+
 /**
  * Get the gpu state
  * Populates the struct with the GPU info on the system
  */
-int get_gpu_state(struct GameModeGPUInfo *info)
+static int get_gpu_state_amd(struct GameModeGPUInfo *info)
 {
-	fprintf(stderr, "Fetching GPU state is currently unimplemented!\n");
+	fprintf(stderr, "Fetching GPU state on AMD is currently unimplemented!\n");
 	return info != NULL;
 }
 
 /**
  * Set the gpu state based on input parameters on Nvidia
  */
-int set_gpu_state_nv(struct GameModeGPUInfo *info)
+static int set_gpu_state_nv(struct GameModeGPUInfo *info)
 {
 	if (info->vendor != Vendor_NVIDIA)
 		return -1;
 
-	// These commands don't technically even need root
+	if (!getenv("DISPLAY") || !getenv("XAUTHORITY"))
+		LOG_ERROR(
+		    "Setting Nvidia parameters requires DISPLAY and XAUTHORITY to be set - will likely "
+		    "fail!\n");
 
 	/* Set the GPUGraphicsClockOffset parameter */
 	char core_arg[128];
 	snprintf(core_arg,
 	         128,
-	         "[gpu:%ld]/GPUGraphicsClockOffset[%ld]=%ld",
+	         NV_ATTRIBUTE_FORMAT "=%ld",
 	         info->device,
+	         NV_CORE_OFFSET_ATTRIBUTE,
 	         info->nv_perf_level,
 	         info->core);
 	const char *exec_args_core[] = { "/usr/bin/nvidia-settings", "-a", core_arg, NULL };
@@ -89,8 +154,9 @@ int set_gpu_state_nv(struct GameModeGPUInfo *info)
 	char mem_arg[128];
 	snprintf(mem_arg,
 	         128,
-	         "[gpu:%ld]/GPUMemoryTransferRateOffset[%ld]=%ld",
+	         NV_ATTRIBUTE_FORMAT "=%ld",
 	         info->device,
+	         NV_MEM_OFFSET_ATTRIBUTE,
 	         info->nv_perf_level,
 	         info->mem);
 	const char *exec_args_mem[] = { "/usr/bin/nvidia-settings", "-a", mem_arg, NULL };
@@ -110,9 +176,8 @@ int set_gpu_state_nv(struct GameModeGPUInfo *info)
  */
 static int set_gpu_state_amd_file(const char *filename, long device, long value)
 {
-	const char *drm_path = "/sys/class/drm/card%ld/device/%s";
 	char path[64];
-	snprintf(path, 64, drm_path, device, filename);
+	snprintf(path, 64, AMD_DRM_PATH, device, filename);
 
 	FILE *file = fopen(path, "w");
 	if (!file) {
@@ -136,10 +201,16 @@ static int set_gpu_state_amd_file(const char *filename, long device, long value)
 /**
  * Set the gpu state based on input parameters on amd
  */
-int set_gpu_state_amd(struct GameModeGPUInfo *info)
+static int set_gpu_state_amd(struct GameModeGPUInfo *info)
 {
 	if (info->vendor != Vendor_AMD)
 		return -1;
+
+	/* Must be root to set the state */
+	if (geteuid() != 0) {
+		fprintf(stderr, "gpuclockctl must be run as root to set AMD values\n");
+		print_usage_and_exit();
+	}
 
 	// Set the the core and mem clock speeds using the OverDrive files
 	if (set_gpu_state_amd_file("pp_sclk_od", info->device, info->core) != 0)
@@ -191,24 +262,34 @@ static long get_generic_value(const char *val)
  */
 int main(int argc, char *argv[])
 {
-	if (argc == 4 && strncmp(argv[3], "get", 3) == 0) {
+	if (argc >= 4 && strncmp(argv[3], "get", 3) == 0) {
 		/* Get and verify the vendor and device */
 		struct GameModeGPUInfo info;
 		memset(&info, 0, sizeof(info));
 		info.vendor = get_vendor(argv[1]);
 		info.device = get_device(argv[2]);
 
+		if (info.vendor == Vendor_NVIDIA && argc > 4)
+			info.nv_perf_level = get_generic_value(argv[4]);
+
 		/* Fetch the state and print it out */
-		get_gpu_state(&info);
+		switch (info.vendor) {
+		case Vendor_NVIDIA:
+			/* Get nvidia power level */
+			if (get_gpu_state_nv(&info) != 0)
+				exit(EXIT_FAILURE);
+			break;
+		case Vendor_AMD:
+			if (get_gpu_state_amd(&info) != 0)
+				exit(EXIT_FAILURE);
+			break;
+		default:
+			printf("Currently unsupported GPU vendor 0x%04x, doing nothing!\n", (short)info.vendor);
+			break;
+		}
 		printf("%ld %ld\n", info.core, info.mem);
 
 	} else if (argc >= 6 && argc <= 7 && strncmp(argv[3], "set", 3) == 0) {
-		/* Must be root to set the state */
-		if (geteuid() != 0) {
-			fprintf(stderr, "gpuclockctl must be run as root to set values\n");
-			print_usage_and_exit();
-		}
-
 		/* Get and verify the vendor and device */
 		struct GameModeGPUInfo info;
 		memset(&info, 0, sizeof(info));
@@ -217,7 +298,7 @@ int main(int argc, char *argv[])
 		info.core = get_generic_value(argv[4]);
 		info.mem = get_generic_value(argv[5]);
 
-		if (info.vendor == Vendor_NVIDIA)
+		if (info.vendor == Vendor_NVIDIA && argc > 6)
 			info.nv_perf_level = get_generic_value(argv[6]);
 
 		printf("gpuclockctl setting core:%ld mem:%ld on device:%ld with vendor 0x%04x\n",

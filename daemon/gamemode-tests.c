@@ -40,7 +40,10 @@ POSSIBILITY OF SUCH DAMAGE.
 #include <sys/wait.h>
 #include <unistd.h>
 
+#include "daemon_config.h"
 #include "gamemode_client.h"
+#include "governors-query.h"
+#include "gpu-control.h"
 
 /* Initial verify step to ensure gamemode isn't already active */
 static int verify_gamemode_initial(void)
@@ -122,7 +125,7 @@ static int verify_other_client_connected(void)
  */
 static int run_basic_client_tests(void)
 {
-	LOG_MSG("   *basic client tests*\n");
+	LOG_MSG(":: Basic client tests\n");
 
 	/* First verify that gamemode is not currently active on the system
 	 * As well as it being currently installed and queryable
@@ -150,7 +153,7 @@ static int run_basic_client_tests(void)
 	if (verify_deactivated() != 0)
 		return -1;
 
-	LOG_MSG("       *passed*\n");
+	LOG_MSG(":: Passed\n\n");
 
 	return 0;
 }
@@ -163,7 +166,7 @@ static int run_dual_client_tests(void)
 	int status = 0;
 
 	/* Try running some process interop tests */
-	LOG_MSG("   *dual clients tests*\n");
+	LOG_MSG(":: Dual client tests\n");
 
 	/* Get the current path to this binary */
 	char mypath[PATH_MAX];
@@ -220,13 +223,13 @@ static int run_dual_client_tests(void)
 	}
 
 	/* Give the child a chance to finish */
-	usleep(10000);
+	usleep(100000);
 
 	// Wait for the child to finish up
 	int wstatus;
 	while (waitpid(child, &wstatus, WNOHANG) == 0) {
-		LOG_MSG("   Waiting for child to quit...\n");
-		usleep(10000);
+		LOG_MSG("...Waiting for child to quit...\n");
+		usleep(100000);
 	}
 
 	/* Verify that gamemode is now innactive */
@@ -234,7 +237,341 @@ static int run_dual_client_tests(void)
 		return -1;
 
 	if (status == 0)
-		LOG_MSG("       *passed*\n");
+		LOG_MSG(":: Passed\n\n");
+
+	return status;
+}
+
+/* Check gamemoderun works */
+static int run_gamemoderun_and_reaper_tests(struct GameModeConfig *config)
+{
+	int status = 0;
+
+	LOG_MSG(":: Gamemoderun and reaper thread tests\n");
+
+	/* Fork so that the child can request gamemode */
+	int child = fork();
+	if (child == 0) {
+		/* Close stdout, we don't care if sh prints anything */
+		fclose(stdout);
+		/* Preload into sh and then kill it */
+		if (execl("/usr/bin/gamemoderun", "/usr/bin/gamemoderun", "sh", (char *)NULL) == -1) {
+			LOG_ERROR("failed to launch gamemoderun with execl: %s\n", strerror(errno));
+			return -1;
+		}
+	}
+
+	/* Give the child a chance to reqeust gamemode */
+	usleep(10000);
+
+	/* Check that when we request gamemode, it replies that the other client is connected */
+	if (verify_other_client_connected() != 0)
+		status = -1;
+
+	/* Send SIGTERM to the child to stop it*/
+	if (kill(child, SIGTERM) == -1) {
+		LOG_ERROR("failed to send continue signal to other client: %s\n", strerror(errno));
+		status = -1;
+	}
+
+	/* Wait for the child to clean up */
+	int wstatus;
+	while (waitpid(child, &wstatus, WNOHANG) == 0) {
+		LOG_MSG("...Waiting for child to quit...\n");
+		usleep(100000);
+	}
+
+	/* And give gamemode a chance to reap the process */
+	long freq = config_get_reaper_frequency(config);
+	LOG_MSG("...Waiting for reaper thread (reaper_frequency set to %ld seconds)...\n", freq);
+	sleep((unsigned int)freq);
+
+	/* Verify that gamemode is now innactive */
+	if (verify_deactivated() != 0)
+		return -1;
+
+	if (status == 0)
+		LOG_MSG(":: Passed\n\n");
+
+	return status;
+}
+
+/* Check the cpu governor setting works */
+static int run_cpu_governor_tests(struct GameModeConfig *config)
+{
+	/* get the two config parameters we care about */
+	char desiredgov[CONFIG_VALUE_MAX] = { 0 };
+	config_get_desired_governor(config, desiredgov);
+
+	if (desiredgov[0] == '\0')
+		strcpy(desiredgov, "performance");
+
+	char defaultgov[CONFIG_VALUE_MAX] = { 0 };
+	config_get_default_governor(config, defaultgov);
+
+	if (desiredgov[0] == '\0') {
+		const char *currentgov = get_gov_state();
+		if (currentgov) {
+			strncpy(desiredgov, currentgov, CONFIG_VALUE_MAX);
+		} else {
+			LOG_ERROR(
+			    "Could not get current CPU governor state, this indicates an error! See rest "
+			    "of log.\n");
+			return -1;
+		}
+	}
+
+	/* Start gamemode */
+	gamemode_request_start();
+
+	/* Verify the governor is the desired one */
+	const char *currentgov = get_gov_state();
+	if (strncmp(currentgov, desiredgov, CONFIG_VALUE_MAX) != 0) {
+		LOG_ERROR("Govenor was not set to %s (was actually %s)!", desiredgov, currentgov);
+		gamemode_request_end();
+		return -1;
+	}
+
+	/* End gamemode */
+	gamemode_request_end();
+
+	/* Verify the governor has been set back */
+	currentgov = get_gov_state();
+	if (strncmp(currentgov, defaultgov, CONFIG_VALUE_MAX) != 0) {
+		LOG_ERROR("Govenor was not set back to %s (was actually %s)!", defaultgov, currentgov);
+		return -1;
+	}
+
+	return 0;
+}
+
+static int run_custom_scripts_tests(struct GameModeConfig *config)
+{
+	int scriptstatus = 0;
+
+	/* Grab and test the start scripts */
+	char startscripts[CONFIG_LIST_MAX][CONFIG_VALUE_MAX];
+	memset(startscripts, 0, sizeof(startscripts));
+	config_get_gamemode_start_scripts(config, startscripts);
+
+	if (startscripts[0][0] != '\0') {
+		int i = 0;
+		while (*startscripts[i] != '\0' && i < CONFIG_LIST_MAX) {
+			LOG_MSG(":::: Running start script [%s]\n", startscripts[i]);
+
+			int ret = system(startscripts[i]);
+
+			if (ret == 0)
+				LOG_MSG(":::: Passed\n");
+			else {
+				LOG_MSG(":::: Failed!\n");
+				scriptstatus = -1;
+			}
+			i++;
+		}
+	}
+
+	/* Grab and test the end scripts */
+	char endscripts[CONFIG_LIST_MAX][CONFIG_VALUE_MAX];
+	memset(endscripts, 0, sizeof(endscripts));
+	config_get_gamemode_end_scripts(config, endscripts);
+
+	if (endscripts[0][0] != '\0') {
+		int i = 0;
+		while (*endscripts[i] != '\0' && i < CONFIG_LIST_MAX) {
+			LOG_MSG(":::: Running end script [%s]\n", endscripts[i]);
+
+			int ret = system(endscripts[i]);
+
+			if (ret == 0)
+				LOG_MSG(":::: Passed\n");
+			else {
+				LOG_MSG(":::: Failed!\n");
+				scriptstatus = -1;
+			}
+			i++;
+		}
+	}
+
+	/* Specal value for no scripts */
+	if (endscripts[0][0] == '\0' && startscripts[0][0] == '\0')
+		return 1;
+
+	return scriptstatus;
+}
+
+int run_gpu_optimisation_tests(struct GameModeConfig *config)
+{
+	int gpustatus = 0;
+
+	/* First check if these are turned on */
+	char apply[CONFIG_VALUE_MAX];
+	config_get_apply_gpu_optimisations(config, apply);
+	if (strlen(apply) == 0) {
+		/* Special value for disabled */
+		return 1;
+	} else if (strncmp(apply, "accept-responsibility", CONFIG_VALUE_MAX) != 0) {
+		LOG_ERROR(
+		    "apply_gpu_optimisations set to value other than \"accept-responsibility\" (%s), will "
+		    "not apply GPU optimisations!\n",
+		    apply);
+		return -1;
+	}
+
+	/* Get current GPU values */
+	GameModeGPUInfo gpuinfo;
+	gpuinfo.device = config_get_gpu_device(config);
+	gpuinfo.vendor = config_get_gpu_vendor(config);
+
+	if (gpuinfo.vendor == Vendor_NVIDIA)
+		gpuinfo.nv_perf_level = config_get_nv_perf_level(config);
+
+	if (game_mode_get_gpu(&gpuinfo) != 0) {
+		LOG_ERROR("Could not get current GPU info, see above!\n");
+		return -1;
+	}
+
+	/* Store the original values */
+	long original_core = gpuinfo.core;
+	long original_mem = gpuinfo.mem;
+
+	/* Grab the expected values */
+	long expected_core = 0;
+	long expected_mem = 0;
+	switch (gpuinfo.vendor) {
+	case Vendor_NVIDIA:
+		expected_core = config_get_nv_core_clock_mhz_offset(config);
+		expected_mem = config_get_nv_mem_clock_mhz_offset(config);
+		break;
+	case Vendor_AMD:
+		expected_core = config_get_amd_core_clock_percentage(config);
+		expected_mem = config_get_amd_mem_clock_percentage(config);
+		break;
+	default:
+		LOG_ERROR("Configured for unsupported GPU vendor 0x%04x!\n", (unsigned int)gpuinfo.vendor);
+		return -1;
+	}
+
+	LOG_MSG("Configured with vendor:0x%04x device:%ld core:%ld mem:%ld (nv_perf_level:%ld)\n",
+	        (unsigned int)gpuinfo.vendor,
+	        gpuinfo.device,
+	        expected_core,
+	        expected_mem,
+	        gpuinfo.nv_perf_level);
+
+	/* Start gamemode and check the new values */
+	gamemode_request_start();
+
+	if (game_mode_get_gpu(&gpuinfo) != 0) {
+		LOG_ERROR("Could not get current GPU info, see above!\n");
+		gamemode_request_end();
+		return -1;
+	}
+
+	if (gpuinfo.core != expected_core || gpuinfo.mem != expected_mem) {
+		LOG_ERROR(
+		    "Current GPU clocks during gamemode do not match requested values!\n"
+		    "\tcore - expected:%ld was:%ld | mem - expected:%ld was:%ld\n",
+		    expected_core,
+		    gpuinfo.core,
+		    expected_mem,
+		    gpuinfo.mem);
+		gpustatus = -1;
+	}
+
+	/* End gamemode and check the values have returned */
+	gamemode_request_end();
+
+	if (game_mode_get_gpu(&gpuinfo) != 0) {
+		LOG_ERROR("Could not get current GPU info, see above!\n");
+		return -1;
+	}
+
+	if (gpuinfo.core != original_core || gpuinfo.mem != original_mem) {
+		LOG_ERROR(
+		    "Current GPU clocks after gamemode do not matcch original values!\n"
+		    "\tcore - original:%ld was:%ld | mem - original:%ld was:%ld\n",
+		    original_core,
+		    gpuinfo.core,
+		    original_mem,
+		    gpuinfo.mem);
+		gpustatus = -1;
+	}
+
+	return gpustatus;
+}
+
+/**
+ * game_mode_run_feature_tests runs a set of tests for each current feature (based on the current
+ * config) returns 0 for success, -1 for failure
+ */
+static int game_mode_run_feature_tests(struct GameModeConfig *config)
+{
+	int status = 0;
+	LOG_MSG(":: Feature tests\n");
+
+	/* If we reach here, we should assume the basic requests and register functions are working */
+
+	/* Does the CPU governor get set properly? */
+	{
+		LOG_MSG("::: Verifying CPU governor setting\n");
+
+		int cpustatus = run_cpu_governor_tests(config);
+
+		if (cpustatus == 0)
+			LOG_MSG("::: Passed\n");
+		else {
+			LOG_MSG("::: Failed!\n");
+			// Consider the CPU governor feature required
+			status = 1;
+		}
+	}
+
+	/* Do custom scripts run? */
+	{
+		LOG_MSG("::: Verifying Scripts\n");
+		int scriptstatus = run_custom_scripts_tests(config);
+
+		if (scriptstatus == 1)
+			LOG_MSG("::: Passed (no scripts configured to run)\n");
+		else if (scriptstatus == 0)
+			LOG_MSG("::: Passed\n");
+		else {
+			LOG_MSG("::: Failed!\n");
+			// Any custom scripts should be expected to work
+			status = 1;
+		}
+	}
+
+	/* Do GPU optimisations get applied? */
+	{
+		LOG_MSG("::: Verifying GPU Optimisations\n");
+		int gpustatus = run_gpu_optimisation_tests(config);
+
+		if (gpustatus == 1)
+			LOG_MSG("::: Passed (gpu optimisations not configured to run)\n");
+		else if (gpustatus == 0)
+			LOG_MSG("::: Passed\n");
+		else {
+			LOG_MSG("::: Failed!\n");
+			// Any custom scripts should be expected to work
+			status = 1;
+		}
+	}
+
+	/* Does the screensaver get inhibited? */
+	/* TODO: Unknown if this is testable, org.freedesktop.ScreenSaver has no query method */
+
+	/* Was the process reniced? */
+	/* Was the scheduling applied? */
+	/* Were io priorities changed? */
+	/* Note: These don't get cleared up on un-register, so will have already been applied */
+	/* TODO */
+
+	if (status != -1)
+		LOG_MSG(":: Passed%s\n\n", status > 0 ? " (with optional failures)" : "");
+	else
+		LOG_ERROR(":: Failed!\n");
 
 	return status;
 }
@@ -248,15 +585,39 @@ static int run_dual_client_tests(void)
 int game_mode_run_client_tests()
 {
 	int status = 0;
-	LOG_MSG("Running tests...\n");
+
+	LOG_MSG(": Loading config\n");
+	/* Grab the config */
+	/* Note: this config may pick up a local gamemode.ini, or the daemon may have one, we may need
+	 * to cope with that */
+	GameModeConfig *config = config_create();
+	config_init(config);
+
+	LOG_MSG(": Running tests\n\n");
 
 	/* Run the basic tests */
 	if (run_basic_client_tests() != 0)
-		return -1;
+		status = -1;
 
 	/* Run the dual client tests */
 	if (run_dual_client_tests() != 0)
-		return -1;
+		status = -1;
+
+	/* Check gamemoderun and the reaper thread work */
+	if (run_gamemoderun_and_reaper_tests(config) != 0)
+		status = -1;
+
+	if (status != 0) {
+		LOG_MSG(": Client tests failed, skipping feature tests\n");
+	} else {
+		/* Run the feature tests */
+		status = game_mode_run_feature_tests(config);
+	}
+
+	if (status >= 0)
+		LOG_MSG(": All Tests Passed%s!\n", status > 0 ? " (with optional failures)" : "");
+	else
+		LOG_MSG(": Tests Failed!\n");
 
 	return status;
 }
