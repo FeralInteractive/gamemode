@@ -40,10 +40,12 @@ POSSIBILITY OF SUCH DAMAGE.
 #include <time.h>
 #include <unistd.h>
 
+static const int default_timout = 5;
+
 /**
  * Call an external process
  */
-int run_external_process(const char *const *exec_args, char buffer[EXTERNAL_BUFFER_MAX])
+int run_external_process(const char *const *exec_args, char buffer[EXTERNAL_BUFFER_MAX], int tsec)
 {
 	pid_t p;
 	int status = 0;
@@ -52,6 +54,11 @@ int run_external_process(const char *const *exec_args, char buffer[EXTERNAL_BUFF
 	if (pipe(pipes) == -1) {
 		LOG_ERROR("Could not create pipe: %s!\n", strerror(errno));
 		return -1;
+	}
+
+	/* Set the default timeout */
+	if (tsec == -1) {
+		tsec = default_timout;
 	}
 
 	/* set up our signaling for the child and the timout */
@@ -88,7 +95,8 @@ int run_external_process(const char *const *exec_args, char buffer[EXTERNAL_BUFF
 
 	/* Set up the timout */
 	struct timespec timeout;
-	timeout.tv_sec = 5; /* Magic timeout value of 5s for now - should be sane for most commands */
+	timeout.tv_sec = tsec; /* Magic timeout value of 5s for now - should be sane for most commands
+	                        */
 	timeout.tv_nsec = 0;
 
 	/* Wait for the child to finish up with a timout */

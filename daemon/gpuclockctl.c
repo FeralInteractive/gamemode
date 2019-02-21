@@ -79,7 +79,7 @@ static int get_gpu_state_nv(struct GameModeGPUInfo *info)
 	         NV_CORE_OFFSET_ATTRIBUTE,
 	         info->nv_perf_level);
 	const char *exec_args_core[] = { "/usr/bin/nvidia-settings", "-q", arg, "-t", NULL };
-	if (run_external_process(exec_args_core, buf) != 0) {
+	if (run_external_process(exec_args_core, buf, -1) != 0) {
 		LOG_ERROR("Failed to set %s!\n", arg);
 		return -1;
 	}
@@ -98,7 +98,7 @@ static int get_gpu_state_nv(struct GameModeGPUInfo *info)
 	         NV_MEM_OFFSET_ATTRIBUTE,
 	         info->nv_perf_level);
 	const char *exec_args_mem[] = { "/usr/bin/nvidia-settings", "-q", arg, "-t", NULL };
-	if (run_external_process(exec_args_mem, buf) != 0) {
+	if (run_external_process(exec_args_mem, buf, -1) != 0) {
 		LOG_ERROR("Failed to set %s!\n", arg);
 		return -1;
 	}
@@ -145,7 +145,7 @@ static int set_gpu_state_nv(struct GameModeGPUInfo *info)
 	         info->nv_perf_level,
 	         info->core);
 	const char *exec_args_core[] = { "/usr/bin/nvidia-settings", "-a", core_arg, NULL };
-	if (run_external_process(exec_args_core, NULL) != 0) {
+	if (run_external_process(exec_args_core, NULL, -1) != 0) {
 		LOG_ERROR("Failed to set %s!\n", core_arg);
 		return -1;
 	}
@@ -160,7 +160,7 @@ static int set_gpu_state_nv(struct GameModeGPUInfo *info)
 	         info->nv_perf_level,
 	         info->mem);
 	const char *exec_args_mem[] = { "/usr/bin/nvidia-settings", "-a", mem_arg, NULL };
-	if (run_external_process(exec_args_mem, NULL) != 0) {
+	if (run_external_process(exec_args_mem, NULL, -1) != 0) {
 		LOG_ERROR("Failed to set %s!\n", mem_arg);
 		return -1;
 	}
