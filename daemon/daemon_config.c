@@ -71,6 +71,7 @@ struct GameModeConfig {
 		char whitelist[CONFIG_LIST_MAX][CONFIG_VALUE_MAX];
 		char blacklist[CONFIG_LIST_MAX][CONFIG_VALUE_MAX];
 
+		long script_timeout;
 		char startscripts[CONFIG_LIST_MAX][CONFIG_VALUE_MAX];
 		char endscripts[CONFIG_LIST_MAX][CONFIG_VALUE_MAX];
 
@@ -278,6 +279,8 @@ static int inih_handler(void *user, const char *section, const char *name, const
 			valid = append_value_to_list(name, value, self->values.startscripts);
 		} else if (strcmp(name, "end") == 0) {
 			valid = append_value_to_list(name, value, self->values.endscripts);
+		} else if (strcmp(name, "script_timeout") == 0) {
+			valid = get_long_value(name, value, &self->values.script_timeout);
 		}
 	}
 
@@ -330,6 +333,7 @@ static void load_config_files(GameModeConfig *self)
 	self->values.reaper_frequency = DEFAULT_REAPER_FREQ;
 	self->values.gpu_device = -1; /* 0 is a valid device ID so use -1 to indicate no value */
 	self->values.nv_perf_level = -1;
+	self->values.script_timeout = 10; /* Default to 10 seconds for scripts */
 
 	/*
 	 * Locations to load, in order
@@ -505,6 +509,11 @@ void config_get_gamemode_end_scripts(GameModeConfig *self,
 {
 	memcpy_locked_config(self, scripts, self->values.endscripts, sizeof(self->values.startscripts));
 }
+
+/*
+ * Get the script timemout value
+ */
+DEFINE_CONFIG_GET(script_timeout)
 
 /*
  * Get the chosen default governor
