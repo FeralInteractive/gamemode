@@ -93,7 +93,7 @@ static void *game_mode_context_reaper(void *userdata);
 static void game_mode_context_enter(GameModeContext *self);
 static void game_mode_context_leave(GameModeContext *self);
 static char *game_mode_context_find_exe(pid_t pid);
-static void game_mode_execute_scripts(char scripts[CONFIG_LIST_MAX][CONFIG_VALUE_MAX]);
+static void game_mode_execute_scripts(char scripts[CONFIG_LIST_MAX][CONFIG_VALUE_MAX], int timeout);
 
 void game_mode_context_init(GameModeContext *self)
 {
@@ -209,7 +209,8 @@ static void game_mode_context_enter(GameModeContext *self)
 	char scripts[CONFIG_LIST_MAX][CONFIG_VALUE_MAX];
 	memset(scripts, 0, sizeof(scripts));
 	config_get_gamemode_start_scripts(self->config, scripts);
-	game_mode_execute_scripts(scripts);
+	long timeout = config_get_script_timeout(self->config);
+	game_mode_execute_scripts(scripts, (int)timeout);
 }
 
 /**
@@ -252,7 +253,8 @@ static void game_mode_context_leave(GameModeContext *self)
 	char scripts[CONFIG_LIST_MAX][CONFIG_VALUE_MAX];
 	memset(scripts, 0, sizeof(scripts));
 	config_get_gamemode_end_scripts(self->config, scripts);
-	game_mode_execute_scripts(scripts);
+	long timeout = config_get_script_timeout(self->config);
+	game_mode_execute_scripts(scripts, (int)timeout);
 }
 
 /**
@@ -686,14 +688,14 @@ fail:
 }
 
 /* Executes a set of scripts */
-static void game_mode_execute_scripts(char scripts[CONFIG_LIST_MAX][CONFIG_VALUE_MAX])
+static void game_mode_execute_scripts(char scripts[CONFIG_LIST_MAX][CONFIG_VALUE_MAX], int timeout)
 {
 	unsigned int i = 0;
 	while (*scripts[i] != '\0' && i < CONFIG_LIST_MAX) {
 		LOG_MSG("Executing script [%s]\n", scripts[i]);
 		int err;
 		const char *args[] = { "/bin/sh", "-c", scripts[i], NULL };
-		if ((err = run_external_process(args, NULL, 10)) != 0) {
+		if ((err = run_external_process(args, NULL, timeout)) != 0) {
 			/* Log the failure, but this is not fatal */
 			LOG_ERROR("Script [%s] failed with error %d\n", scripts[i], err);
 		}

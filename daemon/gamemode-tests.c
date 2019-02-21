@@ -360,6 +360,7 @@ static int run_cpu_governor_tests(struct GameModeConfig *config)
 static int run_custom_scripts_tests(struct GameModeConfig *config)
 {
 	int scriptstatus = 0;
+	long timeout = config_get_script_timeout(config);
 
 	/* Grab and test the start scripts */
 	char startscripts[CONFIG_LIST_MAX][CONFIG_VALUE_MAX];
@@ -372,7 +373,7 @@ static int run_custom_scripts_tests(struct GameModeConfig *config)
 			LOG_MSG(":::: Running start script [%s]\n", startscripts[i]);
 
 			const char *args[] = { "/bin/sh", "-c", startscripts[i], NULL };
-			int ret = run_external_process(args, NULL, 10);
+			int ret = run_external_process(args, NULL, (int)timeout);
 
 			if (ret == 0)
 				LOG_MSG(":::: Passed\n");
@@ -395,7 +396,7 @@ static int run_custom_scripts_tests(struct GameModeConfig *config)
 			LOG_MSG(":::: Running end script [%s]\n", endscripts[i]);
 
 			const char *args[] = { "/bin/sh", "-c", endscripts[i], NULL };
-			int ret = run_external_process(args, NULL, 10);
+			int ret = run_external_process(args, NULL, (int)timeout);
 
 			if (ret == 0)
 				LOG_MSG(":::: Passed\n");
