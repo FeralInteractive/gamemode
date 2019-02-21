@@ -37,6 +37,7 @@ POSSIBILITY OF SUCH DAMAGE.
 #include <linux/limits.h>
 #include <stdio.h>
 #include <sys/wait.h>
+#include <time.h>
 #include <unistd.h>
 
 /**
@@ -46,6 +47,16 @@ int run_external_process(const char *const *exec_args)
 {
 	pid_t p;
 	int status = 0;
+
+	/* set up our signaling for the child and the timout */
+	sigset_t mask;
+	sigset_t omask;
+	sigemptyset(&mask);
+	sigaddset(&mask, SIGCHLD);
+	if (sigprocmask(SIG_BLOCK, &mask, &omask) < 0) {
+		LOG_ERROR("sigprocmask failed: %s\n", strerror(errno));
+		return -1;
+	}
 
 	if ((p = fork()) < 0) {
 		LOG_ERROR("Failed to fork(): %s\n", strerror(errno));
@@ -63,6 +74,27 @@ int run_external_process(const char *const *exec_args)
 			exit(EXIT_FAILURE);
 		}
 		_exit(EXIT_SUCCESS);
+	}
+
+	/* Set up the timout */
+	struct timespec timeout;
+	timeout.tv_sec = 5; /* Magic timeout value of 5s for now - should be sane for most commands */
+	timeout.tv_nsec = 0;
+
+	/* Wait for the child to finish up with a timout */
+	while (true) {
+		if (sigtimedwait(&mask, NULL, &timeout) < 0) {
+			if (errno == EINTR) {
+				continue;
+			} else if (errno == EAGAIN) {
+				LOG_ERROR("Child process timed out for %s, killing and returning\n", exec_args[0]);
+				kill(p, SIGKILL);
+			} else {
+				LOG_ERROR("sigtimedwait failed: %s\n", strerror(errno));
+				return -1;
+			}
+		}
+		break;
 	}
 
 	if (waitpid(p, &status, 0) < 0) {
