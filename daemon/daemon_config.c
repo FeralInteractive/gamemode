@@ -181,6 +181,9 @@ static bool get_string_value(const char *value, char output[CONFIG_VALUE_MAX])
 	return true;
 }
 
+/* Controls whether to read the protected config variables */
+static bool load_protected = false;
+
 /*
  * Handler for the inih callback
  */
@@ -214,6 +217,17 @@ static int inih_handler(void *user, const char *section, const char *name, const
 			valid = get_long_value(name, value, &self->values.inhibit_screensaver);
 		}
 	} else if (strcmp(section, "gpu") == 0) {
+		/* Protect the user - don't allow these config options from unsafe config locations */
+		if (!load_protected) {
+			LOG_ERROR(
+			    "The [gpu] config section is not configurable from unsafe config files! Option %s "
+			    "will be ignored!\n",
+			    name);
+			LOG_ERROR(
+			    "Consider moving this option to /etc/gamemode.ini or "
+			    "/usr/share/gamemode/gamemode.ini\n");
+		}
+
 		/* GPU subsection */
 		if (strcmp(name, "apply_gpu_optimisations") == 0) {
 			valid = get_string_value(value, self->values.apply_gpu_optimisations);
@@ -295,20 +309,25 @@ static void load_config_files(GameModeConfig *self)
 	 * Locations to load, in order
 	 * Arrays merge and values overwrite
 	 */
-	const char *locations[] = {
-		"/usr/share/gamemode", /* shipped default config */
-		"/etc",                /* administrator config */
-		config_location_home,  /* user defined config eg. $XDG_CONFIG_HOME or $HOME/.config/ */
-		config_location_local  /* local data eg. $PWD */
+	struct ConfigLocation {
+		const char *path;
+		bool protected;
+	};
+	struct ConfigLocation locations[] = {
+		{ "/usr/share/gamemode", true }, /* shipped default config */
+		{ "/etc", true },                /* administrator config */
+		{ config_location_home, false }, /* $XDG_CONFIG_HOME or $HOME/.config/ */
+		{ config_location_local, false } /* local data eg. $PWD */
 	};
 
 	/* Load each file in order and overwrite values */
 	for (unsigned int i = 0; i < sizeof(locations) / sizeof(locations[0]); i++) {
 		char *path = NULL;
-		if (locations[i] && asprintf(&path, "%s/" CONFIG_NAME, locations[i]) > 0) {
+		if (locations[i].path && asprintf(&path, "%s/" CONFIG_NAME, locations[i].path) > 0) {
 			FILE *f = fopen(path, "r");
 			if (f) {
 				LOG_MSG("Loading config file [%s]\n", path);
+				load_protected = locations[i].protected;
 				int error = ini_parse_file(f, inih_handler, (void *)self);
 
 				/* Failure here isn't fatal */
