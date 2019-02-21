@@ -93,6 +93,7 @@ static void *game_mode_context_reaper(void *userdata);
 static void game_mode_context_enter(GameModeContext *self);
 static void game_mode_context_leave(GameModeContext *self);
 static char *game_mode_context_find_exe(pid_t pid);
+static void game_mode_execute_scripts(char scripts[CONFIG_LIST_MAX][CONFIG_VALUE_MAX]);
 
 void game_mode_context_init(GameModeContext *self)
 {
@@ -208,17 +209,7 @@ static void game_mode_context_enter(GameModeContext *self)
 	char scripts[CONFIG_LIST_MAX][CONFIG_VALUE_MAX];
 	memset(scripts, 0, sizeof(scripts));
 	config_get_gamemode_start_scripts(self->config, scripts);
-
-	unsigned int i = 0;
-	while (*scripts[i] != '\0' && i < CONFIG_LIST_MAX) {
-		LOG_MSG("Executing script [%s]\n", scripts[i]);
-		int err;
-		if ((err = system(scripts[i])) != 0) {
-			/* Log the failure, but this is not fatal */
-			LOG_ERROR("Script [%s] failed with error %d\n", scripts[i], err);
-		}
-		i++;
-	}
+	game_mode_execute_scripts(scripts);
 }
 
 /**
@@ -261,17 +252,7 @@ static void game_mode_context_leave(GameModeContext *self)
 	char scripts[CONFIG_LIST_MAX][CONFIG_VALUE_MAX];
 	memset(scripts, 0, sizeof(scripts));
 	config_get_gamemode_end_scripts(self->config, scripts);
-
-	unsigned int i = 0;
-	while (*scripts[i] != '\0' && i < CONFIG_LIST_MAX) {
-		LOG_MSG("Executing script [%s]\n", scripts[i]);
-		int err;
-		if ((err = system(scripts[i])) != 0) {
-			/* Log the failure, but this is not fatal */
-			LOG_ERROR("Script [%s] failed with error %d\n", scripts[i], err);
-		}
-		i++;
-	}
+	game_mode_execute_scripts(scripts);
 }
 
 /**
@@ -702,4 +683,19 @@ fail:
 	if (errno != 0) // otherwise a proper message was logged before
 		LOG_ERROR("Unable to find executable for PID %d: %s\n", pid, strerror(errno));
 	return NULL;
+}
+
+/* Executes a set of scripts */
+static void game_mode_execute_scripts(char scripts[CONFIG_LIST_MAX][CONFIG_VALUE_MAX])
+{
+	unsigned int i = 0;
+	while (*scripts[i] != '\0' && i < CONFIG_LIST_MAX) {
+		LOG_MSG("Executing script [%s]\n", scripts[i]);
+		int err;
+		if ((err = system(scripts[i])) != 0) {
+			/* Log the failure, but this is not fatal */
+			LOG_ERROR("Script [%s] failed with error %d\n", scripts[i], err);
+		}
+		i++;
+	}
 }
