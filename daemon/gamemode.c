@@ -692,7 +692,8 @@ static void game_mode_execute_scripts(char scripts[CONFIG_LIST_MAX][CONFIG_VALUE
 	while (*scripts[i] != '\0' && i < CONFIG_LIST_MAX) {
 		LOG_MSG("Executing script [%s]\n", scripts[i]);
 		int err;
-		if ((err = system(scripts[i])) != 0) {
+		const char *args[] = { "/bin/sh", "-c", scripts[i], NULL };
+		if ((err = run_external_process(args)) != 0) {
 			/* Log the failure, but this is not fatal */
 			LOG_ERROR("Script [%s] failed with error %d\n", scripts[i], err);
 		}
