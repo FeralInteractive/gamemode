@@ -47,6 +47,8 @@ static int gamemode_request(const char *function, int arg)
 {
 	sd_bus_message *msg = NULL;
 	sd_bus *bus = NULL;
+	sd_bus_error err;
+	memset(&err, 0, sizeof(err));
 
 	int result = -1;
 
@@ -64,7 +66,7 @@ static int gamemode_request(const char *function, int arg)
 		                         "/com/feralinteractive/GameMode",
 		                         "com.feralinteractive.GameMode",
 		                         function,
-		                         NULL,
+		                         &err,
 		                         &msg,
 		                         arg ? "ii" : "i",
 		                         getpid(),
@@ -72,7 +74,13 @@ static int gamemode_request(const char *function, int arg)
 		if (ret < 0) {
 			snprintf(error_string,
 			         sizeof(error_string),
-			         "Could not call method on bus: %s",
+			         "Could not call method %s on com.feralinteractive.GameMode\n"
+			         "\t%s\n"
+			         "\t%s\n"
+			         "\t%s\n",
+			         function,
+			         err.name,
+			         err.message,
 			         strerror(-ret));
 		} else {
 			// Read the reply
