@@ -170,21 +170,6 @@ static void game_mode_context_enter(GameModeContext *self)
 	LOG_MSG("Entering Game Mode...\n");
 	sd_notifyf(0, "STATUS=%sGameMode is now active.%s\n", "\x1B[1;32m", "\x1B[0m");
 
-	char scripts[CONFIG_LIST_MAX][CONFIG_VALUE_MAX];
-	memset(scripts, 0, sizeof(scripts));
-	config_get_gamemode_start_scripts(self->config, scripts);
-
-	unsigned int i = 0;
-	while (*scripts[i] != '\0' && i < CONFIG_LIST_MAX) {
-		LOG_MSG("Executing script [%s]\n", scripts[i]);
-		int err;
-		if ((err = system(scripts[i])) != 0) {
-			/* Log the failure, but this is not fatal */
-			LOG_ERROR("Script [%s] failed with error %d\n", scripts[i], err);
-		}
-		i++;
-	}
-
 	/* Read the initial governor state so we can revert it correctly */
 	const char *initial_state = get_gov_state();
 	if (initial_state) {
@@ -217,6 +202,23 @@ static void game_mode_context_enter(GameModeContext *self)
 
 	/* Apply GPU optimisations */
 	game_mode_apply_gpu(self->gpu_info, true);
+
+	/* Run custom scripts last - ensures the above are applied first and these scripts can react to
+	 * them if needed */
+	char scripts[CONFIG_LIST_MAX][CONFIG_VALUE_MAX];
+	memset(scripts, 0, sizeof(scripts));
+	config_get_gamemode_start_scripts(self->config, scripts);
+
+	unsigned int i = 0;
+	while (*scripts[i] != '\0' && i < CONFIG_LIST_MAX) {
+		LOG_MSG("Executing script [%s]\n", scripts[i]);
+		int err;
+		if ((err = system(scripts[i])) != 0) {
+			/* Log the failure, but this is not fatal */
+			LOG_ERROR("Script [%s] failed with error %d\n", scripts[i], err);
+		}
+		i++;
+	}
 }
 
 /**
