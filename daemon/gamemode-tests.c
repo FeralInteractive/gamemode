@@ -372,7 +372,7 @@ static int run_custom_scripts_tests(struct GameModeConfig *config)
 			LOG_MSG(":::: Running start script [%s]\n", startscripts[i]);
 
 			const char *args[] = { "/bin/sh", "-c", startscripts[i], NULL };
-			int ret = run_external_process(args, NULL);
+			int ret = run_external_process(args, NULL, 10);
 
 			if (ret == 0)
 				LOG_MSG(":::: Passed\n");
@@ -395,7 +395,7 @@ static int run_custom_scripts_tests(struct GameModeConfig *config)
 			LOG_MSG(":::: Running end script [%s]\n", endscripts[i]);
 
 			const char *args[] = { "/bin/sh", "-c", endscripts[i], NULL };
-			int ret = run_external_process(args, NULL);
+			int ret = run_external_process(args, NULL, 10);
 
 			if (ret == 0)
 				LOG_MSG(":::: Passed\n");
