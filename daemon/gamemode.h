@@ -144,3 +144,4 @@ typedef struct GameModeGPUInfo GameModeGPUInfo;
 int game_mode_initialise_gpu(GameModeConfig *config, GameModeGPUInfo **info);
 void game_mode_free_gpu(GameModeGPUInfo **info);
 int game_mode_apply_gpu(const GameModeGPUInfo *info, bool apply);
+int game_mode_get_gpu(GameModeGPUInfo *info);

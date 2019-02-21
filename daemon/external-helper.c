@@ -31,6 +31,7 @@ POSSIBILITY OF SUCH DAMAGE.
 
 #define _GNU_SOURCE
 
+#include "external-helper.h"
 #include "logging.h"
 
 #include <linux/limits.h>
@@ -45,8 +46,6 @@ int run_external_process(const char *const *exec_args)
 {
 	pid_t p;
 	int status = 0;
-	int ret = 0;
-	int r = -1;
 
 	if ((p = fork()) < 0) {
 		LOG_ERROR("Failed to fork(): %s\n", strerror(errno));
@@ -59,23 +58,74 @@ int run_external_process(const char *const *exec_args)
 		 *   bindings that these objects are completely constant.
 		 * http://pubs.opengroup.org/onlinepubs/9699919799/functions/exec.html
 		 */
-		if ((r = execv(exec_args[0], (char *const *)exec_args)) != 0) {
+		if (execv(exec_args[0], (char *const *)exec_args) != 0) {
 			LOG_ERROR("Failed to execute external process: %s %s\n", exec_args[0], strerror(errno));
 			exit(EXIT_FAILURE);
 		}
 		_exit(EXIT_SUCCESS);
-	} else {
-		if (waitpid(p, &status, 0) < 0) {
-			LOG_ERROR("Failed to waitpid(%d): %s\n", (int)p, strerror(errno));
-			return -1;
-		}
-		/* i.e. sigsev */
-		if (!WIFEXITED(status)) {
-			LOG_ERROR("Child process '%s' exited abnormally\n", exec_args[0]);
-		}
 	}
 
-	if ((ret = WEXITSTATUS(status)) != 0) {
+	if (waitpid(p, &status, 0) < 0) {
+		LOG_ERROR("Failed to waitpid(%d): %s\n", (int)p, strerror(errno));
+		return -1;
+	}
+
+	/* i.e. sigsev */
+	if (!WIFEXITED(status)) {
+		LOG_ERROR("Child process '%s' exited abnormally\n", exec_args[0]);
+	} else if (WEXITSTATUS(status) != 0) {
+		LOG_ERROR("External process failed\n");
+		return -1;
+	}
+
+	return 0;
+}
+
+/**
+ * Call an external process and get output
+ */
+int run_external_process_get_output(const char *const *exec_args, char buffer[EXTERNAL_BUFFER_MAX])
+{
+	pid_t p;
+	int status = 0;
+	int pipes[2];
+
+	if (pipe(pipes) == -1) {
+		LOG_ERROR("Could not create pipe: %s!\n", strerror(errno));
+		return -1;
+	}
+
+	if ((p = fork()) < 0) {
+		LOG_ERROR("Failed to fork(): %s\n", strerror(errno));
+		return false;
+	} else if (p == 0) {
+		/* Send STDOUT to the pipe */
+		dup2(pipes[1], STDOUT_FILENO);
+		close(pipes[0]);
+		close(pipes[1]);
+		/* Launch the process */
+		if (execv(exec_args[0], (char *const *)exec_args) != 0) {
+			LOG_ERROR("Failed to execute external process %s: %s\n", exec_args[0], strerror(errno));
+			exit(EXIT_FAILURE);
+		}
+		_exit(EXIT_SUCCESS);
+	}
+
+	close(pipes[1]);
+	if (read(pipes[0], buffer, EXTERNAL_BUFFER_MAX) < 0) {
+		LOG_ERROR("Failed to read from process %s: %s\n", exec_args[0], strerror(errno));
+		return -1;
+	}
+
+	if (waitpid(p, &status, 0) < 0) {
+		LOG_ERROR("Failed to waitpid(%d): %s\n", (int)p, strerror(errno));
+		return -1;
+	}
+
+	/* i.e. sigsev */
+	if (!WIFEXITED(status)) {
+		LOG_ERROR("Child process '%s' exited abnormally\n", exec_args[0]);
+	} else if (WEXITSTATUS(status) != 0) {
 		LOG_ERROR("External process failed\n");
 		return -1;
 	}
