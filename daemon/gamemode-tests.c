@@ -41,6 +41,7 @@ POSSIBILITY OF SUCH DAMAGE.
 #include <unistd.h>
 
 #include "daemon_config.h"
+#include "external-helper.h"
 #include "gamemode_client.h"
 #include "governors-query.h"
 #include "gpu-control.h"
@@ -370,7 +371,8 @@ static int run_custom_scripts_tests(struct GameModeConfig *config)
 		while (*startscripts[i] != '\0' && i < CONFIG_LIST_MAX) {
 			LOG_MSG(":::: Running start script [%s]\n", startscripts[i]);
 
-			int ret = system(startscripts[i]);
+			const char *args[] = { "/bin/sh", "-c", startscripts[i], NULL };
+			int ret = run_external_process(args);
 
 			if (ret == 0)
 				LOG_MSG(":::: Passed\n");
@@ -392,7 +394,8 @@ static int run_custom_scripts_tests(struct GameModeConfig *config)
 		while (*endscripts[i] != '\0' && i < CONFIG_LIST_MAX) {
 			LOG_MSG(":::: Running end script [%s]\n", endscripts[i]);
 
-			int ret = system(endscripts[i]);
+			const char *args[] = { "/bin/sh", "-c", endscripts[i], NULL };
+			int ret = run_external_process(args);
 
 			if (ret == 0)
 				LOG_MSG(":::: Passed\n");
