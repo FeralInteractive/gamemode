@@ -291,7 +291,7 @@ static void game_mode_context_auto_expire(GameModeContext *self)
 			if (kill(client->pid, 0) != 0) {
 				LOG_MSG("Removing expired game [%i]...\n", client->pid);
 				pthread_rwlock_unlock(&self->rwlock);
-				game_mode_context_unregister(self, client->pid);
+				game_mode_context_unregister(self, client->pid, client->pid);
 				removing = true;
 				break;
 			}
@@ -335,19 +335,42 @@ static int game_mode_context_num_clients(GameModeContext *self)
 	return atomic_load(&self->refcount);
 }
 
-bool game_mode_context_register(GameModeContext *self, pid_t client)
+int game_mode_context_register(GameModeContext *self, pid_t client, pid_t requester)
 {
+	errno = 0;
+
 	/* Construct a new client if we can */
 	GameModeClient *cl = NULL;
 	char *executable = NULL;
 
+	/* Check our requester config first */
+	if (requester != client) {
+		/* Lookup the executable first */
+		executable = game_mode_context_find_exe(requester);
+		if (!executable) {
+			return -1;
+		}
+
+		/* Check our blacklist and whitelist */
+		if (!config_get_supervisor_whitelisted(self->config, executable)) {
+			LOG_MSG("Supervisor [%s] was rejected (not in whitelist)\n", executable);
+			free(executable);
+			return -2;
+		} else if (config_get_supervisor_blacklisted(self->config, executable)) {
+			LOG_MSG("Supervisor [%s] was rejected (in blacklist)\n", executable);
+			free(executable);
+			return -2;
+		}
+	} else if (config_get_require_supervisor(self->config)) {
+		LOG_ERROR("Direct request made but require_supervisor was set, rejecting request!\n");
+		return -2;
+	}
+
 	/* Cap the total number of active clients */
 	if (game_mode_context_num_clients(self) + 1 > MAX_GAMES) {
 		LOG_ERROR("Max games (%d) reached, not registering %d\n", MAX_GAMES, client);
-		return false;
+		goto error_cleanup;
 	}
-
-	errno = 0;
 
 	/* Check the PID first to spare a potentially expensive lookup for the exe */
 	pthread_rwlock_rdlock(&self->rwlock); // ensure our pointer is sane
@@ -407,21 +430,46 @@ bool game_mode_context_register(GameModeContext *self, pid_t client)
 	/* Apply io priorities */
 	game_mode_apply_ioprio(self, client);
 
-	return true;
+	return 0;
 
 error_cleanup:
 	if (errno != 0)
 		LOG_ERROR("Failed to register client [%d]: %s\n", client, strerror(errno));
 	free(executable);
 	game_mode_client_free(cl);
-	return false;
+	return -1;
 }
 
-bool game_mode_context_unregister(GameModeContext *self, pid_t client)
+int game_mode_context_unregister(GameModeContext *self, pid_t client, pid_t requester)
 {
 	GameModeClient *cl = NULL;
 	GameModeClient *prev = NULL;
 	bool found = false;
+
+	/* Check our requester config first */
+	if (requester != client) {
+		/* Lookup the executable first */
+		char *executable = game_mode_context_find_exe(requester);
+		if (!executable) {
+			return -1;
+		}
+
+		/* Check our blacklist and whitelist */
+		if (!config_get_supervisor_whitelisted(self->config, executable)) {
+			LOG_MSG("Supervisor [%s] was rejected (not in whitelist)\n", executable);
+			free(executable);
+			return -2;
+		} else if (config_get_supervisor_blacklisted(self->config, executable)) {
+			LOG_MSG("Supervisor [%s] was rejected (in blacklist)\n", executable);
+			free(executable);
+			return -2;
+		}
+
+		free(executable);
+	} else if (config_get_require_supervisor(self->config)) {
+		LOG_ERROR("Direct request made but require_supervisor was set, rejecting request!\n");
+		return -2;
+	}
 
 	/* Requires locking. */
 	pthread_rwlock_wrlock(&self->rwlock);
@@ -457,7 +505,7 @@ bool game_mode_context_unregister(GameModeContext *self, pid_t client)
 		    "    -- with a nearby 'Removing expired game' which means we cleaned up properly\n"
 		    "    -- (we will log this event). This hint will be displayed only once.\n",
 		    client);
-		return false;
+		return -1;
 	}
 
 	/* When we hit bottom then end the game mode */
@@ -465,13 +513,34 @@ bool game_mode_context_unregister(GameModeContext *self, pid_t client)
 		game_mode_context_leave(self);
 	}
 
-	return true;
+	return 0;
 }
 
-int game_mode_context_query_status(GameModeContext *self, pid_t client)
+int game_mode_context_query_status(GameModeContext *self, pid_t client, pid_t requester)
 {
 	GameModeClient *cl = NULL;
 	int ret = 0;
+
+	/* First check the requester settings if appropriate */
+	if (client != requester) {
+		char *executable = game_mode_context_find_exe(requester);
+		if (!executable) {
+			return -1;
+		}
+
+		/* Check our blacklist and whitelist */
+		if (!config_get_supervisor_whitelisted(self->config, executable)) {
+			LOG_MSG("Supervisor [%s] was rejected (not in whitelist)\n", executable);
+			free(executable);
+			return -2;
+		} else if (config_get_supervisor_blacklisted(self->config, executable)) {
+			LOG_MSG("Supervisor [%s] was rejected (in blacklist)\n", executable);
+			free(executable);
+			return -2;
+		}
+
+		free(executable);
+	}
 
 	/*
 	 * Check the current refcount on gamemode, this equates to whether gamemode is active or not,

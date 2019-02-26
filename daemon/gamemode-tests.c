@@ -127,12 +127,6 @@ static int run_basic_client_tests(void)
 {
 	LOG_MSG(":: Basic client tests\n");
 
-	/* First verify that gamemode is not currently active on the system
-	 * As well as it being currently installed and queryable
-	 */
-	if (verify_gamemode_initial() != 0)
-		return -1;
-
 	/* Verify that gamemode_request_start correctly start gamemode */
 	if (gamemode_request_start() != 0) {
 		LOG_ERROR("gamemode_request_start failed: %s\n", gamemode_error_string());
@@ -576,6 +570,96 @@ static int game_mode_run_feature_tests(struct GameModeConfig *config)
 	return status;
 }
 
+/* Run a set of tests on the supervisor code */
+static int run_supervisor_tests(void)
+{
+	int supervisortests = 0;
+	int ret = 0;
+
+	LOG_MSG(":: Supervisor tests\n");
+
+	/* Launch an external dummy process we can leave running and request gamemode for it */
+	pid_t pid = fork();
+	if (pid == 0) {
+		/* Child simply pauses and exits */
+		pause();
+		exit(EXIT_SUCCESS);
+	}
+
+	/* Request gamemode for our dummy process */
+	ret = gamemode_request_start_for(pid);
+	if (ret != 0) {
+		LOG_ERROR("gamemode_request_start_for gave unexpected value %d, (expected 0)!\n", ret);
+		if (ret == -1)
+			LOG_ERROR("GameMode error string: %s!\n", gamemode_error_string());
+		supervisortests = -1;
+	}
+
+	/* Check it's active */
+	ret = gamemode_query_status();
+	if (ret != 1) {
+		LOG_ERROR(
+		    "gamemode_query_status after start request gave unexpected value %d, (expected 1)!\n",
+		    ret);
+		if (ret == -1)
+			LOG_ERROR("GameMode error string: %s!\n", gamemode_error_string());
+		supervisortests = -1;
+	}
+
+	/* Check it's active for the dummy */
+	ret = gamemode_query_status_for(pid);
+	if (ret != 2) {
+		LOG_ERROR(
+		    "gamemode_query_status_for after start request gave unexpected value %d, (expected "
+		    "2)!\n",
+		    ret);
+		if (ret == -1)
+			LOG_ERROR("GameMode error string: %s!\n", gamemode_error_string());
+		supervisortests = -1;
+	}
+
+	/* request gamemode end for the client */
+	ret = gamemode_request_end_for(pid);
+	if (ret != 0) {
+		LOG_ERROR("gamemode_request_end_for gave unexpected value %d, (expected 0)!\n", ret);
+		if (ret == -1)
+			LOG_ERROR("GameMode error string: %s!\n", gamemode_error_string());
+		supervisortests = -1;
+	}
+
+	/* Verify it's not active */
+	ret = gamemode_query_status();
+	if (ret != 0) {
+		LOG_ERROR(
+		    "gamemode_query_status after end request gave unexpected value %d, (expected 0)!\n",
+		    ret);
+		if (ret == -1)
+			LOG_ERROR("GameMode error string: %s!\n", gamemode_error_string());
+		supervisortests = -1;
+	}
+
+	/* Wake up the child process */
+	if (kill(pid, SIGUSR1) == -1) {
+		LOG_ERROR("failed to send continue signal to other child process: %s\n", strerror(errno));
+		supervisortests = -1;
+	}
+
+	// Wait for the child to finish up
+	int wstatus;
+	usleep(100000);
+	while (waitpid(pid, &wstatus, WNOHANG) == 0) {
+		LOG_MSG("...Waiting for child to quit...\n");
+		usleep(100000);
+	}
+
+	if (supervisortests == 0)
+		LOG_MSG(":: Passed\n\n");
+	else
+		LOG_ERROR(":: Failed!\n");
+
+	return supervisortests;
+}
+
 /**
  * game_mode_run_client_tests runs a set of tests of the client code
  * we simply verify that the client can request the status and recieves the correct results
@@ -595,6 +679,21 @@ int game_mode_run_client_tests()
 
 	LOG_MSG(": Running tests\n\n");
 
+	/* First verify that gamemode is not currently active on the system
+	 * As well as it being currently installed and queryable
+	 */
+	if (verify_gamemode_initial() != 0)
+		return -1;
+
+	/* Controls whether we require a supervisor to actually make requests */
+	/* TODO: This effects all tests below */
+	if (config_get_require_supervisor(config) != 0) {
+		LOG_ERROR("Tests currently unsupported when require_supervisor is set\n");
+		return -1;
+	}
+
+	/* TODO: Also check blacklist/whitelist values as these may mess up the tests below */
+
 	/* Run the basic tests */
 	if (run_basic_client_tests() != 0)
 		status = -1;
@@ -605,6 +704,10 @@ int game_mode_run_client_tests()
 
 	/* Check gamemoderun and the reaper thread work */
 	if (run_gamemoderun_and_reaper_tests(config) != 0)
+		status = -1;
+
+	/* Run the supervisor tests */
+	if (run_supervisor_tests() != 0)
 		status = -1;
 
 	if (status != 0) {
