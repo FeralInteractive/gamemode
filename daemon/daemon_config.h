@@ -141,3 +141,10 @@ long config_get_nv_mem_clock_mhz_offset(GameModeConfig *self);
 long config_get_nv_perf_level(GameModeConfig *self);
 long config_get_amd_core_clock_percentage(GameModeConfig *self);
 long config_get_amd_mem_clock_percentage(GameModeConfig *self);
+
+/**
+ * Functions to get supervisor config permissions
+ */
+long config_get_require_supervisor(GameModeConfig *self);
+bool config_get_supervisor_whitelisted(GameModeConfig *self, const char *supervisor);
+bool config_get_supervisor_blacklisted(GameModeConfig *self, const char *supervisor);

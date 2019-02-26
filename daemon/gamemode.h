@@ -67,17 +67,23 @@ void game_mode_context_destroy(GameModeContext *self);
  * Register a new game client with the context
  *
  * @param pid Process ID for the remote client
- * @returns True if the new client could be registered
+ * @param requester Process ID for the remote requestor
+ * @returns 0 if the request was accepted and the client could be registered
+ *          -1 if the request was accepted but the client could not be registered
+ *          -2 if the request was rejected
  */
-bool game_mode_context_register(GameModeContext *self, pid_t pid);
+int game_mode_context_register(GameModeContext *self, pid_t pid, pid_t requester);
 
 /**
  * Unregister an existing remote game client from the context
  *
  * @param pid Process ID for the remote client
- * @returns True if the client was removed, and existed.
+ * @param requester Process ID for the remote requestor
+ * @returns 0 if the request was accepted and the client existed
+ *          -1 if the request was accepted but the client did not exist
+ *          -2 if the request was rejected
  */
-bool game_mode_context_unregister(GameModeContext *self, pid_t pid);
+int game_mode_context_unregister(GameModeContext *self, pid_t pid, pid_t requester);
 
 /**
  * Query the current status of gamemode
@@ -86,8 +92,9 @@ bool game_mode_context_unregister(GameModeContext *self, pid_t pid);
  * @returns Positive if gamemode is active
  *          1 if gamemode is active but the client is not registered
  *          2 if gamemode is active and the client is registered
+ *          -2 if this requester was rejected
  */
-int game_mode_context_query_status(GameModeContext *self, pid_t pid);
+int game_mode_context_query_status(GameModeContext *self, pid_t pid, pid_t requester);
 
 /**
  * Query the config of a gamemode context
