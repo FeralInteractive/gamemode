@@ -71,7 +71,6 @@ int game_mode_initialise_gpu(GameModeConfig *config, GameModeGPUInfo **info)
 	memset(new_info, 0, sizeof(GameModeGPUInfo));
 
 	/* Get the config parameters */
-	new_info->vendor = config_get_gpu_vendor(config);
 	new_info->device = config_get_gpu_device(config);
 
 	/* verify device ID */
@@ -83,13 +82,30 @@ int game_mode_initialise_gpu(GameModeConfig *config, GameModeGPUInfo **info)
 		return -1;
 	}
 
+	/* Fill in GPU vendor */
+	char path[64] = { 0 };
+	if (snprintf(path, 64, "/sys/class/drm/card%ld/device/vendor", new_info->device) < 0) {
+		LOG_ERROR("snprintf failed, will not apply gpu optimisations!\n");
+		return -1;
+	}
+	FILE *vendor = fopen(path, "r");
+	if (!vendor) {
+		LOG_ERROR("Couldn't open vendor file at %s, will not apply gpu optimisations!\n", path);
+		return -1;
+	}
+	char buff[64];
+	if (fgets(buff, 64, vendor) != NULL) {
+		new_info->vendor = strtol(buff, NULL, 0);
+	} else {
+		LOG_ERROR("Coudn't read contents of file %s, will not apply optimisations!\n", path);
+		return -1;
+	}
+
 	/* verify GPU vendor */
 	if (!GPUVendorValid(new_info->vendor)) {
-		LOG_ERROR(
-		    "Invalid gpu_vendor value (0x%04x) set in configuration, will not apply "
-		    "optimisations!\n",
-		    (unsigned int)new_info->vendor);
-		LOG_ERROR("Possible values are: 0x%04x (NVIDIA) 0x%04x (AMD) 0x%04x (Intel)\n",
+		LOG_ERROR("Unknown vendor value (0x%04x) found, cannot apply optimisations!\n",
+		          (unsigned int)new_info->vendor);
+		LOG_ERROR("Known values are: 0x%04x (NVIDIA) 0x%04x (AMD) 0x%04x (Intel)\n",
 		          Vendor_NVIDIA,
 		          Vendor_AMD,
 		          Vendor_Intel);
