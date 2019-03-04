@@ -87,7 +87,6 @@ struct GameModeConfig {
 		long reaper_frequency;
 
 		char apply_gpu_optimisations[CONFIG_VALUE_MAX];
-		long gpu_vendor;
 		long gpu_device;
 		long nv_core_clock_mhz_offset;
 		long nv_mem_clock_mhz_offset;
@@ -157,7 +156,8 @@ static bool get_long_value(const char *value_name, const char *value, long *outp
 /*
  * Get a long value from a hex string
  */
-static bool get_long_value_hex(const char *value_name, const char *value, long *output)
+__attribute__((unused)) static bool get_long_value_hex(const char *value_name, const char *value,
+                                                       long *output)
 {
 	char *end = NULL;
 	long config_value = strtol(value, &end, 16);
@@ -250,8 +250,6 @@ static int inih_handler(void *user, const char *section, const char *name, const
 		/* GPU subsection */
 		if (strcmp(name, "apply_gpu_optimisations") == 0) {
 			valid = get_string_value(value, self->values.apply_gpu_optimisations);
-		} else if (strcmp(name, "gpu_vendor") == 0) {
-			valid = get_long_value_hex(name, value, &self->values.gpu_vendor);
 		} else if (strcmp(name, "gpu_device") == 0) {
 			valid = get_long_value(name, value, &self->values.gpu_device);
 		} else if (strcmp(name, "nv_core_clock_mhz_offset") == 0) {
@@ -574,7 +572,6 @@ void config_get_apply_gpu_optimisations(GameModeConfig *self, char value[CONFIG_
 }
 
 /* Define the getters for GPU values */
-DEFINE_CONFIG_GET(gpu_vendor)
 DEFINE_CONFIG_GET(gpu_device)
 DEFINE_CONFIG_GET(nv_core_clock_mhz_offset)
 DEFINE_CONFIG_GET(nv_mem_clock_mhz_offset)
