@@ -47,8 +47,8 @@ struct GameModeGPUInfo {
 	long vendor;
 	long device; /* path to device, ie. /sys/class/drm/card#/ */
 
-	long core; /* Core clock to apply */
-	long mem;  /* Mem clock to apply */
+	long nv_core; /* Core clock to apply */
+	long nv_mem;  /* Mem clock to apply */
 
 	long nv_perf_level; /* The Nvidia Performance Level to adjust */
 };
