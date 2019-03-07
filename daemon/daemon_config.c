@@ -92,8 +92,7 @@ struct GameModeConfig {
 		long nv_core_clock_mhz_offset;
 		long nv_mem_clock_mhz_offset;
 		long nv_perf_level;
-		long amd_core_clock_percentage;
-		long amd_mem_clock_percentage;
+		char amd_performance_level[CONFIG_VALUE_MAX];
 
 		long require_supervisor;
 		char supervisor_whitelist[CONFIG_LIST_MAX][CONFIG_VALUE_MAX];
@@ -259,10 +258,8 @@ static int inih_handler(void *user, const char *section, const char *name, const
 			valid = get_long_value(name, value, &self->values.nv_mem_clock_mhz_offset);
 		} else if (strcmp(name, "nv_perf_level") == 0) {
 			valid = get_long_value(name, value, &self->values.nv_perf_level);
-		} else if (strcmp(name, "amd_core_clock_percentage") == 0) {
-			valid = get_long_value(name, value, &self->values.amd_core_clock_percentage);
-		} else if (strcmp(name, "amd_mem_clock_percentage") == 0) {
-			valid = get_long_value(name, value, &self->values.amd_mem_clock_percentage);
+		} else if (strcmp(name, "amd_performance_level") == 0) {
+			valid = get_string_value(value, self->values.amd_performance_level);
 		}
 	} else if (strcmp(section, "supervisor") == 0) {
 		/* Supervisor subsection */
@@ -585,8 +582,14 @@ DEFINE_CONFIG_GET(gpu_device)
 DEFINE_CONFIG_GET(nv_core_clock_mhz_offset)
 DEFINE_CONFIG_GET(nv_mem_clock_mhz_offset)
 DEFINE_CONFIG_GET(nv_perf_level)
-DEFINE_CONFIG_GET(amd_core_clock_percentage)
-DEFINE_CONFIG_GET(amd_mem_clock_percentage)
+
+void config_get_amd_performance_level(GameModeConfig *self, char value[CONFIG_VALUE_MAX])
+{
+	memcpy_locked_config(self,
+	                     value,
+	                     &self->values.amd_performance_level,
+	                     sizeof(self->values.amd_performance_level));
+}
 
 /*
         char supervisor_whitelist[CONFIG_LIST_MAX][CONFIG_VALUE_MAX];
