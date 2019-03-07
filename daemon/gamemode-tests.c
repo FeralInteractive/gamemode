@@ -201,8 +201,8 @@ static int run_dual_client_tests(void)
 	/* Parent process */
 	/* None of these should early-out as we need to clean up the child */
 
-	/* Give the child a chance to reqeust gamemode */
-	usleep(1000);
+	/* Give the child a chance to request gamemode */
+	usleep(10000);
 
 	/* Check that when we request gamemode, it replies that the other client is connected */
 	if (verify_other_client_connected() != 0)
