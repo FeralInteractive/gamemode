@@ -116,23 +116,23 @@ int game_mode_initialise_gpu(GameModeConfig *config, GameModeGPUInfo **info)
 	/* Load the config based on GPU and also verify the values are sane */
 	switch (new_info->vendor) {
 	case Vendor_NVIDIA:
-		new_info->core = config_get_nv_core_clock_mhz_offset(config);
-		new_info->mem = config_get_nv_mem_clock_mhz_offset(config);
+		new_info->nv_core = config_get_nv_core_clock_mhz_offset(config);
+		new_info->nv_mem = config_get_nv_mem_clock_mhz_offset(config);
 
 		/* Reject values over some guessed values
 		 * If a user wants to go into very unsafe levels they can recompile
 		 */
 		const int nv_core_hard_limit = 200;
 		const int nv_mem_hard_limit = 2000;
-		if (new_info->core > nv_core_hard_limit || new_info->mem > nv_mem_hard_limit) {
+		if (new_info->nv_core > nv_core_hard_limit || new_info->nv_mem > nv_mem_hard_limit) {
 			LOG_ERROR(
 			    "NVIDIA Overclock value above safety levels of +%d (core) +%d (mem), will "
 			    "not overclock!\n",
 			    nv_core_hard_limit,
 			    nv_mem_hard_limit);
 			LOG_ERROR("nv_core_clock_mhz_offset:%ld nv_mem_clock_mhz_offset:%ld\n",
-			          new_info->core,
-			          new_info->mem);
+			          new_info->nv_core,
+			          new_info->nv_mem);
 			free(new_info);
 			return -1;
 		}
@@ -150,20 +150,20 @@ int game_mode_initialise_gpu(GameModeConfig *config, GameModeGPUInfo **info)
 
 		break;
 	case Vendor_AMD:
-		new_info->core = config_get_amd_core_clock_percentage(config);
-		new_info->mem = config_get_amd_mem_clock_percentage(config);
+		new_info->nv_core = config_get_amd_core_clock_percentage(config);
+		new_info->nv_mem = config_get_amd_mem_clock_percentage(config);
 
 		/* Reject values over 20%
 		 * If a user wants to go into very unsafe levels they can recompile
 		 * As far as I can tell the driver doesn't allow values over 20 anyway
 		 */
 		const int amd_hard_limit = 20;
-		if (new_info->core > amd_hard_limit || new_info->mem > amd_hard_limit) {
+		if (new_info->nv_core > amd_hard_limit || new_info->nv_mem > amd_hard_limit) {
 			LOG_ERROR("AMD Overclock value above safety level of %d%%, will not overclock!\n",
 			          amd_hard_limit);
 			LOG_ERROR("amd_core_clock_percentage:%ld amd_mem_clock_percentage:%ld\n",
-			          new_info->core,
-			          new_info->mem);
+			          new_info->nv_core,
+			          new_info->nv_mem);
 			free(new_info);
 			return -1;
 		}
@@ -199,20 +199,20 @@ int game_mode_apply_gpu(const GameModeGPUInfo *info, bool apply)
 	if (!info)
 		return 0;
 
-	LOG_MSG("Requesting GPU optimisations on device:%ld with settings core:%ld clock:%ld\n",
+	LOG_MSG("Requesting GPU optimisations on device:%ld with settings nv_core:%ld clock:%ld\n",
 	        info->device,
-	        info->core,
-	        info->mem);
+	        info->nv_core,
+	        info->nv_mem);
 
 	/* Generate the input strings */
 	char vendor[7];
 	snprintf(vendor, 7, "0x%04x", (short)info->vendor);
 	char device[4];
 	snprintf(device, 4, "%ld", info->device);
-	char core[8];
-	snprintf(core, 8, "%ld", info->core);
-	char mem[8];
-	snprintf(mem, 8, "%ld", info->mem);
+	char nv_core[8];
+	snprintf(nv_core, 8, "%ld", info->nv_core);
+	char nv_mem[8];
+	snprintf(nv_mem, 8, "%ld", info->nv_mem);
 	char nv_perf_level[4];
 	snprintf(nv_perf_level, 4, "%ld", info->nv_perf_level);
 
@@ -223,8 +223,8 @@ int game_mode_apply_gpu(const GameModeGPUInfo *info, bool apply)
 		vendor,
 		device,
 		"set",
-		apply ? core : "0",
-		apply ? mem : "0",
+		apply ? nv_core : "0",
+		apply ? nv_mem : "0",
 		info->vendor == Vendor_NVIDIA ? nv_perf_level : NULL, /* Only use this if Nvidia */
 		NULL,
 	};
@@ -267,15 +267,15 @@ int game_mode_get_gpu(GameModeGPUInfo *info)
 		return -1;
 	}
 
-	int core = 0;
-	int mem = 0;
-	if (sscanf(buffer, "%i %i", &core, &mem) != 2) {
+	int nv_core = 0;
+	int nv_mem = 0;
+	if (sscanf(buffer, "%i %i", &nv_core, &nv_mem) != 2) {
 		LOG_ERROR("Failed to parse gpuclockctl output: %s\n", buffer);
 		return -1;
 	}
 
-	info->core = core;
-	info->mem = mem;
+	info->nv_core = nv_core;
+	info->nv_mem = nv_mem;
 
 	return 0;
 }

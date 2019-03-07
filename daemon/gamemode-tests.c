@@ -442,15 +442,15 @@ int run_gpu_optimisation_tests(struct GameModeConfig *config)
 	}
 
 	/* Grab the expected values */
-	long expected_core = gpuinfo->core;
-	long expected_mem = gpuinfo->mem;
+	long expected_core = gpuinfo->nv_core;
+	long expected_mem = gpuinfo->nv_mem;
 
 	/* Get current stats */
 	game_mode_get_gpu(gpuinfo);
-	long original_core = gpuinfo->core;
-	long original_mem = gpuinfo->mem;
+	long original_core = gpuinfo->nv_core;
+	long original_mem = gpuinfo->nv_mem;
 
-	LOG_MSG("Configured with vendor:0x%04x device:%ld core:%ld mem:%ld (nv_perf_level:%ld)\n",
+	LOG_MSG("Configured with vendor:0x%04x device:%ld nv_core:%ld nv_mem:%ld (nv_perf_level:%ld)\n",
 	        (unsigned int)gpuinfo->vendor,
 	        gpuinfo->device,
 	        expected_core,
@@ -467,14 +467,14 @@ int run_gpu_optimisation_tests(struct GameModeConfig *config)
 		return -1;
 	}
 
-	if (gpuinfo->core != expected_core || gpuinfo->mem != expected_mem) {
+	if (gpuinfo->nv_core != expected_core || gpuinfo->nv_mem != expected_mem) {
 		LOG_ERROR(
 		    "Current GPU clocks during gamemode do not match requested values!\n"
-		    "\tcore - expected:%ld was:%ld | mem - expected:%ld was:%ld\n",
+		    "\tnv_core - expected:%ld was:%ld | nv_mem - expected:%ld was:%ld\n",
 		    expected_core,
-		    gpuinfo->core,
+		    gpuinfo->nv_core,
 		    expected_mem,
-		    gpuinfo->mem);
+		    gpuinfo->nv_mem);
 		gpustatus = -1;
 	}
 
@@ -487,14 +487,14 @@ int run_gpu_optimisation_tests(struct GameModeConfig *config)
 		return -1;
 	}
 
-	if (gpuinfo->core != original_core || gpuinfo->mem != original_mem) {
+	if (gpuinfo->nv_core != original_core || gpuinfo->nv_mem != original_mem) {
 		LOG_ERROR(
 		    "Current GPU clocks after gamemode do not matcch original values!\n"
-		    "\tcore - original:%ld was:%ld | mem - original:%ld was:%ld\n",
+		    "\tcore - original:%ld was:%ld | nv_mem - original:%ld was:%ld\n",
 		    original_core,
-		    gpuinfo->core,
+		    gpuinfo->nv_core,
 		    original_mem,
-		    gpuinfo->mem);
+		    gpuinfo->nv_mem);
 		gpustatus = -1;
 	}
 

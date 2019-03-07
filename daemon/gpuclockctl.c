@@ -84,7 +84,7 @@ static int get_gpu_state_nv(struct GameModeGPUInfo *info)
 		return -1;
 	}
 
-	info->core = strtol(buf, &end, 10);
+	info->nv_core = strtol(buf, &end, 10);
 	if (end == buf) {
 		LOG_ERROR("Failed to parse output for \"%s\" output was \"%s\"!\n", arg, buf);
 		return -1;
@@ -103,7 +103,7 @@ static int get_gpu_state_nv(struct GameModeGPUInfo *info)
 		return -1;
 	}
 
-	info->mem = strtol(buf, &end, 10);
+	info->nv_mem = strtol(buf, &end, 10);
 	if (end == buf) {
 		LOG_ERROR("Failed to parse output for \"%s\" output was \"%s\"!\n", arg, buf);
 		return -1;
@@ -143,7 +143,7 @@ static int set_gpu_state_nv(struct GameModeGPUInfo *info)
 	         info->device,
 	         NV_CORE_OFFSET_ATTRIBUTE,
 	         info->nv_perf_level,
-	         info->core);
+	         info->nv_core);
 	const char *exec_args_core[] = { "/usr/bin/nvidia-settings", "-a", core_arg, NULL };
 	if (run_external_process(exec_args_core, NULL, -1) != 0) {
 		LOG_ERROR("Failed to set %s!\n", core_arg);
@@ -158,7 +158,7 @@ static int set_gpu_state_nv(struct GameModeGPUInfo *info)
 	         info->device,
 	         NV_MEM_OFFSET_ATTRIBUTE,
 	         info->nv_perf_level,
-	         info->mem);
+	         info->nv_mem);
 	const char *exec_args_mem[] = { "/usr/bin/nvidia-settings", "-a", mem_arg, NULL };
 	if (run_external_process(exec_args_mem, NULL, -1) != 0) {
 		LOG_ERROR("Failed to set %s!\n", mem_arg);
@@ -212,10 +212,10 @@ static int set_gpu_state_amd(struct GameModeGPUInfo *info)
 		print_usage_and_exit();
 	}
 
-	// Set the the core and mem clock speeds using the OverDrive files
-	if (set_gpu_state_amd_file("pp_sclk_od", info->device, info->core) != 0)
+	// Set the the nv_core and nv_mem clock speeds using the OverDrive files
+	if (set_gpu_state_amd_file("pp_sclk_od", info->device, info->nv_core) != 0)
 		return -1;
-	if (set_gpu_state_amd_file("pp_mclk_od", info->device, info->mem) != 0)
+	if (set_gpu_state_amd_file("pp_mclk_od", info->device, info->nv_mem) != 0)
 		return -1;
 
 	return 0;
@@ -245,7 +245,7 @@ static long get_device(const char *val)
 	return ret;
 }
 
-/* Helper to get and verify core and mem value */
+/* Helper to get and verify nv_core and nv_mem value */
 static long get_generic_value(const char *val)
 {
 	char *end;
@@ -287,7 +287,7 @@ int main(int argc, char *argv[])
 			printf("Currently unsupported GPU vendor 0x%04x, doing nothing!\n", (short)info.vendor);
 			break;
 		}
-		printf("%ld %ld\n", info.core, info.mem);
+		printf("%ld %ld\n", info.nv_core, info.nv_mem);
 
 	} else if (argc >= 6 && argc <= 7 && strncmp(argv[3], "set", 3) == 0) {
 		/* Get and verify the vendor and device */
@@ -295,15 +295,15 @@ int main(int argc, char *argv[])
 		memset(&info, 0, sizeof(info));
 		info.vendor = get_vendor(argv[1]);
 		info.device = get_device(argv[2]);
-		info.core = get_generic_value(argv[4]);
-		info.mem = get_generic_value(argv[5]);
+		info.nv_core = get_generic_value(argv[4]);
+		info.nv_mem = get_generic_value(argv[5]);
 
 		if (info.vendor == Vendor_NVIDIA && argc > 6)
 			info.nv_perf_level = get_generic_value(argv[6]);
 
-		printf("gpuclockctl setting core:%ld mem:%ld on device:%ld with vendor 0x%04x\n",
-		       info.core,
-		       info.mem,
+		printf("gpuclockctl setting nv_core:%ld nv_mem:%ld on device:%ld with vendor 0x%04x\n",
+		       info.nv_core,
+		       info.nv_mem,
 		       info.device,
 		       (unsigned short)info.vendor);
 
