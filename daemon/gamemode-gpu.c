@@ -150,20 +150,11 @@ int game_mode_initialise_gpu(GameModeConfig *config, GameModeGPUInfo **info)
 
 		break;
 	case Vendor_AMD:
-		new_info->nv_core = config_get_amd_core_clock_percentage(config);
-		new_info->nv_mem = config_get_amd_mem_clock_percentage(config);
+		config_get_amd_performance_level(config, new_info->amd_performance_level);
 
-		/* Reject values over 20%
-		 * If a user wants to go into very unsafe levels they can recompile
-		 * As far as I can tell the driver doesn't allow values over 20 anyway
-		 */
-		const int amd_hard_limit = 20;
-		if (new_info->nv_core > amd_hard_limit || new_info->nv_mem > amd_hard_limit) {
-			LOG_ERROR("AMD Overclock value above safety level of %d%%, will not overclock!\n",
-			          amd_hard_limit);
-			LOG_ERROR("amd_core_clock_percentage:%ld amd_mem_clock_percentage:%ld\n",
-			          new_info->nv_core,
-			          new_info->nv_mem);
+		/* Error about unsupported "manual" option, for now */
+		if (strcmp(new_info->amd_performance_level, "manual") == 0) {
+			LOG_ERROR("AMD Performance level set to \"manual\", this is currently unsupported");
 			free(new_info);
 			return -1;
 		}
@@ -193,22 +184,20 @@ void game_mode_free_gpu(GameModeGPUInfo **info)
 /**
  * Applies GPU optimisations when gamemode is active and removes them after
  */
-int game_mode_apply_gpu(const GameModeGPUInfo *info, bool apply)
+int game_mode_apply_gpu(const GameModeGPUInfo *info)
 {
 	// Null info means don't apply anything
 	if (!info)
 		return 0;
 
-	LOG_MSG("Requesting GPU optimisations on device:%ld with settings nv_core:%ld clock:%ld\n",
-	        info->device,
-	        info->nv_core,
-	        info->nv_mem);
+	LOG_MSG("Requesting GPU optimisations on device:%ld\n", info->device);
 
 	/* Generate the input strings */
 	char vendor[7];
 	snprintf(vendor, 7, "0x%04x", (short)info->vendor);
 	char device[4];
 	snprintf(device, 4, "%ld", info->device);
+
 	char nv_core[8];
 	snprintf(nv_core, 8, "%ld", info->nv_core);
 	char nv_mem[8];
@@ -223,8 +212,8 @@ int game_mode_apply_gpu(const GameModeGPUInfo *info, bool apply)
 		vendor,
 		device,
 		"set",
-		apply ? nv_core : "0",
-		apply ? nv_mem : "0",
+		info->vendor == Vendor_NVIDIA ? nv_core : info->amd_performance_level,
+		info->vendor == Vendor_NVIDIA ? nv_mem : NULL,        /* Only use this if Nvidia */
 		info->vendor == Vendor_NVIDIA ? nv_perf_level : NULL, /* Only use this if Nvidia */
 		NULL,
 	};
@@ -263,19 +252,22 @@ int game_mode_get_gpu(GameModeGPUInfo *info)
 
 	char buffer[EXTERNAL_BUFFER_MAX] = { 0 };
 	if (run_external_process(exec_args, buffer, -1) != 0) {
-		LOG_ERROR("Failed to call gpuclockctl, could get values!\n");
+		LOG_ERROR("Failed to call gpuclockctl, could not get values!\n");
 		return -1;
 	}
 
-	int nv_core = 0;
-	int nv_mem = 0;
-	if (sscanf(buffer, "%i %i", &nv_core, &nv_mem) != 2) {
-		LOG_ERROR("Failed to parse gpuclockctl output: %s\n", buffer);
-		return -1;
+	switch (info->vendor) {
+	case Vendor_NVIDIA:
+		if (sscanf(buffer, "%ld %ld", &info->nv_core, &info->nv_mem) != 2) {
+			LOG_ERROR("Failed to parse gpuclockctl output: %s\n", buffer);
+			return -1;
+		}
+		break;
+	case Vendor_AMD:
+		strncpy(info->amd_performance_level, buffer, CONFIG_VALUE_MAX);
+		strtok(info->amd_performance_level, "\n");
+		break;
 	}
-
-	info->nv_core = nv_core;
-	info->nv_mem = nv_mem;
 
 	return 0;
 }

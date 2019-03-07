@@ -113,16 +113,6 @@ static int get_gpu_state_nv(struct GameModeGPUInfo *info)
 }
 
 /**
- * Get the gpu state
- * Populates the struct with the GPU info on the system
- */
-static int get_gpu_state_amd(struct GameModeGPUInfo *info)
-{
-	fprintf(stderr, "Fetching GPU state on AMD is currently unimplemented!\n");
-	return info != NULL;
-}
-
-/**
  * Set the gpu state based on input parameters on Nvidia
  */
 static int set_gpu_state_nv(struct GameModeGPUInfo *info)
@@ -168,13 +158,46 @@ static int set_gpu_state_nv(struct GameModeGPUInfo *info)
 	return 0;
 }
 
-/*
- * Sets the value in a file in the AMDGPU driver config
- * Files are:
- * /sys/class/drm/card0/device/pp_sclk_od
- * /sys/class/drm/card0/device/pp_mclk_od
+/**
+ * Get the gpu state
+ * Populates the struct with the GPU info on the system
  */
-static int set_gpu_state_amd_file(const char *filename, long device, long value)
+static int get_gpu_state_amd(struct GameModeGPUInfo *info)
+{
+	if (info->vendor != Vendor_AMD)
+		return -1;
+
+	/* Get the contents of power_dpm_force_performance_level */
+	char path[64];
+	snprintf(path, 64, AMD_DRM_PATH, info->device, "power_dpm_force_performance_level");
+
+	FILE *file = fopen(path, "r");
+	if (!file) {
+		LOG_ERROR("Could not open %s for read (%s)!\n", path, strerror(errno));
+		return -1;
+	}
+
+	char buff[CONFIG_VALUE_MAX];
+	if (!fgets(buff, CONFIG_VALUE_MAX, file)) {
+		LOG_ERROR("Could not read file %s (%s)!\n", path, strerror(errno));
+		return -1;
+	}
+
+	if (fclose(file) != 0) {
+		LOG_ERROR("Could not close %s after reading (%s)!\n", path, strerror(errno));
+		return -1;
+	}
+
+	/* Copy in the value from the file */
+	strncpy(info->amd_performance_level, buff, CONFIG_VALUE_MAX);
+
+	return info == NULL;
+}
+
+/*
+ * Simply set an amd drm file to a value
+ */
+static int set_gpu_state_amd_file(const char *filename, long device, const char *value)
 {
 	char path[64];
 	snprintf(path, 64, AMD_DRM_PATH, device, filename);
@@ -185,7 +208,7 @@ static int set_gpu_state_amd_file(const char *filename, long device, long value)
 		return -1;
 	}
 
-	if (fprintf(file, "%ld", value) < 0) {
+	if (fprintf(file, "%s", value) < 0) {
 		LOG_ERROR("Could not write to %s (%s)!\n", path, strerror(errno));
 		return -1;
 	}
@@ -212,11 +235,16 @@ static int set_gpu_state_amd(struct GameModeGPUInfo *info)
 		print_usage_and_exit();
 	}
 
-	// Set the the nv_core and nv_mem clock speeds using the OverDrive files
-	if (set_gpu_state_amd_file("pp_sclk_od", info->device, info->nv_core) != 0)
+	/* First set the amd_performance_level to the chosen setting */
+	if (set_gpu_state_amd_file("power_dpm_force_performance_level",
+	                           info->device,
+	                           info->amd_performance_level) != 0)
 		return -1;
-	if (set_gpu_state_amd_file("pp_mclk_od", info->device, info->nv_mem) != 0)
-		return -1;
+
+	/* TODO: If amd_performance_level is set to "manual" we need to adjust pp_table and/or
+	   pp_od_clk_voltage see
+	   https://dri.freedesktop.org/docs/drm/gpu/amdgpu.html#gpu-power-thermal-controls-and-monitoring
+	*/
 
 	return 0;
 }
@@ -278,37 +306,43 @@ int main(int argc, char *argv[])
 			/* Get nvidia power level */
 			if (get_gpu_state_nv(&info) != 0)
 				exit(EXIT_FAILURE);
+			printf("%ld %ld\n", info.nv_core, info.nv_mem);
 			break;
 		case Vendor_AMD:
 			if (get_gpu_state_amd(&info) != 0)
 				exit(EXIT_FAILURE);
+			printf("%s\n", info.amd_performance_level);
 			break;
 		default:
 			printf("Currently unsupported GPU vendor 0x%04x, doing nothing!\n", (short)info.vendor);
 			break;
 		}
-		printf("%ld %ld\n", info.nv_core, info.nv_mem);
 
-	} else if (argc >= 6 && argc <= 7 && strncmp(argv[3], "set", 3) == 0) {
+	} else if (argc >= 5 && argc <= 7 && strncmp(argv[3], "set", 3) == 0) {
 		/* Get and verify the vendor and device */
 		struct GameModeGPUInfo info;
 		memset(&info, 0, sizeof(info));
 		info.vendor = get_vendor(argv[1]);
 		info.device = get_device(argv[2]);
-		info.nv_core = get_generic_value(argv[4]);
-		info.nv_mem = get_generic_value(argv[5]);
 
-		if (info.vendor == Vendor_NVIDIA && argc > 6)
-			info.nv_perf_level = get_generic_value(argv[6]);
+		switch (info.vendor) {
+		case Vendor_NVIDIA:
+			info.nv_core = get_generic_value(argv[4]);
+			info.nv_mem = get_generic_value(argv[5]);
+			if (argc > 6)
+				info.nv_perf_level = get_generic_value(argv[6]);
+			break;
+		case Vendor_AMD:
+			strncpy(info.amd_performance_level, argv[4], CONFIG_VALUE_MAX);
+			break;
+		default:
+			printf("Currently unsupported GPU vendor 0x%04x, doing nothing!\n", (short)info.vendor);
+			break;
+		}
 
-		printf("gpuclockctl setting nv_core:%ld nv_mem:%ld on device:%ld with vendor 0x%04x\n",
-		       info.nv_core,
-		       info.nv_mem,
+		printf("gpuclockctl setting values on device:%ld with vendor 0x%04x",
 		       info.device,
 		       (unsigned short)info.vendor);
-
-		if (info.vendor == Vendor_NVIDIA)
-			printf("on Performance Level %ld\n", info.nv_perf_level);
 
 		switch (info.vendor) {
 		case Vendor_NVIDIA:

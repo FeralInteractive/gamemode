@@ -338,7 +338,7 @@ static int run_cpu_governor_tests(struct GameModeConfig *config)
 	/* Verify the governor is the desired one */
 	const char *currentgov = get_gov_state();
 	if (strncmp(currentgov, desiredgov, CONFIG_VALUE_MAX) != 0) {
-		LOG_ERROR("Govenor was not set to %s (was actually %s)!", desiredgov, currentgov);
+		LOG_ERROR("Governor was not set to %s (was actually %s)!\n", desiredgov, currentgov);
 		gamemode_request_end();
 		return -1;
 	}
@@ -349,7 +349,7 @@ static int run_cpu_governor_tests(struct GameModeConfig *config)
 	/* Verify the governor has been set back */
 	currentgov = get_gov_state();
 	if (strncmp(currentgov, defaultgov, CONFIG_VALUE_MAX) != 0) {
-		LOG_ERROR("Govenor was not set back to %s (was actually %s)!", defaultgov, currentgov);
+		LOG_ERROR("Governor was not set back to %s (was actually %s)!\n", defaultgov, currentgov);
 		return -1;
 	}
 
@@ -444,18 +444,15 @@ int run_gpu_optimisation_tests(struct GameModeConfig *config)
 	/* Grab the expected values */
 	long expected_core = gpuinfo->nv_core;
 	long expected_mem = gpuinfo->nv_mem;
+	char expected_amd_performance_level[CONFIG_VALUE_MAX];
+	strncpy(expected_amd_performance_level, gpuinfo->amd_performance_level, CONFIG_VALUE_MAX);
 
 	/* Get current stats */
 	game_mode_get_gpu(gpuinfo);
-	long original_core = gpuinfo->nv_core;
-	long original_mem = gpuinfo->nv_mem;
-
-	LOG_MSG("Configured with vendor:0x%04x device:%ld nv_core:%ld nv_mem:%ld (nv_perf_level:%ld)\n",
-	        (unsigned int)gpuinfo->vendor,
-	        gpuinfo->device,
-	        expected_core,
-	        expected_mem,
-	        gpuinfo->nv_perf_level);
+	long original_nv_core = gpuinfo->nv_core;
+	long original_nv_mem = gpuinfo->nv_mem;
+	char original_amd_performance_level[CONFIG_VALUE_MAX];
+	strncpy(original_amd_performance_level, gpuinfo->amd_performance_level, CONFIG_VALUE_MAX);
 
 	/* Start gamemode and check the new values */
 	gamemode_request_start();
@@ -467,14 +464,23 @@ int run_gpu_optimisation_tests(struct GameModeConfig *config)
 		return -1;
 	}
 
-	if (gpuinfo->nv_core != expected_core || gpuinfo->nv_mem != expected_mem) {
+	if (gpuinfo->vendor == Vendor_NVIDIA &&
+	    (gpuinfo->nv_core != expected_core || gpuinfo->nv_mem != expected_mem)) {
 		LOG_ERROR(
-		    "Current GPU clocks during gamemode do not match requested values!\n"
+		    "Current Nvidia GPU clocks during gamemode do not match requested values!\n"
 		    "\tnv_core - expected:%ld was:%ld | nv_mem - expected:%ld was:%ld\n",
 		    expected_core,
 		    gpuinfo->nv_core,
 		    expected_mem,
 		    gpuinfo->nv_mem);
+		gpustatus = -1;
+	} else if (gpuinfo->vendor == Vendor_AMD &&
+	           strcmp(expected_amd_performance_level, gpuinfo->amd_performance_level) != 0) {
+		LOG_ERROR(
+		    "Current AMD GPU performance level during gamemode does not match requested value!\n"
+		    "\texpected:%s was:%s\n",
+		    expected_amd_performance_level,
+		    gpuinfo->amd_performance_level);
 		gpustatus = -1;
 	}
 
@@ -487,14 +493,23 @@ int run_gpu_optimisation_tests(struct GameModeConfig *config)
 		return -1;
 	}
 
-	if (gpuinfo->nv_core != original_core || gpuinfo->nv_mem != original_mem) {
+	if (gpuinfo->vendor == Vendor_NVIDIA &&
+	    (gpuinfo->nv_core != original_nv_core || gpuinfo->nv_mem != original_nv_mem)) {
 		LOG_ERROR(
-		    "Current GPU clocks after gamemode do not matcch original values!\n"
+		    "Current Nvidia GPU clocks after gamemode do not matcch original values!\n"
 		    "\tcore - original:%ld was:%ld | nv_mem - original:%ld was:%ld\n",
-		    original_core,
+		    original_nv_core,
 		    gpuinfo->nv_core,
-		    original_mem,
+		    original_nv_mem,
 		    gpuinfo->nv_mem);
+		gpustatus = -1;
+	} else if (gpuinfo->vendor == Vendor_AMD &&
+	           strcmp(original_amd_performance_level, gpuinfo->amd_performance_level) != 0) {
+		LOG_ERROR(
+		    "Current AMD GPU performance level after gamemode does not match requested value!\n"
+		    "\texpected:%s was:%s\n",
+		    original_amd_performance_level,
+		    gpuinfo->amd_performance_level);
 		gpustatus = -1;
 	}
 
