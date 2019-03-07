@@ -30,6 +30,7 @@ POSSIBILITY OF SUCH DAMAGE.
  */
 
 #pragma once
+#include "daemon_config.h"
 
 /* Enums for GPU vendors */
 enum GPUVendor {
@@ -45,10 +46,11 @@ enum GPUVendor {
 /* Storage for GPU info*/
 struct GameModeGPUInfo {
 	long vendor;
-	long device; /* path to device, ie. /sys/class/drm/card#/ */
-
-	long nv_core; /* Core clock to apply */
-	long nv_mem;  /* Mem clock to apply */
-
+	long device;        /* path to device, ie. /sys/class/drm/card#/ */
 	long nv_perf_level; /* The Nvidia Performance Level to adjust */
+
+	long nv_core; /* Nvidia core clock */
+	long nv_mem;  /* Nvidia mem clock */
+
+	char amd_performance_level[CONFIG_VALUE_MAX]; /* The AMD performance level set to */
 };
