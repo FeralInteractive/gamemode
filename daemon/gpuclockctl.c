@@ -73,42 +73,44 @@ static int get_gpu_state_nv(struct GameModeGPUInfo *info)
 	char buf[EXTERNAL_BUFFER_MAX] = { 0 };
 	char *end;
 
-	/* Get the GPUGraphicsClockOffset parameter */
-	snprintf(arg,
-	         128,
-	         NV_ATTRIBUTE_FORMAT NV_PERF_LEVEL_FORMAT,
-	         info->device,
-	         NV_CORE_OFFSET_ATTRIBUTE,
-	         info->nv_perf_level);
-	const char *exec_args_core[] = { "/usr/bin/nvidia-settings", "-q", arg, "-t", NULL };
-	if (run_external_process(exec_args_core, buf, -1) != 0) {
-		LOG_ERROR("Failed to get %s!\n", arg);
-		return -1;
-	}
+	if (info->nv_perf_level != -1) {
+		/* Get the GPUGraphicsClockOffset parameter */
+		snprintf(arg,
+		         128,
+		         NV_ATTRIBUTE_FORMAT NV_PERF_LEVEL_FORMAT,
+		         info->device,
+		         NV_CORE_OFFSET_ATTRIBUTE,
+		         info->nv_perf_level);
+		const char *exec_args_core[] = { "/usr/bin/nvidia-settings", "-q", arg, "-t", NULL };
+		if (run_external_process(exec_args_core, buf, -1) != 0) {
+			LOG_ERROR("Failed to get %s!\n", arg);
+			return -1;
+		}
 
-	info->nv_core = strtol(buf, &end, 10);
-	if (end == buf) {
-		LOG_ERROR("Failed to parse output for \"%s\" output was \"%s\"!\n", arg, buf);
-		return -1;
-	}
+		info->nv_core = strtol(buf, &end, 10);
+		if (end == buf) {
+			LOG_ERROR("Failed to parse output for \"%s\" output was \"%s\"!\n", arg, buf);
+			return -1;
+		}
 
-	/* Get the GPUMemoryTransferRateOffset parameter */
-	snprintf(arg,
-	         128,
-	         NV_ATTRIBUTE_FORMAT NV_PERF_LEVEL_FORMAT,
-	         info->device,
-	         NV_MEM_OFFSET_ATTRIBUTE,
-	         info->nv_perf_level);
-	const char *exec_args_mem[] = { "/usr/bin/nvidia-settings", "-q", arg, "-t", NULL };
-	if (run_external_process(exec_args_mem, buf, -1) != 0) {
-		LOG_ERROR("Failed to get %s!\n", arg);
-		return -1;
-	}
+		/* Get the GPUMemoryTransferRateOffset parameter */
+		snprintf(arg,
+		         128,
+		         NV_ATTRIBUTE_FORMAT NV_PERF_LEVEL_FORMAT,
+		         info->device,
+		         NV_MEM_OFFSET_ATTRIBUTE,
+		         info->nv_perf_level);
+		const char *exec_args_mem[] = { "/usr/bin/nvidia-settings", "-q", arg, "-t", NULL };
+		if (run_external_process(exec_args_mem, buf, -1) != 0) {
+			LOG_ERROR("Failed to get %s!\n", arg);
+			return -1;
+		}
 
-	info->nv_mem = strtol(buf, &end, 10);
-	if (end == buf) {
-		LOG_ERROR("Failed to parse output for \"%s\" output was \"%s\"!\n", arg, buf);
-		return -1;
+		info->nv_mem = strtol(buf, &end, 10);
+		if (end == buf) {
+			LOG_ERROR("Failed to parse output for \"%s\" output was \"%s\"!\n", arg, buf);
+			return -1;
+		}
 	}
 
 	/* Get the GPUPowerMizerMode parameter */
@@ -143,48 +145,49 @@ static int set_gpu_state_nv(struct GameModeGPUInfo *info)
 
 	char arg[128] = { 0 };
 
-	/* Set the GPUGraphicsClockOffset parameter */
-	snprintf(arg,
-	         128,
-	         NV_ATTRIBUTE_FORMAT NV_PERF_LEVEL_FORMAT "=%ld",
-	         info->device,
-	         NV_CORE_OFFSET_ATTRIBUTE,
-	         info->nv_perf_level,
-	         info->nv_core);
-	const char *exec_args_core[] = { "/usr/bin/nvidia-settings", "-a", arg, NULL };
-	if (run_external_process(exec_args_core, NULL, -1) != 0) {
-		LOG_ERROR("Failed to set %s!\n", arg);
-		return -1;
-	}
+	if (info->nv_perf_level != -1) {
+		/* Set the GPUGraphicsClockOffset parameter */
+		snprintf(arg,
+		         128,
+		         NV_ATTRIBUTE_FORMAT NV_PERF_LEVEL_FORMAT "=%ld",
+		         info->device,
+		         NV_CORE_OFFSET_ATTRIBUTE,
+		         info->nv_perf_level,
+		         info->nv_core);
+		const char *exec_args_core[] = { "/usr/bin/nvidia-settings", "-a", arg, NULL };
+		if (run_external_process(exec_args_core, NULL, -1) != 0) {
+			LOG_ERROR("Failed to set %s!\n", arg);
+			return -1;
+		}
 
-	/* Set the GPUMemoryTransferRateOffset parameter */
-	snprintf(arg,
-	         128,
-	         NV_ATTRIBUTE_FORMAT NV_PERF_LEVEL_FORMAT "=%ld",
-	         info->device,
-	         NV_MEM_OFFSET_ATTRIBUTE,
-	         info->nv_perf_level,
-	         info->nv_mem);
-	const char *exec_args_mem[] = { "/usr/bin/nvidia-settings", "-a", arg, NULL };
-	if (run_external_process(exec_args_mem, NULL, -1) != 0) {
-		LOG_ERROR("Failed to set %s!\n", arg);
-		return -1;
+		/* Set the GPUMemoryTransferRateOffset parameter */
+		snprintf(arg,
+		         128,
+		         NV_ATTRIBUTE_FORMAT NV_PERF_LEVEL_FORMAT "=%ld",
+		         info->device,
+		         NV_MEM_OFFSET_ATTRIBUTE,
+		         info->nv_perf_level,
+		         info->nv_mem);
+		const char *exec_args_mem[] = { "/usr/bin/nvidia-settings", "-a", arg, NULL };
+		if (run_external_process(exec_args_mem, NULL, -1) != 0) {
+			LOG_ERROR("Failed to set %s!\n", arg);
+			return -1;
+		}
 	}
 
 	/* Set the GPUPowerMizerMode parameter if requested */
-	if (info->nv_powermizer_mode == -1)
-		return 0;
-
-	snprintf(arg,
-	         128,
-	         NV_ATTRIBUTE_FORMAT "=%ld",
-	         info->device,
-	         NV_POWERMIZER_MODE_ATTRIBUTE,
-	         info->nv_powermizer_mode);
-	const char *exec_args_pm[] = { "/usr/bin/nvidia-settings", "-a", arg, NULL };
-	if (run_external_process(exec_args_pm, NULL, -1) != 0) {
-		LOG_ERROR("Failed to set %s!\n", arg);
-		return -1;
+	if (info->nv_powermizer_mode != -1) {
+		snprintf(arg,
+		         128,
+		         NV_ATTRIBUTE_FORMAT "=%ld",
+		         info->device,
+		         NV_POWERMIZER_MODE_ATTRIBUTE,
+		         info->nv_powermizer_mode);
+		const char *exec_args_pm[] = { "/usr/bin/nvidia-settings", "-a", arg, NULL };
+		if (run_external_process(exec_args_pm, NULL, -1) != 0) {
+			LOG_ERROR("Failed to set %s!\n", arg);
+			return -1;
+		}
 	}
 
 	return 0;
@@ -310,7 +313,7 @@ static long get_generic_value(const char *val)
 {
 	char *end;
 	long ret = strtol(val, &end, 10);
-	if (ret < 0 || end == val) {
+	if (end == val) {
 		LOG_ERROR("Invalid value passed (%ld)!\n", ret);
 		print_usage_and_exit();
 	}
@@ -329,12 +332,12 @@ int main(int argc, char *argv[])
 		info.vendor = get_vendor(argv[1]);
 		info.device = get_device(argv[2]);
 
-		if (info.vendor == Vendor_NVIDIA && argc > 4)
-			info.nv_perf_level = get_generic_value(argv[4]);
-
 		/* Fetch the state and print it out */
 		switch (info.vendor) {
 		case Vendor_NVIDIA:
+			info.nv_perf_level = -1;
+			if (argc > 4)
+				info.nv_perf_level = get_generic_value(argv[4]);
 			/* Get nvidia power level */
 			if (get_gpu_state_nv(&info) != 0)
 				exit(EXIT_FAILURE);
@@ -361,12 +364,12 @@ int main(int argc, char *argv[])
 		case Vendor_NVIDIA:
 			info.nv_core = get_generic_value(argv[4]);
 			info.nv_mem = get_generic_value(argv[5]);
+			info.nv_perf_level = -1;
 			if (argc > 6)
 				info.nv_perf_level = get_generic_value(argv[6]);
+			info.nv_powermizer_mode = -1;
 			if (argc > 7)
 				info.nv_powermizer_mode = get_generic_value(argv[7]);
-			else
-				info.nv_powermizer_mode = -1;
 			break;
 		case Vendor_AMD:
 			strncpy(info.amd_performance_level, argv[4], CONFIG_VALUE_MAX);
