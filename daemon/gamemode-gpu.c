@@ -140,7 +140,9 @@ int game_mode_initialise_gpu(GameModeConfig *config, GameModeGPUInfo **info)
 		}
 
 		/* Sanity check the performance level value as well */
-		if (new_info->nv_perf_level < 0 || new_info->nv_perf_level > 16) {
+		/* Allow an invalid perf level if we've got the powermizer mode set */
+		if (!(new_info->nv_perf_level == -1 && new_info->nv_powermizer_mode != -1) &&
+		    (new_info->nv_perf_level < 0 || new_info->nv_perf_level > 16)) {
 			LOG_ERROR(
 			    "NVIDIA Performance level value likely invalid (%ld), will not apply "
 			    "optimisations!\n",
