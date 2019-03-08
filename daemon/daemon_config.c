@@ -92,6 +92,7 @@ struct GameModeConfig {
 		long nv_core_clock_mhz_offset;
 		long nv_mem_clock_mhz_offset;
 		long nv_perf_level;
+		long nv_powermizer_mode;
 		char amd_performance_level[CONFIG_VALUE_MAX];
 
 		long require_supervisor;
@@ -258,6 +259,8 @@ static int inih_handler(void *user, const char *section, const char *name, const
 			valid = get_long_value(name, value, &self->values.nv_mem_clock_mhz_offset);
 		} else if (strcmp(name, "nv_perf_level") == 0) {
 			valid = get_long_value(name, value, &self->values.nv_perf_level);
+		} else if (strcmp(name, "nv_powermizer_mode") == 0) {
+			valid = get_long_value(name, value, &self->values.nv_powermizer_mode);
 		} else if (strcmp(name, "amd_performance_level") == 0) {
 			valid = get_string_value(value, self->values.amd_performance_level);
 		}
@@ -330,6 +333,7 @@ static void load_config_files(GameModeConfig *self)
 	self->values.reaper_frequency = DEFAULT_REAPER_FREQ;
 	self->values.gpu_device = -1; /* 0 is a valid device ID so use -1 to indicate no value */
 	self->values.nv_perf_level = -1;
+	self->values.nv_powermizer_mode = -1;
 	self->values.script_timeout = 10; /* Default to 10 seconds for scripts */
 
 	/*
@@ -582,6 +586,7 @@ DEFINE_CONFIG_GET(gpu_device)
 DEFINE_CONFIG_GET(nv_core_clock_mhz_offset)
 DEFINE_CONFIG_GET(nv_mem_clock_mhz_offset)
 DEFINE_CONFIG_GET(nv_perf_level)
+DEFINE_CONFIG_GET(nv_powermizer_mode)
 
 void config_get_amd_performance_level(GameModeConfig *self, char value[CONFIG_VALUE_MAX])
 {
