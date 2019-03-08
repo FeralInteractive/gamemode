@@ -319,12 +319,11 @@ static int run_cpu_governor_tests(struct GameModeConfig *config)
 		strcpy(desiredgov, "performance");
 
 	char defaultgov[CONFIG_VALUE_MAX] = { 0 };
-	config_get_default_governor(config, defaultgov);
 
-	if (desiredgov[0] == '\0') {
+	if (defaultgov[0] == '\0') {
 		const char *currentgov = get_gov_state();
 		if (currentgov) {
-			strncpy(desiredgov, currentgov, CONFIG_VALUE_MAX);
+			strncpy(defaultgov, currentgov, CONFIG_VALUE_MAX);
 		} else {
 			LOG_ERROR(
 			    "Could not get current CPU governor state, this indicates an error! See rest "
