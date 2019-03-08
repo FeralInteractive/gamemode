@@ -36,7 +36,7 @@ dnf install meson systemd-devel pkg-config git
 #### Gentoo
 Gentoo has a bleeding-edge ebuild which builds from sources. It will also pull in all the dependencies so you can work on the source code.
 ```bash
-ACCEPT_KEYWORDS="**" emerge --ask ~games-util/gamemode-9999
+emerge --ask =gamemode-1.2
 ```
 
 ### Build and Install GameMode
