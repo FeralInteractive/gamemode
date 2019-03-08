@@ -118,6 +118,8 @@ int game_mode_initialise_gpu(GameModeConfig *config, GameModeGPUInfo **info)
 	case Vendor_NVIDIA:
 		new_info->nv_core = config_get_nv_core_clock_mhz_offset(config);
 		new_info->nv_mem = config_get_nv_mem_clock_mhz_offset(config);
+		new_info->nv_perf_level = config_get_nv_perf_level(config);
+		new_info->nv_powermizer_mode = config_get_nv_powermizer_mode(config);
 
 		/* Reject values over some guessed values
 		 * If a user wants to go into very unsafe levels they can recompile
@@ -138,7 +140,6 @@ int game_mode_initialise_gpu(GameModeConfig *config, GameModeGPUInfo **info)
 		}
 
 		/* Sanity check the performance level value as well */
-		new_info->nv_perf_level = config_get_nv_perf_level(config);
 		if (new_info->nv_perf_level < 0 || new_info->nv_perf_level > 16) {
 			LOG_ERROR(
 			    "NVIDIA Performance level value likely invalid (%ld), will not apply "
@@ -204,6 +205,8 @@ int game_mode_apply_gpu(const GameModeGPUInfo *info)
 	snprintf(nv_mem, 8, "%ld", info->nv_mem);
 	char nv_perf_level[4];
 	snprintf(nv_perf_level, 4, "%ld", info->nv_perf_level);
+	char nv_powermizer_mode[4];
+	snprintf(nv_powermizer_mode, 4, "%ld", info->nv_powermizer_mode);
 
 	// Set up our command line to pass to gpuclockctl
 	const char *const exec_args[] = {
@@ -213,8 +216,9 @@ int game_mode_apply_gpu(const GameModeGPUInfo *info)
 		device,
 		"set",
 		info->vendor == Vendor_NVIDIA ? nv_core : info->amd_performance_level,
-		info->vendor == Vendor_NVIDIA ? nv_mem : NULL,        /* Only use this if Nvidia */
-		info->vendor == Vendor_NVIDIA ? nv_perf_level : NULL, /* Only use this if Nvidia */
+		info->vendor == Vendor_NVIDIA ? nv_mem : NULL,             /* Only use this if Nvidia */
+		info->vendor == Vendor_NVIDIA ? nv_perf_level : NULL,      /* Only use this if Nvidia */
+		info->vendor == Vendor_NVIDIA ? nv_powermizer_mode : NULL, /* Only use this if Nvidia */
 		NULL,
 	};
 
@@ -255,17 +259,21 @@ int game_mode_get_gpu(GameModeGPUInfo *info)
 		LOG_ERROR("Failed to call gpuclockctl, could not get values!\n");
 		return -1;
 	}
+	strtok(buffer, "\n");
 
 	switch (info->vendor) {
 	case Vendor_NVIDIA:
-		if (sscanf(buffer, "%ld %ld", &info->nv_core, &info->nv_mem) != 2) {
+		if (sscanf(buffer,
+		           "%ld %ld %ld",
+		           &info->nv_core,
+		           &info->nv_mem,
+		           &info->nv_powermizer_mode) != 3) {
 			LOG_ERROR("Failed to parse gpuclockctl output: %s\n", buffer);
 			return -1;
 		}
 		break;
 	case Vendor_AMD:
 		strncpy(info->amd_performance_level, buffer, CONFIG_VALUE_MAX);
-		strtok(info->amd_performance_level, "\n");
 		break;
 	}
 
