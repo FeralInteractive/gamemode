@@ -49,8 +49,9 @@ struct GameModeGPUInfo {
 	long device;        /* path to device, ie. /sys/class/drm/card#/ */
 	long nv_perf_level; /* The Nvidia Performance Level to adjust */
 
-	long nv_core; /* Nvidia core clock */
-	long nv_mem;  /* Nvidia mem clock */
+	long nv_core;            /* Nvidia core clock */
+	long nv_mem;             /* Nvidia mem clock */
+	long nv_powermizer_mode; /* NV Powermizer Mode */
 
 	char amd_performance_level[CONFIG_VALUE_MAX]; /* The AMD performance level set to */
 };

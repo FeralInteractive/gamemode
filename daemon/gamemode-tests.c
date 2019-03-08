@@ -444,6 +444,7 @@ int run_gpu_optimisation_tests(struct GameModeConfig *config)
 	/* Grab the expected values */
 	long expected_core = gpuinfo->nv_core;
 	long expected_mem = gpuinfo->nv_mem;
+	long expected_nv_powermizer_mode = gpuinfo->nv_powermizer_mode;
 	char expected_amd_performance_level[CONFIG_VALUE_MAX];
 	strncpy(expected_amd_performance_level, gpuinfo->amd_performance_level, CONFIG_VALUE_MAX);
 
@@ -451,6 +452,7 @@ int run_gpu_optimisation_tests(struct GameModeConfig *config)
 	game_mode_get_gpu(gpuinfo);
 	long original_nv_core = gpuinfo->nv_core;
 	long original_nv_mem = gpuinfo->nv_mem;
+	long original_nv_powermizer_mode = gpuinfo->nv_powermizer_mode;
 	char original_amd_performance_level[CONFIG_VALUE_MAX];
 	strncpy(original_amd_performance_level, gpuinfo->amd_performance_level, CONFIG_VALUE_MAX);
 
@@ -465,14 +467,18 @@ int run_gpu_optimisation_tests(struct GameModeConfig *config)
 	}
 
 	if (gpuinfo->vendor == Vendor_NVIDIA &&
-	    (gpuinfo->nv_core != expected_core || gpuinfo->nv_mem != expected_mem)) {
+	    (gpuinfo->nv_core != expected_core || gpuinfo->nv_mem != expected_mem ||
+	     gpuinfo->nv_powermizer_mode != expected_nv_powermizer_mode)) {
 		LOG_ERROR(
 		    "Current Nvidia GPU clocks during gamemode do not match requested values!\n"
-		    "\tnv_core - expected:%ld was:%ld | nv_mem - expected:%ld was:%ld\n",
+		    "\tnv_core - expected:%ld was:%ld | nv_mem - expected:%ld was:%ld | nv_powermizer_mode "
+		    "- expected:%ld was:%ld\n",
 		    expected_core,
 		    gpuinfo->nv_core,
 		    expected_mem,
-		    gpuinfo->nv_mem);
+		    gpuinfo->nv_mem,
+		    expected_nv_powermizer_mode,
+		    gpuinfo->nv_powermizer_mode);
 		gpustatus = -1;
 	} else if (gpuinfo->vendor == Vendor_AMD &&
 	           strcmp(expected_amd_performance_level, gpuinfo->amd_performance_level) != 0) {
@@ -494,14 +500,18 @@ int run_gpu_optimisation_tests(struct GameModeConfig *config)
 	}
 
 	if (gpuinfo->vendor == Vendor_NVIDIA &&
-	    (gpuinfo->nv_core != original_nv_core || gpuinfo->nv_mem != original_nv_mem)) {
+	    (gpuinfo->nv_core != original_nv_core || gpuinfo->nv_mem != original_nv_mem ||
+	     gpuinfo->nv_powermizer_mode != original_nv_powermizer_mode)) {
 		LOG_ERROR(
 		    "Current Nvidia GPU clocks after gamemode do not matcch original values!\n"
-		    "\tcore - original:%ld was:%ld | nv_mem - original:%ld was:%ld\n",
+		    "\tnv_core - original:%ld was:%ld | nv_mem - original:%ld was:%ld | nv_powermizer_mode "
+		    "- original:%ld was:%ld\n",
 		    original_nv_core,
 		    gpuinfo->nv_core,
 		    original_nv_mem,
-		    gpuinfo->nv_mem);
+		    gpuinfo->nv_mem,
+		    original_nv_powermizer_mode,
+		    gpuinfo->nv_powermizer_mode);
 		gpustatus = -1;
 	} else if (gpuinfo->vendor == Vendor_AMD &&
 	           strcmp(original_amd_performance_level, gpuinfo->amd_performance_level) != 0) {
