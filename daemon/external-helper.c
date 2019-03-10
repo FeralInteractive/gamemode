@@ -116,10 +116,13 @@ int run_external_process(const char *const *exec_args, char buffer[EXTERNAL_BUFF
 	}
 
 	close(pipes[1]);
-	if (read(pipes[0], internal, EXTERNAL_BUFFER_MAX) < 0) {
+	ssize_t output_size = read(pipes[0], internal, EXTERNAL_BUFFER_MAX - 1);
+	if (output_size < 0) {
 		LOG_ERROR("Failed to read from process %s: %s\n", exec_args[0], strerror(errno));
 		return -1;
 	}
+
+	internal[output_size] = 0;
 
 	if (waitpid(p, &status, 0) < 0) {
 		LOG_ERROR("Failed to waitpid(%d): %s\n", (int)p, strerror(errno));
