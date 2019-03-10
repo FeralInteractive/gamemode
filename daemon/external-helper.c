@@ -40,7 +40,7 @@ POSSIBILITY OF SUCH DAMAGE.
 #include <time.h>
 #include <unistd.h>
 
-static const int default_timout = 5;
+static const int default_timeout = 5;
 
 /**
  * Call an external process
@@ -59,7 +59,7 @@ int run_external_process(const char *const *exec_args, char buffer[EXTERNAL_BUFF
 
 	/* Set the default timeout */
 	if (tsec == -1) {
-		tsec = default_timout;
+		tsec = default_timeout;
 	}
 
 	/* set up our signaling for the child and the timout */
@@ -96,8 +96,7 @@ int run_external_process(const char *const *exec_args, char buffer[EXTERNAL_BUFF
 
 	/* Set up the timout */
 	struct timespec timeout;
-	timeout.tv_sec = tsec; /* Magic timeout value of 5s for now - should be sane for most commands
-	                        */
+	timeout.tv_sec = tsec;
 	timeout.tv_nsec = 0;
 
 	/* Wait for the child to finish up with a timout */
