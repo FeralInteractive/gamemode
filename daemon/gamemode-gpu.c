@@ -229,7 +229,7 @@ int game_mode_apply_gpu(const GameModeGPUInfo *info, bool apply)
 		NULL,
 	};
 
-	if (run_external_process(exec_args) != 0) {
+	if (run_external_process(exec_args, NULL, -1) != 0) {
 		LOG_ERROR("Failed to call gpuclockctl, could not apply optimisations!\n");
 		return -1;
 	}
@@ -262,7 +262,7 @@ int game_mode_get_gpu(GameModeGPUInfo *info)
 	};
 
 	char buffer[EXTERNAL_BUFFER_MAX] = { 0 };
-	if (run_external_process_get_output(exec_args, buffer) != 0) {
+	if (run_external_process(exec_args, buffer, -1) != 0) {
 		LOG_ERROR("Failed to call gpuclockctl, could get values!\n");
 		return -1;
 	}

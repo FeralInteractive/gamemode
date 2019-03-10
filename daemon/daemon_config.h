@@ -106,6 +106,11 @@ void config_get_gamemode_end_scripts(GameModeConfig *self,
                                      char scripts[CONFIG_LIST_MAX][CONFIG_VALUE_MAX]);
 
 /*
+ * Get the script timout value
+ */
+long config_get_script_timeout(GameModeConfig *self);
+
+/*
  * Get the chosen default governor
  */
 void config_get_default_governor(GameModeConfig *self, char governor[CONFIG_VALUE_MAX]);
