@@ -41,27 +41,45 @@ POSSIBILITY OF SUCH DAMAGE.
 #include <unistd.h>
 
 #include "daemon_config.h"
+#include "external-helper.h"
 #include "gamemode_client.h"
 #include "governors-query.h"
 #include "gpu-control.h"
 
 /* Initial verify step to ensure gamemode isn't already active */
-static int verify_gamemode_initial(void)
+static int verify_gamemode_initial(struct GameModeConfig *config)
 {
 	int status = 0;
 
 	if ((status = gamemode_query_status()) != 0 && status != -1) {
-		LOG_ERROR("gamemode is currently active, tests require gamemode to start deactivated!\n");
-		status = -1;
+		long reaper = config_get_reaper_frequency(config);
+		LOG_MSG("GameMode was active, waiting for the reaper thread (%ld seconds)!\n", reaper);
+		sleep(1);
+
+		/* Try again after waiting */
+		for (int i = 0; i < reaper; i++) {
+			if ((status = gamemode_query_status()) == 0) {
+				status = 0;
+				break;
+			} else if (status == -1) {
+				goto status_error;
+			}
+			LOG_MSG("Waiting...\n");
+			sleep(1);
+		}
+		if (status == 1)
+			LOG_ERROR("GameMode still active, cannot run tests!\n");
 	} else if (status == -1) {
-		LOG_ERROR("gamemode_query_status failed: %s!\n", gamemode_error_string());
-		LOG_ERROR("is gamemode installed correctly?\n");
-		status = -1;
+		goto status_error;
 	} else {
 		status = 0;
 	}
 
 	return status;
+status_error:
+	LOG_ERROR("gamemode_query_status failed: %s!\n", gamemode_error_string());
+	LOG_ERROR("is gamemode installed correctly?\n");
+	return -1;
 }
 
 /* Check if gamemode is active and this client is registered */
@@ -183,8 +201,8 @@ static int run_dual_client_tests(void)
 	/* Parent process */
 	/* None of these should early-out as we need to clean up the child */
 
-	/* Give the child a chance to reqeust gamemode */
-	usleep(1000);
+	/* Give the child a chance to request gamemode */
+	usleep(10000);
 
 	/* Check that when we request gamemode, it replies that the other client is connected */
 	if (verify_other_client_connected() != 0)
@@ -301,12 +319,11 @@ static int run_cpu_governor_tests(struct GameModeConfig *config)
 		strcpy(desiredgov, "performance");
 
 	char defaultgov[CONFIG_VALUE_MAX] = { 0 };
-	config_get_default_governor(config, defaultgov);
 
-	if (desiredgov[0] == '\0') {
+	if (defaultgov[0] == '\0') {
 		const char *currentgov = get_gov_state();
 		if (currentgov) {
-			strncpy(desiredgov, currentgov, CONFIG_VALUE_MAX);
+			strncpy(defaultgov, currentgov, CONFIG_VALUE_MAX);
 		} else {
 			LOG_ERROR(
 			    "Could not get current CPU governor state, this indicates an error! See rest "
@@ -342,6 +359,7 @@ static int run_cpu_governor_tests(struct GameModeConfig *config)
 static int run_custom_scripts_tests(struct GameModeConfig *config)
 {
 	int scriptstatus = 0;
+	long timeout = config_get_script_timeout(config);
 
 	/* Grab and test the start scripts */
 	char startscripts[CONFIG_LIST_MAX][CONFIG_VALUE_MAX];
@@ -353,7 +371,8 @@ static int run_custom_scripts_tests(struct GameModeConfig *config)
 		while (*startscripts[i] != '\0' && i < CONFIG_LIST_MAX) {
 			LOG_MSG(":::: Running start script [%s]\n", startscripts[i]);
 
-			int ret = system(startscripts[i]);
+			const char *args[] = { "/bin/sh", "-c", startscripts[i], NULL };
+			int ret = run_external_process(args, NULL, (int)timeout);
 
 			if (ret == 0)
 				LOG_MSG(":::: Passed\n");
@@ -375,7 +394,8 @@ static int run_custom_scripts_tests(struct GameModeConfig *config)
 		while (*endscripts[i] != '\0' && i < CONFIG_LIST_MAX) {
 			LOG_MSG(":::: Running end script [%s]\n", endscripts[i]);
 
-			int ret = system(endscripts[i]);
+			const char *args[] = { "/bin/sh", "-c", endscripts[i], NULL };
+			int ret = run_external_process(args, NULL, (int)timeout);
 
 			if (ret == 0)
 				LOG_MSG(":::: Passed\n");
@@ -668,7 +688,7 @@ int game_mode_run_client_tests()
 	/* First verify that gamemode is not currently active on the system
 	 * As well as it being currently installed and queryable
 	 */
-	if (verify_gamemode_initial() != 0)
+	if (verify_gamemode_initial(config) != 0)
 		return -1;
 
 	/* Controls whether we require a supervisor to actually make requests */

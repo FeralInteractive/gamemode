@@ -93,6 +93,7 @@ static void *game_mode_context_reaper(void *userdata);
 static void game_mode_context_enter(GameModeContext *self);
 static void game_mode_context_leave(GameModeContext *self);
 static char *game_mode_context_find_exe(pid_t pid);
+static void game_mode_execute_scripts(char scripts[CONFIG_LIST_MAX][CONFIG_VALUE_MAX], int timeout);
 
 void game_mode_context_init(GameModeContext *self)
 {
@@ -170,21 +171,6 @@ static void game_mode_context_enter(GameModeContext *self)
 	LOG_MSG("Entering Game Mode...\n");
 	sd_notifyf(0, "STATUS=%sGameMode is now active.%s\n", "\x1B[1;32m", "\x1B[0m");
 
-	char scripts[CONFIG_LIST_MAX][CONFIG_VALUE_MAX];
-	memset(scripts, 0, sizeof(scripts));
-	config_get_gamemode_start_scripts(self->config, scripts);
-
-	unsigned int i = 0;
-	while (*scripts[i] != '\0' && i < CONFIG_LIST_MAX) {
-		LOG_MSG("Executing script [%s]\n", scripts[i]);
-		int err;
-		if ((err = system(scripts[i])) != 0) {
-			/* Log the failure, but this is not fatal */
-			LOG_ERROR("Script [%s] failed with error %d\n", scripts[i], err);
-		}
-		i++;
-	}
-
 	/* Read the initial governor state so we can revert it correctly */
 	const char *initial_state = get_gov_state();
 	if (initial_state) {
@@ -203,7 +189,7 @@ static void game_mode_context_enter(GameModeContext *self)
 		};
 
 		LOG_MSG("Requesting update of governor policy to %s\n", desiredGov);
-		if (run_external_process(exec_args) != 0) {
+		if (run_external_process(exec_args, NULL, -1) != 0) {
 			LOG_ERROR("Failed to update cpu governor policy\n");
 			/* if the set fails, clear the initial mode so we don't try and reset it back and fail
 			 * again, presumably */
@@ -217,6 +203,14 @@ static void game_mode_context_enter(GameModeContext *self)
 
 	/* Apply GPU optimisations */
 	game_mode_apply_gpu(self->gpu_info, true);
+
+	/* Run custom scripts last - ensures the above are applied first and these scripts can react to
+	 * them if needed */
+	char scripts[CONFIG_LIST_MAX][CONFIG_VALUE_MAX];
+	memset(scripts, 0, sizeof(scripts));
+	config_get_gamemode_start_scripts(self->config, scripts);
+	long timeout = config_get_script_timeout(self->config);
+	game_mode_execute_scripts(scripts, (int)timeout);
 }
 
 /**
@@ -249,7 +243,7 @@ static void game_mode_context_leave(GameModeContext *self)
 		};
 
 		LOG_MSG("Requesting update of governor policy to %s\n", gov_mode);
-		if (run_external_process(exec_args) != 0) {
+		if (run_external_process(exec_args, NULL, -1) != 0) {
 			LOG_ERROR("Failed to update cpu governor policy\n");
 		}
 
@@ -259,17 +253,8 @@ static void game_mode_context_leave(GameModeContext *self)
 	char scripts[CONFIG_LIST_MAX][CONFIG_VALUE_MAX];
 	memset(scripts, 0, sizeof(scripts));
 	config_get_gamemode_end_scripts(self->config, scripts);
-
-	unsigned int i = 0;
-	while (*scripts[i] != '\0' && i < CONFIG_LIST_MAX) {
-		LOG_MSG("Executing script [%s]\n", scripts[i]);
-		int err;
-		if ((err = system(scripts[i])) != 0) {
-			/* Log the failure, but this is not fatal */
-			LOG_ERROR("Script [%s] failed with error %d\n", scripts[i], err);
-		}
-		i++;
-	}
+	long timeout = config_get_script_timeout(self->config);
+	game_mode_execute_scripts(scripts, (int)timeout);
 }
 
 /**
@@ -700,4 +685,20 @@ fail:
 	if (errno != 0) // otherwise a proper message was logged before
 		LOG_ERROR("Unable to find executable for PID %d: %s\n", pid, strerror(errno));
 	return NULL;
+}
+
+/* Executes a set of scripts */
+static void game_mode_execute_scripts(char scripts[CONFIG_LIST_MAX][CONFIG_VALUE_MAX], int timeout)
+{
+	unsigned int i = 0;
+	while (*scripts[i] != '\0' && i < CONFIG_LIST_MAX) {
+		LOG_MSG("Executing script [%s]\n", scripts[i]);
+		int err;
+		const char *args[] = { "/bin/sh", "-c", scripts[i], NULL };
+		if ((err = run_external_process(args, NULL, timeout)) != 0) {
+			/* Log the failure, but this is not fatal */
+			LOG_ERROR("Script [%s] failed with error %d\n", scripts[i], err);
+		}
+		i++;
+	}
 }
