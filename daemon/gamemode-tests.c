@@ -456,9 +456,13 @@ int run_gpu_optimisation_tests(struct GameModeConfig *config)
 	char original_amd_performance_level[CONFIG_VALUE_MAX];
 	strncpy(original_amd_performance_level, gpuinfo->amd_performance_level, CONFIG_VALUE_MAX);
 
-	/* account for when powermizer is not set */
+	/* account for when settings are not set */
 	if (expected_nv_powermizer_mode == -1)
 		expected_nv_powermizer_mode = original_nv_powermizer_mode;
+	if (expected_core == -1)
+		expected_core = original_nv_core;
+	if (expected_mem == -1)
+		expected_mem = original_nv_mem;
 
 	/* Start gamemode and check the new values */
 	gamemode_request_start();
