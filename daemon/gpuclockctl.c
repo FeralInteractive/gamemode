@@ -284,18 +284,6 @@ static int set_gpu_state_amd(struct GameModeGPUInfo *info)
 	return 0;
 }
 
-/* Helper to get and verify vendor value */
-static long get_vendor(const char *val)
-{
-	char *end;
-	long ret = strtol(val, &end, 0);
-	if (!GPUVendorValid(ret) || end == val) {
-		LOG_ERROR("Invalid GPU Vendor passed (0x%04x)!\n", (unsigned short)ret);
-		print_usage_and_exit();
-	}
-	return ret;
-}
-
 /* Helper to get and verify device value */
 static long get_device(const char *val)
 {
@@ -325,20 +313,23 @@ static long get_generic_value(const char *val)
  */
 int main(int argc, char *argv[])
 {
-	if (argc >= 4 && strncmp(argv[3], "get", 3) == 0) {
+	if (argc >= 3 && strncmp(argv[2], "get", 3) == 0) {
 		/* Get and verify the vendor and device */
 		struct GameModeGPUInfo info;
 		memset(&info, 0, sizeof(info));
-		info.vendor = get_vendor(argv[1]);
-		info.device = get_device(argv[2]);
+		info.device = get_device(argv[1]);
+		info.vendor = gamemode_get_gpu_vendor(info.device);
 
 		/* Fetch the state and print it out */
 		switch (info.vendor) {
 		case Vendor_NVIDIA:
-			info.nv_perf_level = -1;
-			if (argc > 4)
-				info.nv_perf_level = get_generic_value(argv[4]);
-			/* Get nvidia power level */
+			if (argc < 3) {
+				LOG_ERROR("Must pass perf_level for nvidia gpu!\n");
+				print_usage_and_exit();
+			}
+			info.nv_perf_level = get_generic_value(argv[3]);
+
+			/* Get nvidia info */
 			if (get_gpu_state_nv(&info) != 0)
 				exit(EXIT_FAILURE);
 			printf("%ld %ld %ld\n", info.nv_core, info.nv_mem, info.nv_powermizer_mode);
@@ -349,33 +340,44 @@ int main(int argc, char *argv[])
 			printf("%s\n", info.amd_performance_level);
 			break;
 		default:
-			printf("Currently unsupported GPU vendor 0x%04x, doing nothing!\n", (short)info.vendor);
+			LOG_ERROR("Currently unsupported GPU vendor 0x%04x, doing nothing!\n",
+			          (short)info.vendor);
 			break;
 		}
 
-	} else if (argc >= 5 && argc <= 8 && strncmp(argv[3], "set", 3) == 0) {
+	} else if (argc >= 4 && argc <= 7 && strncmp(argv[2], "set", 3) == 0) {
 		/* Get and verify the vendor and device */
 		struct GameModeGPUInfo info;
 		memset(&info, 0, sizeof(info));
-		info.vendor = get_vendor(argv[1]);
-		info.device = get_device(argv[2]);
+		info.device = get_device(argv[1]);
+		info.vendor = gamemode_get_gpu_vendor(info.device);
 
 		switch (info.vendor) {
 		case Vendor_NVIDIA:
-			info.nv_core = get_generic_value(argv[4]);
-			info.nv_mem = get_generic_value(argv[5]);
-			info.nv_perf_level = -1;
-			if (argc > 6)
-				info.nv_perf_level = get_generic_value(argv[6]);
+			if (argc < 5) {
+				LOG_ERROR("Must pass at least 5 arguments for nvidia gpu!\n");
+				print_usage_and_exit();
+			}
+			info.nv_core = get_generic_value(argv[3]);
+			info.nv_mem = get_generic_value(argv[4]);
+			info.nv_perf_level = get_generic_value(argv[5]);
+
+			/* Optional */
 			info.nv_powermizer_mode = -1;
-			if (argc > 7)
-				info.nv_powermizer_mode = get_generic_value(argv[7]);
+			if (argc >= 5)
+				info.nv_powermizer_mode = get_generic_value(argv[6]);
 			break;
 		case Vendor_AMD:
-			strncpy(info.amd_performance_level, argv[4], CONFIG_VALUE_MAX);
+			if (argc < 3) {
+				LOG_ERROR("Must pass performance level for AMD gpu!\n");
+				print_usage_and_exit();
+			}
+			strncpy(info.amd_performance_level, argv[3], CONFIG_VALUE_MAX);
 			break;
 		default:
-			printf("Currently unsupported GPU vendor 0x%04x, doing nothing!\n", (short)info.vendor);
+			LOG_ERROR("Currently unsupported GPU vendor 0x%04x, doing nothing!\n",
+			          (short)info.vendor);
+			print_usage_and_exit();
 			break;
 		}
 
@@ -389,7 +391,6 @@ int main(int argc, char *argv[])
 		case Vendor_AMD:
 			return set_gpu_state_amd(&info);
 		default:
-			printf("Currently unsupported GPU vendor 0x%04x, doing nothing!\n", (short)info.vendor);
 			break;
 		}
 	} else {
