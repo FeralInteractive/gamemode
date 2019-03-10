@@ -34,7 +34,11 @@ pacman -S meson systemd git
 dnf install meson systemd-devel pkg-config git
 ```
 #### Gentoo
-Gentoo has a bleeding-edge ebuild which builds from sources. It will also pull in all the dependencies so you can work on the source code.
+Gentoo has an ebuild which builds a stable release from sources. It will also pull in all the dependencies so you can work on the source code.
+```bash
+emerge --ask games-util/gamemode
+```
+You can also install using the latest sources from git:
 ```bash
 ACCEPT_KEYWORDS="**" emerge --ask ~games-util/gamemode-9999
 ```
