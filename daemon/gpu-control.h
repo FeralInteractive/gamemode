@@ -46,8 +46,7 @@ enum GPUVendor {
 /* Storage for GPU info*/
 struct GameModeGPUInfo {
 	long vendor;
-	long device;        /* path to device, ie. /sys/class/drm/card#/ */
-	long nv_perf_level; /* The Nvidia Performance Level to adjust */
+	long device; /* path to device, ie. /sys/class/drm/card#/ */
 
 	long nv_core;            /* Nvidia core clock */
 	long nv_mem;             /* Nvidia mem clock */
