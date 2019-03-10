@@ -1,26 +1,21 @@
 project(
     'gamemode',
     'c',
-    default_options : ['c_std=c11'],
+    default_options : ['c_std=c11', 'warning_level=3'],
     version: '1.3-dev',
     license: 'BSD',
 )
 
 am_cflags = [
     '-fstack-protector',
-    '-Wall',
-    '-pedantic',
     '-Wstrict-prototypes',
     '-Wundef',
     '-fno-common',
     '-Werror-implicit-function-declaration',
-    '-Wformat',
     '-Wformat-security',
     '-Werror=format-security',
     '-Wconversion',
-    '-Wunused-variable',
     '-Wunreachable-code',
-    '-W',
 ]
 
 # Add our main flags
