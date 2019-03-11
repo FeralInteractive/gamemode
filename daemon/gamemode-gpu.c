@@ -47,8 +47,6 @@ POSSIBILITY OF SUCH DAMAGE.
  */
 int game_mode_initialise_gpu(GameModeConfig *config, GameModeGPUInfo **info)
 {
-	int status = 0;
-
 	/* Verify input, this is programmer error */
 	if (!info || *info)
 		FATAL_ERROR("Invalid GameModeGPUInfo passed to %s", __func__);
@@ -83,33 +81,9 @@ int game_mode_initialise_gpu(GameModeConfig *config, GameModeGPUInfo **info)
 	}
 
 	/* Fill in GPU vendor */
-	char path[64] = { 0 };
-	if (snprintf(path, 64, "/sys/class/drm/card%ld/device/vendor", new_info->device) < 0) {
-		LOG_ERROR("snprintf failed, will not apply gpu optimisations!\n");
-		return -1;
-	}
-	FILE *vendor = fopen(path, "r");
-	if (!vendor) {
-		LOG_ERROR("Couldn't open vendor file at %s, will not apply gpu optimisations!\n", path);
-		return -1;
-	}
-	char buff[64];
-	if (fgets(buff, 64, vendor) != NULL) {
-		new_info->vendor = strtol(buff, NULL, 0);
-	} else {
-		LOG_ERROR("Coudn't read contents of file %s, will not apply optimisations!\n", path);
-		return -1;
-	}
-
-	/* verify GPU vendor */
+	new_info->vendor = gamemode_get_gpu_vendor(new_info->device);
 	if (!GPUVendorValid(new_info->vendor)) {
-		LOG_ERROR("Unknown vendor value (0x%04x) found, cannot apply optimisations!\n",
-		          (unsigned int)new_info->vendor);
-		LOG_ERROR("Known values are: 0x%04x (NVIDIA) 0x%04x (AMD) 0x%04x (Intel)\n",
-		          Vendor_NVIDIA,
-		          Vendor_AMD,
-		          Vendor_Intel);
-		free(new_info);
+		LOG_ERROR("Found invalid vendor, will not apply optimisations!\n");
 		return -1;
 	}
 
@@ -118,7 +92,6 @@ int game_mode_initialise_gpu(GameModeConfig *config, GameModeGPUInfo **info)
 	case Vendor_NVIDIA:
 		new_info->nv_core = config_get_nv_core_clock_mhz_offset(config);
 		new_info->nv_mem = config_get_nv_mem_clock_mhz_offset(config);
-		new_info->nv_perf_level = config_get_nv_perf_level(config);
 		new_info->nv_powermizer_mode = config_get_nv_powermizer_mode(config);
 
 		/* Reject values over some guessed values
@@ -135,18 +108,6 @@ int game_mode_initialise_gpu(GameModeConfig *config, GameModeGPUInfo **info)
 			LOG_ERROR("nv_core_clock_mhz_offset:%ld nv_mem_clock_mhz_offset:%ld\n",
 			          new_info->nv_core,
 			          new_info->nv_mem);
-			free(new_info);
-			return -1;
-		}
-
-		/* Sanity check the performance level value as well */
-		/* Allow an invalid perf level if we've got the powermizer mode set */
-		if (!(new_info->nv_perf_level == -1 && new_info->nv_powermizer_mode != -1) &&
-		    (new_info->nv_perf_level < 0 || new_info->nv_perf_level > 16)) {
-			LOG_ERROR(
-			    "NVIDIA Performance level value likely invalid (%ld), will not apply "
-			    "optimisations!\n",
-			    new_info->nv_perf_level);
 			free(new_info);
 			return -1;
 		}
@@ -168,7 +129,7 @@ int game_mode_initialise_gpu(GameModeConfig *config, GameModeGPUInfo **info)
 
 	/* Give back the new gpu info */
 	*info = new_info;
-	return status;
+	return 0;
 }
 
 /* Simply used to free the GPU info object */
@@ -196,8 +157,6 @@ int game_mode_apply_gpu(const GameModeGPUInfo *info)
 	LOG_MSG("Requesting GPU optimisations on device:%ld\n", info->device);
 
 	/* Generate the input strings */
-	char vendor[7];
-	snprintf(vendor, 7, "0x%04x", (short)info->vendor);
 	char device[4];
 	snprintf(device, 4, "%ld", info->device);
 
@@ -205,8 +164,6 @@ int game_mode_apply_gpu(const GameModeGPUInfo *info)
 	snprintf(nv_core, 8, "%ld", info->nv_core);
 	char nv_mem[8];
 	snprintf(nv_mem, 8, "%ld", info->nv_mem);
-	char nv_perf_level[4];
-	snprintf(nv_perf_level, 4, "%ld", info->nv_perf_level);
 	char nv_powermizer_mode[4];
 	snprintf(nv_powermizer_mode, 4, "%ld", info->nv_powermizer_mode);
 
@@ -214,12 +171,10 @@ int game_mode_apply_gpu(const GameModeGPUInfo *info)
 	const char *const exec_args[] = {
 		"/usr/bin/pkexec",
 		LIBEXECDIR "/gpuclockctl",
-		vendor,
 		device,
 		"set",
 		info->vendor == Vendor_NVIDIA ? nv_core : info->amd_performance_level,
 		info->vendor == Vendor_NVIDIA ? nv_mem : NULL,             /* Only use this if Nvidia */
-		info->vendor == Vendor_NVIDIA ? nv_perf_level : NULL,      /* Only use this if Nvidia */
 		info->vendor == Vendor_NVIDIA ? nv_powermizer_mode : NULL, /* Only use this if Nvidia */
 		NULL,
 	};
@@ -238,21 +193,15 @@ int game_mode_get_gpu(GameModeGPUInfo *info)
 		return 0;
 
 	/* Generate the input strings */
-	char vendor[7];
-	snprintf(vendor, 7, "0x%04x", (short)info->vendor);
 	char device[4];
 	snprintf(device, 4, "%ld", info->device);
-	char nv_perf_level[4];
-	snprintf(nv_perf_level, 4, "%ld", info->nv_perf_level);
 
 	// Set up our command line to pass to gpuclockctl
 	// This doesn't need pkexec as get does not need elevated perms
 	const char *const exec_args[] = {
 		LIBEXECDIR "/gpuclockctl",
-		vendor,
 		device,
 		"get",
-		info->vendor == Vendor_NVIDIA ? nv_perf_level : NULL, /* Only use this if Nvidia */
 		NULL,
 	};
 
