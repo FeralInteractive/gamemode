@@ -28,32 +28,45 @@ ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 POSSIBILITY OF SUCH DAMAGE.
 
  */
+#include "gpu-control.h"
+#include "logging.h"
 
-#pragma once
-#include "daemon_config.h"
-
-/* Enums for GPU vendors */
-enum GPUVendor {
-	Vendor_Invalid = 0,
-	Vendor_NVIDIA = 0x10de,
-	Vendor_AMD = 0x1002,
-	Vendor_Intel = 0x8086
-};
-
-#define GPUVendorValid(vendor)                                                                     \
-	(vendor == Vendor_NVIDIA || vendor == Vendor_AMD || vendor == Vendor_Intel)
-
-/* Storage for GPU info*/
-struct GameModeGPUInfo {
-	long vendor;
-	long device; /* path to device, ie. /sys/class/drm/card#/ */
-
-	long nv_core;            /* Nvidia core clock */
-	long nv_mem;             /* Nvidia mem clock */
-	long nv_powermizer_mode; /* NV Powermizer Mode */
-
-	char amd_performance_level[CONFIG_VALUE_MAX]; /* The AMD performance level set to */
-};
+#include <stdio.h>
 
 /* Get the vendor for a device */
-enum GPUVendor gamemode_get_gpu_vendor(long device);
+enum GPUVendor gamemode_get_gpu_vendor(long device)
+{
+	enum GPUVendor vendor = Vendor_Invalid;
+
+	/* Fill in GPU vendor */
+	char path[64] = { 0 };
+	if (snprintf(path, 64, "/sys/class/drm/card%ld/device/vendor", device) < 0) {
+		LOG_ERROR("snprintf failed, will not apply gpu optimisations!\n");
+		return Vendor_Invalid;
+	}
+	FILE *file = fopen(path, "r");
+	if (!file) {
+		LOG_ERROR("Couldn't open vendor file at %s, will not apply gpu optimisations!\n", path);
+		return Vendor_Invalid;
+	}
+	char buff[64];
+	if (fgets(buff, 64, file) != NULL) {
+		vendor = strtol(buff, NULL, 0);
+	} else {
+		LOG_ERROR("Coudn't read contents of file %s, will not apply optimisations!\n", path);
+		return Vendor_Invalid;
+	}
+
+	/* verify GPU vendor */
+	if (!GPUVendorValid(vendor)) {
+		LOG_ERROR("Unknown vendor value (0x%04x) found, cannot apply optimisations!\n",
+		          (unsigned int)vendor);
+		LOG_ERROR("Known values are: 0x%04x (NVIDIA) 0x%04x (AMD) 0x%04x (Intel)\n",
+		          Vendor_NVIDIA,
+		          Vendor_AMD,
+		          Vendor_Intel);
+		return Vendor_Invalid;
+	}
+
+	return vendor;
+}

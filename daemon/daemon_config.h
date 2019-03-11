@@ -142,7 +142,6 @@ void config_get_apply_gpu_optimisations(GameModeConfig *self, char value[CONFIG_
 long config_get_gpu_device(GameModeConfig *self);
 long config_get_nv_core_clock_mhz_offset(GameModeConfig *self);
 long config_get_nv_mem_clock_mhz_offset(GameModeConfig *self);
-long config_get_nv_perf_level(GameModeConfig *self);
 long config_get_nv_powermizer_mode(GameModeConfig *self);
 void config_get_amd_performance_level(GameModeConfig *self, char value[CONFIG_VALUE_MAX]);
 

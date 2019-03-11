@@ -3,6 +3,7 @@ common_sources = [
     'logging.c',
     'governors-query.c',
     'external-helper.c',
+    'gpu-control.c',
 ]
 
 daemon_common = static_library(
