@@ -41,6 +41,7 @@ POSSIBILITY OF SUCH DAMAGE.
 #define NV_MEM_OFFSET_ATTRIBUTE "GPUMemoryTransferRateOffset"
 #define NV_POWERMIZER_MODE_ATTRIBUTE "GPUPowerMizerMode"
 #define NV_PERFMODES_ATTRIBUTE "GPUPerfModes"
+#define NV_PCIDEVICE_ATTRIBUTE "PCIDevice"
 #define NV_ATTRIBUTE_FORMAT "[gpu:%ld]/%s"
 #define NV_PERF_LEVEL_FORMAT "[%ld]"
 
@@ -61,6 +62,49 @@ static void print_usage_and_exit(void)
 {
 	fprintf(stderr, "%s\n", usage_text);
 	exit(EXIT_FAILURE);
+}
+
+/* Get the nvidia driver index for the current GPU */
+static long get_gpu_index_id_nv(struct GameModeGPUInfo *info)
+{
+	// Default to using the current device number
+	long gpu_index = info->device;
+
+	if (info->vendor != Vendor_NVIDIA)
+		return -1;
+
+	if (!getenv("DISPLAY"))
+		LOG_ERROR("Getting Nvidia parameters requires DISPLAY to be set - will likely fail!\n");
+	long current = 0;
+	do {
+		char arg[128] = { 0 };
+		char buf[EXTERNAL_BUFFER_MAX] = { 0 };
+		char *end;
+
+		/* Get the PCI id parameter */
+		snprintf(arg, 128, NV_ATTRIBUTE_FORMAT, current, NV_PCIDEVICE_ATTRIBUTE);
+		const char *exec_args_core[] = { "/usr/bin/nvidia-settings", "-q", arg, "-t", NULL };
+		if (run_external_process(exec_args_core, buf, -1) != 0) {
+			LOG_ERROR("Failed to get %s! Will be defaulting to nvidia gpu index %ld\n",
+			          arg,
+			          gpu_index);
+			/* Failure just means we've overrun the device list */
+			break;
+		}
+
+		long pcidevice = strtol(buf, &end, 10);
+		if (end == buf) {
+			LOG_ERROR("Failed to parse output for \"%s\" output was \"%s\"!\n", arg, buf);
+			break;
+		}
+
+		if (info->device == pcidevice) {
+			gpu_index = current;
+			break;
+		}
+	} while (true);
+
+	return gpu_index;
 }
 
 /* Get the max nvidia perf level */
@@ -361,9 +405,14 @@ int main(int argc, char *argv[])
 		info.device = get_device(argv[1]);
 		info.vendor = gamemode_get_gpu_vendor(info.device);
 
+		/* Adjust the device number to the gpu index for Nvidia */
+		if (info.vendor == Vendor_NVIDIA)
+			info.device = get_gpu_index_id_nv(&info);
+
 		/* Fetch the state and print it out */
 		switch (info.vendor) {
 		case Vendor_NVIDIA:
+
 			if (get_gpu_state_nv(&info) != 0)
 				exit(EXIT_FAILURE);
 			printf("%ld %ld %ld\n", info.nv_core, info.nv_mem, info.nv_powermizer_mode);
