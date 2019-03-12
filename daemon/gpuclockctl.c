@@ -397,13 +397,11 @@ int main(int argc, char *argv[])
 		info.device = get_device(argv[1]);
 		info.vendor = gamemode_get_gpu_vendor(info.device);
 
-		/* Adjust the device number to the gpu index for Nvidia */
-		if (info.vendor == Vendor_NVIDIA)
-			info.device = get_gpu_index_id_nv(&info);
-
 		/* Fetch the state and print it out */
 		switch (info.vendor) {
 		case Vendor_NVIDIA:
+			/* Adjust the device number to the gpu index for Nvidia */
+			info.device = get_gpu_index_id_nv(&info);
 
 			if (get_gpu_state_nv(&info) != 0)
 				exit(EXIT_FAILURE);
@@ -435,6 +433,9 @@ int main(int argc, char *argv[])
 			}
 			info.nv_core = get_generic_value(argv[3]);
 			info.nv_mem = get_generic_value(argv[4]);
+
+			/* Adjust the device number to the gpu index for Nvidia */
+			info.device = get_gpu_index_id_nv(&info);
 
 			/* Optional */
 			info.nv_powermizer_mode = -1;
