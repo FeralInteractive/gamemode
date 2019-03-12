@@ -67,44 +67,36 @@ static void print_usage_and_exit(void)
 /* Get the nvidia driver index for the current GPU */
 static long get_gpu_index_id_nv(struct GameModeGPUInfo *info)
 {
-	// Default to using the current device number
-	long gpu_index = info->device;
-
 	if (info->vendor != Vendor_NVIDIA)
 		return -1;
 
-	if (!getenv("DISPLAY"))
-		LOG_ERROR("Getting Nvidia parameters requires DISPLAY to be set - will likely fail!\n");
-	long current = 0;
-	do {
-		char arg[128] = { 0 };
-		char buf[EXTERNAL_BUFFER_MAX] = { 0 };
-		char *end;
+	/* NOTE: This is currently based off of a best guess of how the NVidia gpu index works
+	 * ie. that the index is simply the index into available NV gpus in the same order as drm
+	 * If that is not the case then this may fail to discern the correct GPU
+	 */
 
-		/* Get the PCI id parameter */
-		snprintf(arg, 128, NV_ATTRIBUTE_FORMAT, current, NV_PCIDEVICE_ATTRIBUTE);
-		const char *exec_args_core[] = { "/usr/bin/nvidia-settings", "-q", arg, "-t", NULL };
-		if (run_external_process(exec_args_core, buf, -1) != 0) {
-			LOG_ERROR("Failed to get %s! Will be defaulting to nvidia gpu index %ld\n",
-			          arg,
-			          gpu_index);
-			/* Failure just means we've overrun the device list */
+	int device = 0;
+	int nv_device = -1;
+	while (device <= info->device) {
+		/* Get the vendor for each gpu sequentially */
+		enum GPUVendor vendor = gamemode_get_gpu_vendor(device++);
+
+		switch (vendor) {
+		case Vendor_NVIDIA:
+			/* If we've found an nvidia device, increment our counter */
+			nv_device++;
+			break;
+		case Vendor_Invalid:
+			/* Bail out, we've gone too far */
+			LOG_ERROR("Failed to find Nvidia GPU with expected index!\n");
+			break;
+		default:
+			/* Non-NV gpu, continue */
 			break;
 		}
+	};
 
-		long pcidevice = strtol(buf, &end, 10);
-		if (end == buf) {
-			LOG_ERROR("Failed to parse output for \"%s\" output was \"%s\"!\n", arg, buf);
-			break;
-		}
-
-		if (info->device == pcidevice) {
-			gpu_index = current;
-			break;
-		}
-	} while (true);
-
-	return gpu_index;
+	return nv_device;
 }
 
 /* Get the max nvidia perf level */
@@ -405,13 +397,11 @@ int main(int argc, char *argv[])
 		info.device = get_device(argv[1]);
 		info.vendor = gamemode_get_gpu_vendor(info.device);
 
-		/* Adjust the device number to the gpu index for Nvidia */
-		if (info.vendor == Vendor_NVIDIA)
-			info.device = get_gpu_index_id_nv(&info);
-
 		/* Fetch the state and print it out */
 		switch (info.vendor) {
 		case Vendor_NVIDIA:
+			/* Adjust the device number to the gpu index for Nvidia */
+			info.device = get_gpu_index_id_nv(&info);
 
 			if (get_gpu_state_nv(&info) != 0)
 				exit(EXIT_FAILURE);
@@ -443,6 +433,9 @@ int main(int argc, char *argv[])
 			}
 			info.nv_core = get_generic_value(argv[3]);
 			info.nv_mem = get_generic_value(argv[4]);
+
+			/* Adjust the device number to the gpu index for Nvidia */
+			info.device = get_gpu_index_id_nv(&info);
 
 			/* Optional */
 			info.nv_powermizer_mode = -1;
