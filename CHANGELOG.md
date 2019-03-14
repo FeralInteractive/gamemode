@@ -4,12 +4,12 @@
 
 * Disable screensaver when the game is running (can help when playing with gamepad or joystick).
 * Add a `gamemoderun` helper script to do the necessary setup (set `LD_PRELOAD`) to enable GameMode on games which do not support it themselves.
-* Add tests for GameMode functionality (run with `gamemoded -t`).
 * Support for overclocking on NVIDIA GPUs (experimental, use at your own risk). See `example/gamemode.ini` for further details.
 * Support for configuring performance level on AMD GPUs (experimental, use at your own risk). See `example/gamemode.ini`.
 * Increase I/O priority of game processes.
-* `softrealtime` and `renice` options are no longer enabled by default since they require extra system configuration to work. See `example/gamemode.ini`
+* `softrealtime` and `renice` options are no longer enabled by default since they require extra system configuration. See `example/gamemode.ini`.
 * Add supervisor API which allows requesting GameMode on behalf of another process.
+* Add tests for GameMode functionality (run with `gamemoded -t`).
 * Various other minor fixes and improvements.
 
 ### Contributors
