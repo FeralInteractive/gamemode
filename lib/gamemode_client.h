@@ -1,6 +1,6 @@
 /*
 
-Copyright (c) 2017-2018, Feral Interactive
+Copyright (c) 2017-2019, Feral Interactive
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
