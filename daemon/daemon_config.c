@@ -326,7 +326,6 @@ static void load_config_files(GameModeConfig *self)
 
 	/* Set some non-zero defaults */
 	self->values.inhibit_screensaver = 1; /* Defaults to on */
-	self->values.renice = 4;              /* default value of 4 */
 	self->values.reaper_frequency = DEFAULT_REAPER_FREQ;
 	self->values.gpu_device = -1; /* 0 is a valid device ID so use -1 to indicate no value */
 	self->values.nv_powermizer_mode = -1;
