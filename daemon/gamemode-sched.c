@@ -108,7 +108,7 @@ void game_mode_apply_scheduling(const GameModeContext *self, const pid_t client)
 	 * slower as a result, so enable only with more than 3 cores.
 	 */
 	bool enable_softrealtime = (strcmp(softrealtime, "on") == 0) ||
-							   ((strcmp(softrealtime, "auto") == 0) && (get_nprocs() > 3));
+	                           ((strcmp(softrealtime, "auto") == 0) && (get_nprocs() > 3));
 
 	/*
 	 * Actually apply the scheduler policy if not explicitly turned off
