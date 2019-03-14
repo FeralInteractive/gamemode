@@ -4,11 +4,11 @@
 GameMode was designed primarily as a stop-gap solution to problems with the Intel and AMD CPU powersave or ondemand governors, but is now host to a range of optimisation features and configurations.
 
 Currently GameMode includes support for optimisations including:
-* CPU Governor
-* I/O Priority
-* Kernel Scheduler (`SCHED_ISO`)
+* CPU governor
+* I/O priority
+* Kernel scheduler (`SCHED_ISO`)
 * Screensaver inhibiting
-* GPU Overclocking (Nvidia and AMD)
+* GPU performance mode (NVIDIA and AMD), GPU overclocking (NVIDIA)
 * Custom scripts
 
 Issues with GameMode should be reported here in the issues section, and not reported to Feral directly.
@@ -67,7 +67,7 @@ After installing `libgamemodeauto.so.0` simply preload it into the game:
 ```bash
 gamemoderun ./game
 ```
-Or edit the steam launch options:
+Or edit the Steam launch options:
 ```bash
 gamemoderun %command%
 ```
@@ -77,6 +77,7 @@ Note: for older versions of GameMode (1.2) use this string in place of `gamemode
 LD_PRELOAD="$LD_PRELOAD:/usr/\$LIB/libgamemodeauto.so.0"
 ```
 Please note the backslash here in `\$LIB` is required.
+
 ---
 ## Configuration
 
@@ -94,7 +95,7 @@ The file parsing uses [inih](https://github.com/benhoyt/inih).
 ## Features
 
 ### Scheduling
-GameMode can leverage support for soft real time mode if the running kernel supports `SCHED_ISO`, controlled by the `softrealtime` option. This adjusts the scheduling of the game to real time without sacrificing system stability by starving other processes.
+GameMode can leverage support for soft real time mode if the running kernel supports `SCHED_ISO` (not currently supported in upstream kernels), controlled by the `softrealtime` option. This adjusts the scheduling of the game to real time without sacrificing system stability by starving other processes.
 
 GameMode can adjust the nice priority of games to give them a slight IO and CPU priority over other background processes, controlled by the `renice` option. This only works if your user is permitted to adjust priorities within the limits configured by PAM. GameMode can be configured to take care of it by passing `with-pam-group=group` to the build options where `group` is a group your user needs to be part of.
 For more information, see `/etc/security/limits.conf`.
@@ -111,8 +112,14 @@ If you are unsure, `bootstrap.sh` will warn you if your system lacks CPU governo
 
 Scripts and other features will still work.
 
-### GPU Optimisations
-GameMode is able to automatically apply GPU overclocks when activated. AMD overclocking currently requires the amdgpu kernel module, and Nvidia requires the `coolbits` extension to be enabled in the Nvidia settings. It is very much encouraged for users to find out their own overclocking limits manually before venturing into configuring them in GameMode, and activating this feature in GameMode assumes you take responsibility for the effects of said overclocks. More information can be found in the `example/gamemode.ini` file. Note that both Nvidia (GPUBoost) and AMD (Overdrive) devices and drivers already attempt to internally overclock if possible, but it is still common for enthusiasts to want to manually push the upper threshold.
+### GPU optimisations
+GameMode is able to automatically apply GPU performance mode changes on AMD and NVIDIA, and overclocking on NVIDIA, when activated. AMD support currently requires the `amdgpu` kernel module, and NVIDIA requires the `coolbits` extension to be enabled in the NVIDIA settings.
+
+It is very much encouraged for users to find out their own overclocking limits manually before venturing into configuring them in GameMode, and activating this feature in GameMode assumes you take responsibility for the effects of said overclocks.
+
+More information can be found in the `example/gamemode.ini` file.
+
+Note that both NVIDIA (GPUBoost) and AMD (Overdrive) devices and drivers already attempt to internally overclock if possible, but it is still common for enthusiasts to want to manually push the upper threshold.
 
 ---
 ## Developers
