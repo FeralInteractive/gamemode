@@ -44,12 +44,12 @@ ACCEPT_KEYWORDS="**" emerge --ask ~games-util/gamemode-9999
 ```
 
 ### Build and Install GameMode
-Then clone, build and install a release version of GameMode at 1.2:
+Then clone, build and install a release version of GameMode at 1.3:
 
 ```bash
 git clone https://github.com/FeralInteractive/gamemode.git
 cd gamemode
-git checkout 1.2 # omit to build the master branch
+git checkout 1.3 # omit to build the master branch
 ./bootstrap.sh
 ```
 
@@ -72,7 +72,7 @@ Or edit the Steam launch options:
 gamemoderun %command%
 ```
 
-Note: for older versions of GameMode (1.2) use this string in place of `gamemoderun`:
+Note: for older versions of GameMode (before 1.3) use this string in place of `gamemoderun`:
 ```
 LD_PRELOAD="$LD_PRELOAD:/usr/\$LIB/libgamemodeauto.so.0"
 ```
