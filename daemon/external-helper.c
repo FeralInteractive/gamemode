@@ -133,7 +133,7 @@ int run_external_process(const char *const *exec_args, char buffer[EXTERNAL_BUFF
 	if (!WIFEXITED(status)) {
 		LOG_ERROR("Child process '%s' exited abnormally\n", exec_args[0]);
 	} else if (WEXITSTATUS(status) != 0) {
-		LOG_ERROR("External process failed with exit code %u\n", WEXITSTATUS(status));
+		LOG_ERROR("External process failed with exit code %d\n", WEXITSTATUS(status));
 		LOG_ERROR("Output was: %s\n", buffer ? buffer : internal);
 		return -1;
 	}

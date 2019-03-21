@@ -414,7 +414,7 @@ int main(int argc, char *argv[])
 			break;
 		default:
 			LOG_ERROR("Currently unsupported GPU vendor 0x%04x, doing nothing!\n",
-			          (short)info.vendor);
+			          (unsigned short)info.vendor);
 			break;
 		}
 
@@ -454,7 +454,7 @@ int main(int argc, char *argv[])
 			break;
 		default:
 			LOG_ERROR("Currently unsupported GPU vendor 0x%04x, doing nothing!\n",
-			          (short)info.vendor);
+			          (unsigned short)info.vendor);
 			print_usage_and_exit();
 			break;
 		}
