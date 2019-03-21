@@ -38,7 +38,7 @@ POSSIBILITY OF SUCH DAMAGE.
 /**
  * Run the main D-BUS loop "forever"
  */
-void game_mode_context_loop(GameModeContext *context);
+void game_mode_context_loop(GameModeContext *context) __attribute__ ((noreturn));
 
 /**
  * Inhibit the screensaver
