@@ -23,6 +23,54 @@ add_global_arguments(am_cflags, language: 'c')
 
 cc = meson.get_compiler('c')
 
+# additional compiler warnings, if supported
+test_args = [
+  '-Waggregate-return',
+  '-Wunused',
+  '-Warray-bounds',
+  '-Wcast-align',
+  '-Wclobbered',
+  '-Wempty-body',
+  '-Wformat=2',
+  '-Wformat-nonliteral',
+  '-Wformat-signedness',
+  '-Wignored-qualifiers',
+  '-Wimplicit-function-declaration',
+  '-Winit-self',
+  '-Wmissing-format-attribute',
+  '-Wmissing-include-dirs',
+  '-Wmissing-noreturn',
+  '-Wmissing-parameter-type',
+  '-Wnested-externs',
+  '-Wno-discarded-qualifiers',
+  '-Wno-missing-field-initializers',
+  '-Wno-suggest-attribute=format',
+  '-Wno-unused-parameter',
+  '-Wold-style-definition',
+  '-Woverride-init',
+  '-Wpointer-arith',
+  '-Wredundant-decls',
+  '-Wreturn-type',
+  '-Wshadow',
+  '-Wsign-compare',
+  '-Wstrict-aliasing=3',
+  '-Wstrict-prototypes',
+  '-Wstringop-overflow',
+  '-Wstringop-truncation',
+  '-Wtype-limits',
+  '-Wundef',
+  '-Wuninitialized',
+  '-Wunused-but-set-variable',
+  '-Wwrite-strings',
+]
+
+foreach arg: test_args
+  if cc.has_argument(arg)
+    add_global_arguments(arg, language : 'c')
+  endif
+endforeach
+
+
 path_prefix = get_option('prefix')
 path_bindir = join_paths(path_prefix, get_option('bindir'))
 path_datadir = join_paths(path_prefix, get_option('datadir'))
