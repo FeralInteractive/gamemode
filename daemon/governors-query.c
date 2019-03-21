@@ -134,7 +134,7 @@ const char *get_gov_state(void)
 				return "malformed";
 			}
 
-			strncpy(governor, contents, sizeof(governor));
+			strncpy(governor, contents, sizeof(governor) - 1);
 		} else {
 			LOG_ERROR("Failed to read contents of %s\n", gov);
 		}

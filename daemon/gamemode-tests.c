@@ -323,7 +323,7 @@ static int run_cpu_governor_tests(struct GameModeConfig *config)
 	if (defaultgov[0] == '\0') {
 		const char *currentgov = get_gov_state();
 		if (currentgov) {
-			strncpy(defaultgov, currentgov, CONFIG_VALUE_MAX);
+			strncpy(defaultgov, currentgov, CONFIG_VALUE_MAX - 1);
 		} else {
 			LOG_ERROR(
 			    "Could not get current CPU governor state, this indicates an error! See rest "
@@ -445,16 +445,16 @@ int run_gpu_optimisation_tests(struct GameModeConfig *config)
 	long expected_core = gpuinfo->nv_core;
 	long expected_mem = gpuinfo->nv_mem;
 	long expected_nv_powermizer_mode = gpuinfo->nv_powermizer_mode;
-	char expected_amd_performance_level[CONFIG_VALUE_MAX];
-	strncpy(expected_amd_performance_level, gpuinfo->amd_performance_level, CONFIG_VALUE_MAX);
+	char expected_amd_performance_level[CONFIG_VALUE_MAX] = { 0 };
+	strncpy(expected_amd_performance_level, gpuinfo->amd_performance_level, CONFIG_VALUE_MAX - 1);
 
 	/* Get current stats */
 	game_mode_get_gpu(gpuinfo);
 	long original_nv_core = gpuinfo->nv_core;
 	long original_nv_mem = gpuinfo->nv_mem;
 	long original_nv_powermizer_mode = gpuinfo->nv_powermizer_mode;
-	char original_amd_performance_level[CONFIG_VALUE_MAX];
-	strncpy(original_amd_performance_level, gpuinfo->amd_performance_level, CONFIG_VALUE_MAX);
+	char original_amd_performance_level[CONFIG_VALUE_MAX] = { 0 };
+	strncpy(original_amd_performance_level, gpuinfo->amd_performance_level, CONFIG_VALUE_MAX - 1);
 
 	/* account for when settings are not set */
 	if (expected_nv_powermizer_mode == -1)
