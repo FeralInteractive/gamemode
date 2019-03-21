@@ -269,21 +269,21 @@ int game_mode_inhibit_screensaver(bool inhibit)
 	const char *function = inhibit ? "Inhibit" : "UnInhibit";
 
 	sd_bus_message *msg = NULL;
-	sd_bus *bus = NULL;
+	sd_bus *bus_local = NULL;
 	sd_bus_error err;
 	memset(&err, 0, sizeof(sd_bus_error));
 
 	int result = -1;
 
 	// Open the user bus
-	int ret = sd_bus_open_user(&bus);
+	int ret = sd_bus_open_user(&bus_local);
 	if (ret < 0) {
 		LOG_ERROR("Could not connect to user bus: %s\n", strerror(-ret));
 		return -1;
 	}
 
 	if (inhibit) {
-		ret = sd_bus_call_method(bus,
+		ret = sd_bus_call_method(bus_local,
 		                         service,
 		                         object_path,
 		                         interface,
@@ -294,7 +294,7 @@ int game_mode_inhibit_screensaver(bool inhibit)
 		                         "com.feralinteractive.GameMode",
 		                         "GameMode Activated");
 	} else {
-		ret = sd_bus_call_method(bus,
+		ret = sd_bus_call_method(bus_local,
 		                         service,
 		                         object_path,
 		                         interface,
@@ -329,6 +329,8 @@ int game_mode_inhibit_screensaver(bool inhibit)
 	} else {
 		result = 0;
 	}
+
+	sd_bus_unref(bus_local);
 
 	return result;
 }
