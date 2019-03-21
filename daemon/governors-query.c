@@ -34,6 +34,7 @@ POSSIBILITY OF SUCH DAMAGE.
 #include "governors-query.h"
 #include "logging.h"
 
+#include <assert.h>
 #include <glob.h>
 #include <stdio.h>
 #include <string.h>
@@ -80,12 +81,13 @@ int fetch_governors(char governors[MAX_GOVERNORS][MAX_GOVERNOR_LENGTH])
 
 		/* Only add this governor if it is unique */
 		for (int j = 0; j < num_governors; j++) {
-			if (strncmp(fullpath, governors[i], MAX_GOVERNOR_LENGTH) == 0) {
+			if (strncmp(fullpath, governors[i], PATH_MAX) == 0) {
 				continue;
 			}
 		}
 
 		/* Copy this governor into the output set */
+		static_assert(MAX_GOVERNOR_LENGTH > PATH_MAX, "possible string truncation");
 		strncpy(governors[num_governors], fullpath, MAX_GOVERNOR_LENGTH);
 		num_governors++;
 	}
