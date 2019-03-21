@@ -705,7 +705,7 @@ static int run_supervisor_tests(void)
  *
  * returns 0 for success, -1 for failure
  */
-int game_mode_run_client_tests()
+int game_mode_run_client_tests(void)
 {
 	int status = 0;
 
