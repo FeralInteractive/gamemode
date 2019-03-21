@@ -224,7 +224,8 @@ int game_mode_get_gpu(GameModeGPUInfo *info)
 		}
 		break;
 	case Vendor_AMD:
-		strncpy(info->amd_performance_level, buffer, CONFIG_VALUE_MAX);
+		strncpy(info->amd_performance_level, buffer, sizeof(info->amd_performance_level) - 1);
+		info->amd_performance_level[sizeof(info->amd_performance_level) - 1] = '\0';
 		break;
 	}
 
