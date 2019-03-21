@@ -62,9 +62,9 @@ enum GPUVendor gamemode_get_gpu_vendor(long device)
 		LOG_ERROR("Unknown vendor value (0x%04x) found, cannot apply optimisations!\n",
 		          (unsigned int)vendor);
 		LOG_ERROR("Known values are: 0x%04x (NVIDIA) 0x%04x (AMD) 0x%04x (Intel)\n",
-		          Vendor_NVIDIA,
-		          Vendor_AMD,
-		          Vendor_Intel);
+		          (unsigned int)Vendor_NVIDIA,
+		          (unsigned int)Vendor_AMD,
+		          (unsigned int)Vendor_Intel);
 		return Vendor_Invalid;
 	}
 
