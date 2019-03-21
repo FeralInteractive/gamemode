@@ -632,7 +632,7 @@ static void *game_mode_context_reaper(void *userdata)
 	return NULL;
 }
 
-GameModeContext *game_mode_context_instance()
+GameModeContext *game_mode_context_instance(void)
 {
 	return &instance;
 }
