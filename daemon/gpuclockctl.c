@@ -289,7 +289,7 @@ static int get_gpu_state_amd(struct GameModeGPUInfo *info)
 		return -1;
 	}
 
-	char buff[CONFIG_VALUE_MAX];
+	char buff[CONFIG_VALUE_MAX] = { 0 };
 	if (!fgets(buff, CONFIG_VALUE_MAX, file)) {
 		LOG_ERROR("Could not read file %s (%s)!\n", path, strerror(errno));
 		return -1;
@@ -301,8 +301,8 @@ static int get_gpu_state_amd(struct GameModeGPUInfo *info)
 	}
 
 	/* Copy in the value from the file */
-	strncpy(info->amd_performance_level, buff, CONFIG_VALUE_MAX);
-
+	strncpy(info->amd_performance_level, buff, CONFIG_VALUE_MAX - 1);
+	info->amd_performance_level[CONFIG_VALUE_MAX - 1] = '\0';
 	return info == NULL;
 }
 
@@ -449,7 +449,7 @@ int main(int argc, char *argv[])
 				LOG_ERROR("Must pass performance level for AMD gpu!\n");
 				print_usage_and_exit();
 			}
-			strncpy(info.amd_performance_level, argv[3], CONFIG_VALUE_MAX);
+			strncpy(info.amd_performance_level, argv[3], CONFIG_VALUE_MAX - 1);
 			return set_gpu_state_amd(&info);
 			break;
 		default:
