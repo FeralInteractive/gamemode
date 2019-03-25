@@ -26,7 +26,7 @@ fi
 
 # Echo the rest so it's obvious
 set -x
-meson --prefix=$prefix build -Dwith-systemd-user-unit-dir=/etc/systemd/user
+meson --prefix=$prefix build --buildtype debugoptimized -Dwith-systemd-user-unit-dir=/etc/systemd/user
 cd build
 ninja
 
