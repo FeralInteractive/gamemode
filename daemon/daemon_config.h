@@ -140,12 +140,14 @@ long config_get_ioprio_value(GameModeConfig *self);
  */
 void config_get_apply_gpu_optimisations(GameModeConfig *self, char value[CONFIG_VALUE_MAX]);
 long config_get_gpu_device(GameModeConfig *self);
+void config_get_vsync_mode(GameModeConfig *self, char value[CONFIG_VALUE_MAX]);
+void config_get_hybrid_gpu_mode(GameModeConfig *self, char value[CONFIG_VALUE_MAX]);
 long config_get_nv_core_clock_mhz_offset(GameModeConfig *self);
 long config_get_nv_mem_clock_mhz_offset(GameModeConfig *self);
 long config_get_nv_powermizer_mode(GameModeConfig *self);
 void config_get_amd_performance_level(GameModeConfig *self, char value[CONFIG_VALUE_MAX]);
 
-/**
+/*
  * Functions to get supervisor config permissions
  */
 long config_get_require_supervisor(GameModeConfig *self);

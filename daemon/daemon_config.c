@@ -89,6 +89,8 @@ struct GameModeConfig {
 
 		char apply_gpu_optimisations[CONFIG_VALUE_MAX];
 		long gpu_device;
+		char vsync_mode[CONFIG_VALUE_MAX];
+		char hybrid_gpu_mode[CONFIG_VALUE_MAX];
 		long nv_core_clock_mhz_offset;
 		long nv_mem_clock_mhz_offset;
 		long nv_powermizer_mode;
@@ -252,6 +254,10 @@ static int inih_handler(void *user, const char *section, const char *name, const
 			valid = get_string_value(value, self->values.apply_gpu_optimisations);
 		} else if (strcmp(name, "gpu_device") == 0) {
 			valid = get_long_value(name, value, &self->values.gpu_device);
+		} else if (strcmp(name, "vsync_mode") == 0) {
+			valid = get_string_value(value, self->values.vsync_mode);
+		} else if (strcmp(name, "hybrid_gpu_mode") == 0) {
+			valid = get_string_value(value, self->values.hybrid_gpu_mode);
 		} else if (strcmp(name, "nv_core_clock_mhz_offset") == 0) {
 			valid = get_long_value(name, value, &self->values.nv_core_clock_mhz_offset);
 		} else if (strcmp(name, "nv_mem_clock_mhz_offset") == 0) {
@@ -578,12 +584,41 @@ void config_get_apply_gpu_optimisations(GameModeConfig *self, char value[CONFIG_
 	                     sizeof(self->values.apply_gpu_optimisations));
 }
 
-/* Define the getters for GPU values */
+/* Define the getters for GPU index */
 DEFINE_CONFIG_GET(gpu_device)
+
+/*
+ * Get vsync mode
+ */
+void config_get_vsync_mode(GameModeConfig *self, char value[CONFIG_VALUE_MAX])
+{
+	memcpy_locked_config(self,
+	                     value,
+	                     &self->values.vsync_mode,
+	                     sizeof(self->values.vsync_mode));
+}
+
+/*
+ * Get hybrid GPU mode
+ */
+void config_get_hybrid_gpu_mode(GameModeConfig *self, char value[CONFIG_VALUE_MAX])
+{
+	memcpy_locked_config(self,
+	                     value,
+	                     &self->values.hybrid_gpu_mode,
+	                     sizeof(self->values.hybrid_gpu_mode));
+}
+
+/*
+ * Define getters for nvidia settings
+ */
 DEFINE_CONFIG_GET(nv_core_clock_mhz_offset)
 DEFINE_CONFIG_GET(nv_mem_clock_mhz_offset)
 DEFINE_CONFIG_GET(nv_powermizer_mode)
 
+/*
+ * Get AMD performance level
+ */
 void config_get_amd_performance_level(GameModeConfig *self, char value[CONFIG_VALUE_MAX])
 {
 	memcpy_locked_config(self,
