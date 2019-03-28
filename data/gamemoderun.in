@@ -7,5 +7,26 @@ CONFIG_LIB_DIR="@GAMEMODE_LIB_DIR@/libgamemodeauto.so.0"
 # Set the ld preload path prefixed libgamemodeauto
 export LD_PRELOAD="${CONFIG_LIB_DIR}${LD_PRELOAD:+:$LD_PRELOAD}"
 
+# Set vsync Mode
+if [ "$vsync_mode" == "force_disable" ]; then
+  export vblank_mode=0
+elif [ "$vsync_mode" == "force_enable" ]; then
+  export vblank_mode=1
+fi
+
+# Set hybrid GPU launch mode
+if [ "$hybrid_gpu_mode" == "prime" ]; then
+  export DRI_PRIME=1
+  exec_cmd="exec"
+elif [ "$hybrid_gpu_mode" == "bumblebee" ]; then
+  exec_cmd="optirun"
+elif [ "$hybrid_gpu_mode" == "primus" ]; then
+  exec_cmd="primusrun"
+elif [ "$hybrid_gpu_mode" == "nvidia-xrun" ]; then
+  exec_cmd="nvidia-xrun"
+else
+  exec_cmd="exec"
+fi
+
 # Launch
-exec "$@"
+$exec_cmd "$@"
