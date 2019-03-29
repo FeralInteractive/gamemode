@@ -42,7 +42,7 @@ configure_file(
     input: 'gamemoderun.in',
     output: 'gamemoderun',
     configuration: data_conf,
-    install_dir: 'bin',
+    install_dir: path_bindir,
     install_mode: 'rwxr-xr-x',
 )
 
