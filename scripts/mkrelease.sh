@@ -20,3 +20,5 @@ xz -9 "${NAME}-${VERSION}.tar"
 # Automatically sign the tarball with GPG key of user running this script
 gpg --armor --detach-sign "${NAME}-${VERSION}.tar.xz"
 gpg --verify "${NAME}-${VERSION}.tar.xz.asc"
+
+sha256sum "${NAME}-${VERSION}.tar.xz" "${NAME}-${VERSION}.tar.xz.asc" > sha256sums.txt
