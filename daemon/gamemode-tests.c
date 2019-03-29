@@ -445,16 +445,18 @@ int run_gpu_optimisation_tests(struct GameModeConfig *config)
 	long expected_core = gpuinfo->nv_core;
 	long expected_mem = gpuinfo->nv_mem;
 	long expected_nv_powermizer_mode = gpuinfo->nv_powermizer_mode;
-	char expected_amd_performance_level[CONFIG_VALUE_MAX] = { 0 };
+	char expected_amd_performance_level[CONFIG_VALUE_MAX];
 	strncpy(expected_amd_performance_level, gpuinfo->amd_performance_level, CONFIG_VALUE_MAX - 1);
+	expected_amd_performance_level[CONFIG_VALUE_MAX - 1] = '\0';
 
 	/* Get current stats */
 	game_mode_get_gpu(gpuinfo);
 	long original_nv_core = gpuinfo->nv_core;
 	long original_nv_mem = gpuinfo->nv_mem;
 	long original_nv_powermizer_mode = gpuinfo->nv_powermizer_mode;
-	char original_amd_performance_level[CONFIG_VALUE_MAX] = { 0 };
+	char original_amd_performance_level[CONFIG_VALUE_MAX];
 	strncpy(original_amd_performance_level, gpuinfo->amd_performance_level, CONFIG_VALUE_MAX - 1);
+	original_amd_performance_level[CONFIG_VALUE_MAX - 1] = '\0';
 
 	/* account for when settings are not set */
 	if (expected_nv_powermizer_mode == -1)
