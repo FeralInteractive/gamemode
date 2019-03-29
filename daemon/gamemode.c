@@ -560,6 +560,18 @@ int game_mode_context_query_status(GameModeContext *self, pid_t client, pid_t re
 	return ret;
 }
 
+void return_vsync_mode(GameModeContext *self, char vsync_mode[CONFIG_VALUE_MAX])
+{
+	GameModeConfig *config = game_mode_config_from_context(self);
+	config_get_vsync_mode(config, vsync_mode);
+}
+
+void return_hybrid_gpu_mode(GameModeContext *self, char hybrid_gpu_mode[CONFIG_VALUE_MAX])
+{
+	GameModeConfig *config = game_mode_config_from_context(self);
+	config_get_hybrid_gpu_mode(config, hybrid_gpu_mode);
+}
+
 /**
  * Construct a new GameModeClient for the given process ID
  *

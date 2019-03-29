@@ -1,32 +1,44 @@
 #!/bin/bash
 # Helper script to launch games with gamemode
 
+# Load vsync mode via dbus
+vsync_mode="$(dbus-send --session --dest=com.feralinteractive.GameMode --type=method_call --print-reply /com/feralinteractive/GameMode com.feralinteractive.GameMode.GetVsyncMode | grep -oP '(?<=").*(?=")')"
+
+# Load hybrid GPU mode via dbus
+hybrid_gpu_mode="$(dbus-send --session --dest=com.feralinteractive.GameMode --type=method_call --print-reply /com/feralinteractive/GameMode com.feralinteractive.GameMode.GetHybridGPUMode | grep -oP '(?<=").*(?=")')"
+
+# Set vsync mode
+if [ "$vsync_mode" == "force_disable" ]; then
+  echo "gamemoderun: force disable vsync"
+  export vblank_mode=0
+elif [ "$vsync_mode" == "force_enable" ]; then
+  echo "gamemoderun: force enable vsync"
+  export vblank_mode=1
+fi
+
+# Set hybrid GPU mode
+if [ "$hybrid_gpu_mode" == "prime" ]; then
+  echo "gamemoderun: launch with prime"
+  exec_cmd="exec"
+  export DRI_PRIME=1
+elif [ "$hybrid_gpu_mode" == "bumblebee" ]; then
+  echo "gamemoderun: launch with bumblebee"
+  exec_cmd="optirun"
+elif [ "$hybrid_gpu_mode" == "primus" ]; then
+  echo "gamemoderun: launch with primus"
+  exec_cmd="primusrun"
+elif [ "$hybrid_gpu_mode" == "nvidia-xrun" ]; then
+  echo "gamemoderun: launch with nvidia-xrun"
+  exec_cmd="nvidia-xrun"
+else
+  exec_cmd="exec"
+fi
+
 # Path to install gamemoded auto script
 CONFIG_LIB_DIR="@GAMEMODE_LIB_DIR@/libgamemodeauto.so.0"
 
 # Set the ld preload path prefixed libgamemodeauto
 export LD_PRELOAD="${CONFIG_LIB_DIR}${LD_PRELOAD:+:$LD_PRELOAD}"
-
-# Set vsync Mode
-if [ "$vsync_mode" == "force_disable" ]; then
-  export vblank_mode=0
-elif [ "$vsync_mode" == "force_enable" ]; then
-  export vblank_mode=1
-fi
-
-# Set hybrid GPU launch mode
-if [ "$hybrid_gpu_mode" == "prime" ]; then
-  export DRI_PRIME=1
-  exec_cmd="exec"
-elif [ "$hybrid_gpu_mode" == "bumblebee" ]; then
-  exec_cmd="optirun"
-elif [ "$hybrid_gpu_mode" == "primus" ]; then
-  exec_cmd="primusrun"
-elif [ "$hybrid_gpu_mode" == "nvidia-xrun" ]; then
-  exec_cmd="nvidia-xrun"
-else
-  exec_cmd="exec"
-fi
 
 # Launch
 $exec_cmd "$@"

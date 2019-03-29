@@ -184,6 +184,34 @@ static int method_query_status_by_pid(sd_bus_message *m, void *userdata,
 }
 
 /**
+ * Handles the GetVsyncMode D-BUS Method
+ */
+static int method_get_vsync_mode(sd_bus_message *m, void *userdata,
+                                 __attribute__((unused)) sd_bus_error *ret_error)
+{
+	GameModeContext *context = userdata;
+
+	char vsync_mode[CONFIG_VALUE_MAX];
+	return_vsync_mode(context, vsync_mode);
+
+	return sd_bus_reply_method_return(m, "s", vsync_mode);
+}
+
+/**
+ * Handles the GetHybridGPUMode D-BUS Method
+ */
+static int method_get_hybrid_gpu_mode(sd_bus_message *m, void *userdata,
+                                      __attribute__((unused)) sd_bus_error *ret_error)
+{
+	GameModeContext *context = userdata;
+
+	char hybrid_gpu_mode[CONFIG_VALUE_MAX];
+	return_hybrid_gpu_mode(context, hybrid_gpu_mode);
+
+	return sd_bus_reply_method_return(m, "s", hybrid_gpu_mode);
+}
+
+/**
  * D-BUS vtable to dispatch virtual methods
  */
 static const sd_bus_vtable gamemode_vtable[] =
@@ -197,6 +225,8 @@ static const sd_bus_vtable gamemode_vtable[] =
 	                SD_BUS_VTABLE_UNPRIVILEGED),
 	  SD_BUS_METHOD("QueryStatusByPID", "ii", "i", method_query_status_by_pid,
 	                SD_BUS_VTABLE_UNPRIVILEGED),
+	  SD_BUS_METHOD("GetVsyncMode", "", "s", method_get_vsync_mode, SD_BUS_VTABLE_UNPRIVILEGED),
+	  SD_BUS_METHOD("GetHybridGPUMode", "", "s", method_get_hybrid_gpu_mode, SD_BUS_VTABLE_UNPRIVILEGED),
 	  SD_BUS_VTABLE_END };
 
 /**
