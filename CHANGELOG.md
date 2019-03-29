@@ -1,3 +1,14 @@
+## 1.3.1
+
+### Changes
+
+* Change permission of `gamemoderun` in source tree so that it is correctly installed with execute permissions on older Meson versions (such as that included with Ubuntu 18.04) (#115).
+* Enable more compiler warnings and fix issues highlighted by these.
+
+### Contributors
+
+* Christian Kellner @gicmo
+
 ## 1.3
 
 ### Changes
