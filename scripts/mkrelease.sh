@@ -11,7 +11,7 @@ git submodule init
 git submodule update
 
 # Bump in tandem with meson.build, run script once new tag is up.
-VERSION="1.3.1"
+VERSION="1.4-dev"
 
 NAME="gamemode"
 ./scripts/git-archive-all.sh --format tar --prefix ${NAME}-${VERSION}/ --verbose -t HEAD ${NAME}-${VERSION}.tar
