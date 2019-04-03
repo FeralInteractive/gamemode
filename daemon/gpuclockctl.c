@@ -303,7 +303,7 @@ static int get_gpu_state_amd(struct GameModeGPUInfo *info)
 	/* Copy in the value from the file */
 	strncpy(info->amd_performance_level, buff, CONFIG_VALUE_MAX - 1);
 	info->amd_performance_level[CONFIG_VALUE_MAX - 1] = '\0';
-	return info == NULL;
+	return 0;
 }
 
 /*
