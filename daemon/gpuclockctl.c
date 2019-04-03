@@ -289,21 +289,27 @@ static int get_gpu_state_amd(struct GameModeGPUInfo *info)
 		return -1;
 	}
 
+	int ret = 0;
+
 	char buff[CONFIG_VALUE_MAX] = { 0 };
 	if (!fgets(buff, CONFIG_VALUE_MAX, file)) {
 		LOG_ERROR("Could not read file %s (%s)!\n", path, strerror(errno));
-		return -1;
+		ret = -1;
 	}
 
 	if (fclose(file) != 0) {
 		LOG_ERROR("Could not close %s after reading (%s)!\n", path, strerror(errno));
-		return -1;
+		ret = -1;
 	}
 
-	/* Copy in the value from the file */
-	strncpy(info->amd_performance_level, buff, CONFIG_VALUE_MAX - 1);
-	info->amd_performance_level[CONFIG_VALUE_MAX - 1] = '\0';
-	return 0;
+	if( ret == 0 )
+	{
+		/* Copy in the value from the file */
+		strncpy(info->amd_performance_level, buff, CONFIG_VALUE_MAX - 1);
+		info->amd_performance_level[CONFIG_VALUE_MAX - 1] = '\0';
+	}
+
+	return ret;
 }
 
 /*
@@ -320,17 +326,19 @@ static int set_gpu_state_amd_file(const char *filename, long device, const char 
 		return -1;
 	}
 
+	int ret = 0;
+
 	if (fprintf(file, "%s", value) < 0) {
 		LOG_ERROR("Could not write to %s (%s)!\n", path, strerror(errno));
-		return -1;
+		ret = -1;
 	}
 
 	if (fclose(file) != 0) {
 		LOG_ERROR("Could not close %s after writing (%s)!\n", path, strerror(errno));
-		return -1;
+		ret = -1;
 	}
 
-	return 0;
+	return ret;
 }
 
 /**
