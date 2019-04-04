@@ -67,7 +67,7 @@ static void print_usage_and_exit(void)
 	exit(EXIT_FAILURE);
 }
 
-static const char* get_nv_attr(const char *attr)
+static const char *get_nv_attr(const char *attr)
 {
 	static char out[EXTERNAL_BUFFER_MAX];
 	const char *exec_args[] = { "/usr/bin/nvidia-settings", "-q", attr, "-t", NULL };
@@ -315,8 +315,7 @@ static int get_gpu_state_amd(struct GameModeGPUInfo *info)
 		ret = -1;
 	}
 
-	if( ret == 0 )
-	{
+	if (ret == 0) {
 		/* Copy in the value from the file */
 		strncpy(info->amd_performance_level, buff, CONFIG_VALUE_MAX - 1);
 		info->amd_performance_level[CONFIG_VALUE_MAX - 1] = '\0';
