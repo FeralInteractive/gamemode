@@ -133,6 +133,7 @@ const char *get_gov_state(void)
 				/* Don't handle the mixed case, this shouldn't ever happen
 				 * But it is a clear sign we shouldn't carry on */
 				LOG_ERROR("Governors malformed: got \"%s\", expected \"%s\"", contents, governor);
+				fclose(f);
 				return "malformed";
 			}
 

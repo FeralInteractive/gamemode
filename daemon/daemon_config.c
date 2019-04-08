@@ -362,6 +362,7 @@ static void load_config_files(GameModeConfig *self)
 				if (error) {
 					LOG_MSG("Failed to parse config file - error on line %d!\n", error);
 				}
+				fclose(f);
 			}
 			free(path);
 		}
