@@ -182,22 +182,48 @@ static int method_query_status_by_pid(sd_bus_message *m, void *userdata,
 
 	return sd_bus_reply_method_return(m, "i", status);
 }
+/**
+ * Handles the Active D-BUS Method
+ */
+static int property_get_client_count(sd_bus *local_bus, const char *path, const char *interface,
+                                     const char *property, sd_bus_message *reply, void *userdata,
+                                     __attribute__((unused)) sd_bus_error *ret_error)
+{
+	GameModeContext *context = userdata;
+	int count;
+
+	count = game_mode_context_num_clients(context);
+
+	return sd_bus_message_append_basic(reply, 'i', &count);
+}
+
+void game_mode_client_count_changed(void)
+{
+	(void)sd_bus_emit_properties_changed(bus,
+	                                     "/com/feralinteractive/GameMode",
+	                                     "com.feralinteractive.GameMode",
+	                                     "ClientCount",
+	                                     NULL);
+}
 
 /**
  * D-BUS vtable to dispatch virtual methods
  */
-static const sd_bus_vtable gamemode_vtable[] =
-    { SD_BUS_VTABLE_START(0),
-	  SD_BUS_METHOD("RegisterGame", "i", "i", method_register_game, SD_BUS_VTABLE_UNPRIVILEGED),
-	  SD_BUS_METHOD("UnregisterGame", "i", "i", method_unregister_game, SD_BUS_VTABLE_UNPRIVILEGED),
-	  SD_BUS_METHOD("QueryStatus", "i", "i", method_query_status, SD_BUS_VTABLE_UNPRIVILEGED),
-	  SD_BUS_METHOD("RegisterGameByPID", "ii", "i", method_register_game_by_pid,
-	                SD_BUS_VTABLE_UNPRIVILEGED),
-	  SD_BUS_METHOD("UnregisterGameByPID", "ii", "i", method_unregister_game_by_pid,
-	                SD_BUS_VTABLE_UNPRIVILEGED),
-	  SD_BUS_METHOD("QueryStatusByPID", "ii", "i", method_query_status_by_pid,
-	                SD_BUS_VTABLE_UNPRIVILEGED),
-	  SD_BUS_VTABLE_END };
+static const sd_bus_vtable gamemode_vtable[] = {
+	SD_BUS_VTABLE_START(0),
+	SD_BUS_PROPERTY("ClientCount", "i", property_get_client_count, 0,
+	                SD_BUS_VTABLE_PROPERTY_EMITS_CHANGE),
+	SD_BUS_METHOD("RegisterGame", "i", "i", method_register_game, SD_BUS_VTABLE_UNPRIVILEGED),
+	SD_BUS_METHOD("UnregisterGame", "i", "i", method_unregister_game, SD_BUS_VTABLE_UNPRIVILEGED),
+	SD_BUS_METHOD("QueryStatus", "i", "i", method_query_status, SD_BUS_VTABLE_UNPRIVILEGED),
+	SD_BUS_METHOD("RegisterGameByPID", "ii", "i", method_register_game_by_pid,
+	              SD_BUS_VTABLE_UNPRIVILEGED),
+	SD_BUS_METHOD("UnregisterGameByPID", "ii", "i", method_unregister_game_by_pid,
+	              SD_BUS_VTABLE_UNPRIVILEGED),
+	SD_BUS_METHOD("QueryStatusByPID", "ii", "i", method_query_status_by_pid,
+	              SD_BUS_VTABLE_UNPRIVILEGED),
+	SD_BUS_VTABLE_END
+};
 
 /**
  * Main process loop for the daemon. Run until quitting has been requested.

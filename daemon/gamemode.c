@@ -415,6 +415,8 @@ int game_mode_context_register(GameModeContext *self, pid_t client, pid_t reques
 	/* Apply io priorities */
 	game_mode_apply_ioprio(self, client);
 
+	game_mode_client_count_changed();
+
 	return 0;
 
 error_cleanup:
@@ -497,6 +499,8 @@ int game_mode_context_unregister(GameModeContext *self, pid_t client, pid_t requ
 	if (atomic_fetch_sub_explicit(&self->refcount, 1, memory_order_seq_cst) == 1) {
 		game_mode_context_leave(self);
 	}
+
+	game_mode_client_count_changed();
 
 	return 0;
 }
