@@ -89,7 +89,6 @@ static volatile bool had_context_init = false;
 static GameModeClient *game_mode_client_new(pid_t pid, char *exe);
 static void game_mode_client_free(GameModeClient *client);
 static const GameModeClient *game_mode_context_has_client(GameModeContext *self, pid_t client);
-static int game_mode_context_num_clients(GameModeContext *self);
 static void *game_mode_context_reaper(void *userdata);
 static void game_mode_context_enter(GameModeContext *self);
 static void game_mode_context_leave(GameModeContext *self);
@@ -316,10 +315,7 @@ static const GameModeClient *game_mode_context_has_client(GameModeContext *self,
 	return found;
 }
 
-/**
- * Helper to grab the current number of clients we know about
- */
-static int game_mode_context_num_clients(GameModeContext *self)
+int game_mode_context_num_clients(GameModeContext *self)
 {
 	return atomic_load(&self->refcount);
 }
