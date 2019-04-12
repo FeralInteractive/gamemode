@@ -64,6 +64,13 @@ void game_mode_context_init(GameModeContext *self);
 void game_mode_context_destroy(GameModeContext *self);
 
 /**
+ * Query the number of currently registered clients.
+ *
+ * @returns The number of clients. A number > 0 means that gamemode is active.
+ */
+int game_mode_context_num_clients(GameModeContext *self);
+
+/**
  * Register a new game client with the context
  *
  * @param pid Process ID for the remote client

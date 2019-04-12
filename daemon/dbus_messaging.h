@@ -44,3 +44,8 @@ void game_mode_context_loop(GameModeContext *context) __attribute__((noreturn));
  * Inhibit the screensaver
  */
 int game_mode_inhibit_screensaver(bool inhibit);
+
+/**
+ * Signal the ClientCount property has changed
+ */
+void game_mode_client_count_changed(void);
