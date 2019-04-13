@@ -94,6 +94,9 @@ struct GameModeConfig {
 		long nv_powermizer_mode;
 		char amd_performance_level[CONFIG_VALUE_MAX];
 
+		char vsync_mode[CONFIG_VALUE_MAX];
+		char hybrid_gpu_mode[CONFIG_VALUE_MAX];
+
 		long require_supervisor;
 		char supervisor_whitelist[CONFIG_LIST_MAX][CONFIG_VALUE_MAX];
 		char supervisor_blacklist[CONFIG_LIST_MAX][CONFIG_VALUE_MAX];
@@ -261,6 +264,13 @@ static int inih_handler(void *user, const char *section, const char *name, const
 		} else if (strcmp(name, "amd_performance_level") == 0) {
 			valid = get_string_value(value, self->values.amd_performance_level);
 		}
+	} else if (strcmp(section, "gamemoderun") == 0) {
+		/* gamemoderun subsection */
+		if (strcmp(name, "vsync_mode") == 0) {
+			valid = get_string_value(value, self->values.vsync_mode);
+		} else if (strcmp(name, "hybrid_gpu_mode") == 0) {
+			valid = get_string_value(value, self->values.hybrid_gpu_mode);
+		}
 	} else if (strcmp(section, "supervisor") == 0) {
 		/* Supervisor subsection */
 		if (strcmp(name, "supervisor_whitelist") == 0) {
@@ -354,7 +364,7 @@ static void load_config_files(GameModeConfig *self)
 		if (locations[i].path && asprintf(&path, "%s/" CONFIG_NAME, locations[i].path) > 0) {
 			FILE *f = fopen(path, "r");
 			if (f) {
-				LOG_MSG("Loading config file [%s]\n", path);
+				// LOG_MSG("Loading config file [%s]\n", path);
 				load_protected = locations[i].protected;
 				int error = ini_parse_file(f, inih_handler, (void *)self);
 
@@ -578,18 +588,44 @@ void config_get_apply_gpu_optimisations(GameModeConfig *self, char value[CONFIG_
 	                     sizeof(self->values.apply_gpu_optimisations));
 }
 
-/* Define the getters for GPU values */
+/* Define getter for GPU index */
 DEFINE_CONFIG_GET(gpu_device)
+
+/*
+ * Define getters for nvidia settings
+ */
 DEFINE_CONFIG_GET(nv_core_clock_mhz_offset)
 DEFINE_CONFIG_GET(nv_mem_clock_mhz_offset)
 DEFINE_CONFIG_GET(nv_powermizer_mode)
 
+/*
+ * Get AMD performance level
+ */
 void config_get_amd_performance_level(GameModeConfig *self, char value[CONFIG_VALUE_MAX])
 {
 	memcpy_locked_config(self,
 	                     value,
 	                     &self->values.amd_performance_level,
 	                     sizeof(self->values.amd_performance_level));
+}
+
+/*
+ * Get vsync mode
+ */
+void config_get_vsync_mode(GameModeConfig *self, char value[CONFIG_VALUE_MAX])
+{
+	memcpy_locked_config(self, value, &self->values.vsync_mode, sizeof(self->values.vsync_mode));
+}
+
+/*
+ * Get hybrid GPU mode
+ */
+void config_get_hybrid_gpu_mode(GameModeConfig *self, char value[CONFIG_VALUE_MAX])
+{
+	memcpy_locked_config(self,
+	                     value,
+	                     &self->values.hybrid_gpu_mode,
+	                     sizeof(self->values.hybrid_gpu_mode));
 }
 
 /*

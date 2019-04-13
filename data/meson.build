@@ -1,7 +1,6 @@
 data_conf = configuration_data()
 data_conf.set('BINDIR', path_bindir)
 data_conf.set('LIBEXECDIR', path_libexecdir)
-data_conf.set('GAMEMODE_LIB_DIR', path_libdir)
 
 # Pull in the example config
 config_example = run_command(

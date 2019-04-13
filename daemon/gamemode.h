@@ -34,6 +34,8 @@ POSSIBILITY OF SUCH DAMAGE.
 #include <stdbool.h>
 #include <sys/types.h>
 
+#include "daemon_config.h"
+
 #define INVALID_PROCFD -1
 
 typedef int procfd_t;
@@ -152,3 +154,9 @@ int game_mode_initialise_gpu(GameModeConfig *config, GameModeGPUInfo **info);
 void game_mode_free_gpu(GameModeGPUInfo **info);
 int game_mode_apply_gpu(const GameModeGPUInfo *info);
 int game_mode_get_gpu(GameModeGPUInfo *info);
+
+/**
+ * Return functions for gamemoderun
+ */
+void return_vsync_mode(GameModeContext *self, char vsync_mode[CONFIG_VALUE_MAX]);
+void return_hybrid_gpu_mode(GameModeContext *self, char hybrid_gpu_mode[CONFIG_VALUE_MAX]);

@@ -145,9 +145,15 @@ long config_get_nv_mem_clock_mhz_offset(GameModeConfig *self);
 long config_get_nv_powermizer_mode(GameModeConfig *self);
 void config_get_amd_performance_level(GameModeConfig *self, char value[CONFIG_VALUE_MAX]);
 
-/**
+/*
  * Functions to get supervisor config permissions
  */
 long config_get_require_supervisor(GameModeConfig *self);
 bool config_get_supervisor_whitelisted(GameModeConfig *self, const char *supervisor);
 bool config_get_supervisor_blacklisted(GameModeConfig *self, const char *supervisor);
+
+/*
+ * Get values for gamemoderun
+ */
+void config_get_vsync_mode(GameModeConfig *self, char value[CONFIG_VALUE_MAX]);
+void config_get_hybrid_gpu_mode(GameModeConfig *self, char value[CONFIG_VALUE_MAX]);

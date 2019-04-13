@@ -78,6 +78,7 @@ with_examples = get_option('with-examples')
 cdata = configuration_data()
 cdata.set_quoted('LIBEXECDIR', path_libexecdir)
 cdata.set_quoted('GAMEMODE_VERSION', meson.project_version())
+cdata.set_quoted('GAMEMODE_LIB_DIR', path_libdir)
 config_h = configure_file(
     configuration: cdata,
     output: 'config.h',

@@ -50,6 +50,7 @@ POSSIBILITY OF SUCH DAMAGE.
 #define _GNU_SOURCE
 
 #include "config.h"
+#include "daemon_config.h"
 #include "daemonize.h"
 #include "dbus_messaging.h"
 #include "gamemode.h"
@@ -63,17 +64,28 @@ POSSIBILITY OF SUCH DAMAGE.
 #include <unistd.h>
 
 #define USAGE_TEXT                                                                                 \
-	"Usage: %s [-d] [-l] [-r] [-t] [-h] [-v]\n\n"                                                  \
+	"Usage: %s [-d] [-l] [-s] [-r] [-t] [-e] [-g] [-h] [-v]\n\n"                                   \
 	"  -d  daemonize self after launch\n"                                                          \
 	"  -l  log to syslog\n"                                                                        \
+	"  -s  print status\n"                                                                         \
 	"  -r  request gamemode and pause\n"                                                           \
 	"  -t  run tests\n"                                                                            \
+	"  -e  print launch command for gamemoderun\n"                                                 \
 	"  -h  print this help\n"                                                                      \
 	"  -v  print version\n"                                                                        \
 	"\n"                                                                                           \
 	"See man page for more information.\n"
 
 #define VERSION_TEXT "gamemode version: v" GAMEMODE_VERSION "\n"
+
+#define EXPORT_LD_PRELOAD "env LD_PRELOAD=" GAMEMODE_LIB_DIR "/libgamemodeauto.so.0 "
+#define EXPORT_DISABLE_VSYNC "env vblank_mode=0 "
+#define EXPORT_ENABLE_VYSNC "env vblank_mode=3 "
+#define EXPORT_DRI_PRIME "env DRI_PRIME=1 "
+#define LAUNCH_BUMBLEBEE "optirun\n"
+#define LAUNCH_PRIMUS "primusrun\n"
+#define LAUNCH_NVXRUN "nvidia-xrun\n"
+#define LAUNCH_NORMAL "exec\n"
 
 static void sigint_handler(__attribute__((unused)) int signo)
 {
@@ -96,14 +108,23 @@ static void sigint_handler_noexit(__attribute__((unused)) int signo)
  */
 int main(int argc, char *argv[])
 {
+	/* Set up the game mode context */
 	GameModeContext *context = NULL;
+	context = game_mode_context_instance();
+	game_mode_context_init(context);
+
+	/* Gather information for gamemoderun */
+	char vsync_mode[CONFIG_VALUE_MAX];
+	return_vsync_mode(context, vsync_mode);
+	char hybrid_gpu_mode[CONFIG_VALUE_MAX];
+	return_hybrid_gpu_mode(context, hybrid_gpu_mode);
 
 	/* Gather command line options */
 	bool daemon = false;
 	bool use_syslog = false;
 	int opt = 0;
 	int status;
-	while ((opt = getopt(argc, argv, "dlsrtvh")) != -1) {
+	while ((opt = getopt(argc, argv, "dlsrtehv")) != -1) {
 		switch (opt) {
 		case 'd':
 			daemon = true;
@@ -158,12 +179,42 @@ int main(int argc, char *argv[])
 			status = game_mode_run_client_tests();
 			exit(status);
 			break;
-		case 'v':
-			LOG_MSG(VERSION_TEXT);
+		case 'e':;
+			/* init output */
+			char output[255];
+			strcpy(output, "");
+			/* export vsync mode */
+			if (strcmp(vsync_mode, "force_disable") == 0) {
+				strcat(output, EXPORT_DISABLE_VSYNC);
+			} else if (strcmp(vsync_mode, "force_enable") == 0) {
+				strcat(output, EXPORT_ENABLE_VYSNC);
+			}
+			/* export libgamemodeauto */
+			strcat(output, EXPORT_LD_PRELOAD);
+			/* export hybrid gpu launch mode */
+			if (strcmp(hybrid_gpu_mode, "prime") == 0) {
+				strcat(output, EXPORT_DRI_PRIME);
+				strcat(output, LAUNCH_NORMAL);
+			} else if (strcmp(hybrid_gpu_mode, "bumblebee") == 0) {
+				strcat(output, LAUNCH_BUMBLEBEE);
+			} else if (strcmp(hybrid_gpu_mode, "primus") == 0) {
+				strcat(output, LAUNCH_PRIMUS);
+			} else if (strcmp(hybrid_gpu_mode, "nvidia-xrun") == 0) {
+				strcat(output, LAUNCH_NVXRUN);
+			} else {
+				strcat(output, LAUNCH_NORMAL);
+			}
+			/* print output */
+			printf("%s", output);
+			/* exit */
 			exit(EXIT_SUCCESS);
 			break;
 		case 'h':
 			LOG_MSG(USAGE_TEXT, argv[0]);
+			exit(EXIT_SUCCESS);
+			break;
+		case 'v':
+			LOG_MSG(VERSION_TEXT);
 			exit(EXIT_SUCCESS);
 			break;
 		default:
@@ -185,10 +236,6 @@ int main(int argc, char *argv[])
 
 	/* Log a version message on startup */
 	LOG_MSG("v%s\n", GAMEMODE_VERSION);
-
-	/* Set up the game mode context */
-	context = game_mode_context_instance();
-	game_mode_context_init(context);
 
 	/* Handle quits cleanly */
 	if (signal(SIGINT, sigint_handler) == SIG_ERR) {

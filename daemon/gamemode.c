@@ -706,3 +706,15 @@ static void game_mode_execute_scripts(char scripts[CONFIG_LIST_MAX][CONFIG_VALUE
 		i++;
 	}
 }
+
+void return_vsync_mode(GameModeContext *self, char vsync_mode[CONFIG_VALUE_MAX])
+{
+	GameModeConfig *config = game_mode_config_from_context(self);
+	config_get_vsync_mode(config, vsync_mode);
+}
+
+void return_hybrid_gpu_mode(GameModeContext *self, char hybrid_gpu_mode[CONFIG_VALUE_MAX])
+{
+	GameModeConfig *config = game_mode_config_from_context(self);
+	config_get_hybrid_gpu_mode(config, hybrid_gpu_mode);
+}
