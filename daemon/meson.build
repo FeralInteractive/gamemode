@@ -30,6 +30,7 @@ daemon_sources = [
     'daemonize.c',
     'dbus_messaging.c',
     'daemon_config.c',
+    'helpers.c',
 ]
 
 gamemoded_includes = libgamemode_includes

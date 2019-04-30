@@ -34,6 +34,7 @@ POSSIBILITY OF SUCH DAMAGE.
 #include <stdio.h>
 #include <string.h>
 #include <sys/param.h>
+#include <unistd.h>
 
 /**
  * Value clamping helper, works like MIN/MAX but constraints a value within the range.
@@ -62,3 +63,21 @@ static inline const char *strtail(const char *haystack, const char *needle)
 		return pos;
 	return NULL;
 }
+
+/**
+ * Helper function for autoclosing file-descriptors. Does nothing if the argument
+ * is NULL or the referenced integer < 0.
+ */
+inline void cleanup_close(int *fd_ptr)
+{
+	if (fd_ptr == NULL || *fd_ptr < 0)
+		return;
+
+	(void)close(*fd_ptr);
+}
+
+/**
+ * Helper macro for autoclosing file-descriptors: use by prefixing the variable,
+ * like "autoclose_fd int fd = -1;".
+ */
+#define autoclose_fd __attribute__((cleanup(cleanup_close)))
