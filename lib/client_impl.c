@@ -92,6 +92,7 @@ static int gamemode_request(const char *function, int arg)
 				         strerror(-ret));
 			}
 		}
+		sd_bus_unref(bus);
 	}
 
 	return result;
