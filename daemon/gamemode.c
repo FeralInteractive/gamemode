@@ -40,10 +40,14 @@ POSSIBILITY OF SUCH DAMAGE.
 #include "helpers.h"
 #include "logging.h"
 
+#include <fcntl.h>
 #include <pthread.h>
 #include <signal.h>
 #include <stdatomic.h>
+#include <sys/stat.h>
+#include <sys/types.h>
 #include <systemd/sd-daemon.h>
+#include <unistd.h>
 
 /**
  * The GameModeClient encapsulates the remote connection, providing a list
@@ -650,14 +654,30 @@ static char *game_mode_context_find_exe(pid_t pid)
 {
 	char buffer[PATH_MAX];
 	char *proc_path = NULL, *wine_exe = NULL;
+	autoclose_fd int pidfd = -1;
+	ssize_t r;
 
-	if (!(proc_path = buffered_snprintf(buffer, "/proc/%d/exe", pid)))
+	if (!(proc_path = buffered_snprintf(buffer, "/proc/%d", pid)))
 		goto fail;
 
-	/* Allocate the realpath if possible */
-	char *exe = realpath(proc_path, NULL);
-	if (!exe)
+	/* Translate /proc/<pid>/exe to the application binary */
+	pidfd = openat(AT_FDCWD, proc_path, O_RDONLY | O_NONBLOCK | O_DIRECTORY | O_CLOEXEC | O_NOCTTY);
+	if (pidfd == -1)
 		goto fail;
+
+	r = readlinkat(pidfd, "exe", buffer, sizeof(buffer));
+
+	if (r == sizeof(buffer)) {
+		errno = ENAMETOOLONG;
+		r = -1;
+	}
+
+	if (r == -1)
+		goto fail;
+
+	buffer[r] = '\0';
+
+	char *exe = strdup(buffer);
 
 	/* Detect if the process is a wine loader process */
 	if (game_mode_detect_wine_preloader(exe)) {
