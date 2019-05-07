@@ -124,13 +124,18 @@ More information can be found in the `example/gamemode.ini` file.
 Note that both NVIDIA (GPUBoost) and AMD (Overdrive) devices and drivers already attempt to internally overclock if possible, but it is still common for enthusiasts to want to manually push the upper threshold.
 
 ---
-## Games with GameMode integration
+## Apps with GameMode integration
 
+### Games
 The following games are known to integrate GameMode support (meaning they don't require any additional configuration to activate GameMode while running):
 * Rise of the Tomb Raider
 * Total War Saga: Thrones of Britannia
 * Total War: WARHAMMER II
 * DiRT 4
+
+### Others
+Other apps which can integrate with GameMode include:
+* GNOME Shell ([via extension](https://github.com/gicmo/gamemode-extension)) - indicates when GameMode is active in the top panel.
 
 ---
 ## Developers
