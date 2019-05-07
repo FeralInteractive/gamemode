@@ -63,7 +63,9 @@ ninja uninstall
 ---
 ## Requesting GameMode
 
-After installing `libgamemodeauto.so.0` simply preload it into the game:
+For games which integrate GameMode support (see list later on), simply running the game will automatically activate GameMode.
+
+For others, you must manually request GameMode when running the game. This can be done by launching the game through `gamemoderun`:
 ```bash
 gamemoderun ./game
 ```
@@ -120,6 +122,15 @@ It is very much encouraged for users to find out their own overclocking limits m
 More information can be found in the `example/gamemode.ini` file.
 
 Note that both NVIDIA (GPUBoost) and AMD (Overdrive) devices and drivers already attempt to internally overclock if possible, but it is still common for enthusiasts to want to manually push the upper threshold.
+
+---
+## Games with GameMode integration
+
+The following games are known to integrate GameMode support (meaning they don't require any additional configuration to activate GameMode while running):
+* Rise of the Tomb Raider
+* Total War Saga: Thrones of Britannia
+* Total War: WARHAMMER II
+* DiRT 4
 
 ---
 ## Developers
