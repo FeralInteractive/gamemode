@@ -14,11 +14,13 @@ The design has a clear cut abstraction between the host daemon and library (\fBg
 .SH OPTIONS
 
 .TP 8
-.B \-r, \-\-request
-Request gamemode and pause
+.B \-r[PID], \-\-request=[PID]
+Toggle gamemode for process.
+When no PID given, requests gamemode and pauses
 .TP 8
-.B \-s, \-\-status
-Query the status of gamemode
+.B \-s[PID], \-\-status=[PID]
+Query the status of gamemode for process
+When no PID given, queries the status globally
 .TP 8
 .B \-d, \-\-daemonize
 Run the daemon as a separate process (daemonize it)

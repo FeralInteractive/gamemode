@@ -65,8 +65,10 @@ POSSIBILITY OF SUCH DAMAGE.
 
 #define USAGE_TEXT                                                                                 \
 	"Usage: %s [-d] [-l] [-r] [-t] [-h] [-v]\n\n"                                                  \
-	"  -r, --request            Request gamemode and pause\n"                                      \
-	"  -s, --status             Query the status of gamemode\n"                                    \
+	"  -r[PID], --request=[PID] Toggle gamemode for process\n"                                     \
+	"                           When no PID given, requests gamemode and pauses\n"                 \
+	"  -s[PID], --status=[PID]  Query the status of gamemode for process\n"                        \
+	"                           When no PID given, queries the status globally\n"                  \
 	"  -d, --daemonize          Daemonize self after launch\n"                                     \
 	"  -l, --log-to-syslog      Log to syslog\n"                                                   \
 	"  -r, --test               Run tests\n"                                                       \
@@ -107,9 +109,9 @@ int main(int argc, char *argv[])
 
 	/* Options struct for getopt_long */
 	static struct option long_options[] = {
-		{ "daemonize", no_argument, 0, 'd' }, { "log-to-syslog", no_argument, 0, 'l' },
-		{ "request", no_argument, 0, 'r' },   { "test", no_argument, 0, 't' },
-		{ "status", no_argument, 0, 's' },    { "help", no_argument, 0, 'h' },
+		{ "daemonize", no_argument, 0, 'd' },     { "log-to-syslog", no_argument, 0, 'l' },
+		{ "request", optional_argument, 0, 'r' }, { "test", no_argument, 0, 't' },
+		{ "status", optional_argument, 0, 's' },  { "help", no_argument, 0, 'h' },
 		{ "version", no_argument, 0, 'v' }
 	};
 	static const char *short_options = "dls::r::tvh";
@@ -124,53 +126,107 @@ int main(int argc, char *argv[])
 			break;
 
 		case 's':
-
-			switch (gamemode_query_status()) {
-			case 0:
-				LOG_MSG("gamemode is inactive\n");
-				break;
-			case 1:
-				LOG_MSG("gamemode is active\n");
-				break;
-			case -1:
-				LOG_ERROR("gamemode status request failed: %s\n", gamemode_error_string());
-				exit(EXIT_FAILURE);
-			default:
-				LOG_ERROR("gamemode_query_status returned unexpected value 2\n");
-				exit(EXIT_FAILURE);
+			if (optarg != NULL) {
+				pid_t pid = atoi(optarg);
+				switch (gamemode_query_status_for(pid)) {
+				case 0: /* inactive */
+					LOG_MSG("gamemode is inactive\n");
+					break;
+				case 1: /* active not not registered */
+					LOG_MSG("gamemode is active but [%d] not registered\n", pid);
+					break;
+				case 2: /* active for client */
+					LOG_MSG("gamemode is active and [%d] registered\n", pid);
+					break;
+				case -1:
+					LOG_ERROR("gamemode_query_status_for(%d) failed: %s\n",
+					          pid,
+					          gamemode_error_string());
+					exit(EXIT_FAILURE);
+				default:
+					LOG_ERROR("gamemode_query_status returned unexpected value 2\n");
+					exit(EXIT_FAILURE);
+				}
+			} else {
+				switch (gamemode_query_status()) {
+				case 0:
+					LOG_MSG("gamemode is inactive\n");
+					break;
+				case 1:
+					LOG_MSG("gamemode is active\n");
+					break;
+				case -1:
+					LOG_ERROR("gamemode status request failed: %s\n", gamemode_error_string());
+					exit(EXIT_FAILURE);
+				default:
+					LOG_ERROR("gamemode_query_status returned unexpected value 2\n");
+					exit(EXIT_FAILURE);
+				}
 			}
 
 			exit(EXIT_SUCCESS);
 
 		case 'r':
 
-			if (gamemode_request_start() < 0) {
-				LOG_ERROR("gamemode request failed: %s\n", gamemode_error_string());
-				exit(EXIT_FAILURE);
-			}
+			if (optarg != NULL) {
+				pid_t pid = atoi(optarg);
+				switch (gamemode_query_status_for(pid)) {
+				case 0: /* inactive */
+				case 1: /* active not not registered */
+					LOG_MSG("gamemode not active for client, requesting start for %d...\n", pid);
+					if (gamemode_request_start_for(pid) < 0) {
+						LOG_ERROR("gamemode_request_start_for(%d) failed: %s\n",
+						          pid,
+						          gamemode_error_string());
+						exit(EXIT_FAILURE);
+					}
+					LOG_MSG("request succeeded\n");
+					break;
+				case 2: /* active for client */
+					LOG_MSG("gamemode active for client, requesting end for %d...\n", pid);
+					if (gamemode_request_end_for(pid) < 0) {
+						LOG_ERROR("gamemode_request_end_for(%d) failed: %s\n",
+						          pid,
+						          gamemode_error_string());
+						exit(EXIT_FAILURE);
+					}
+					LOG_MSG("request succeeded\n");
+					break;
+				case -1:
+					LOG_ERROR("gamemode_query_status_for(%d) failed: %s\n",
+					          pid,
+					          gamemode_error_string());
+					exit(EXIT_FAILURE);
+				}
+			} else {
+				if (gamemode_request_start() < 0) {
+					LOG_ERROR("gamemode request failed: %s\n", gamemode_error_string());
+					exit(EXIT_FAILURE);
+				}
 
-			switch (gamemode_query_status()) {
-			case 2:
-				LOG_MSG("gamemode request succeeded and is active\n");
-				break;
-			case 1:
-				LOG_ERROR("gamemode request succeeded and is active but registration failed\n");
-				exit(EXIT_FAILURE);
-			case 0:
-				LOG_ERROR("gamemode request succeeded but is not active\n");
-				exit(EXIT_FAILURE);
-			}
+				switch (gamemode_query_status()) {
+				case 2:
+					LOG_MSG("gamemode request succeeded and is active\n");
+					break;
+				case 1:
+					LOG_ERROR("gamemode request succeeded and is active but registration failed\n");
+					exit(EXIT_FAILURE);
+				case 0:
+					LOG_ERROR("gamemode request succeeded but is not active\n");
+					exit(EXIT_FAILURE);
+				}
 
-			// Simply pause and wait a SIGINT
-			if (signal(SIGINT, sigint_handler_noexit) == SIG_ERR) {
-				FATAL_ERRORNO("Could not catch SIGINT");
-			}
-			pause();
+				// Simply pause and wait a SIGINT
+				if (signal(SIGINT, sigint_handler_noexit) == SIG_ERR) {
+					FATAL_ERRORNO("Could not catch SIGINT");
+				}
+				pause();
 
-			// Explicitly clean up
-			if (gamemode_request_end() < 0) {
-				LOG_ERROR("gamemode request failed: %s\n", gamemode_error_string());
-				exit(EXIT_FAILURE);
+				// Explicitly clean up
+				if (gamemode_request_end() < 0) {
+					LOG_ERROR("gamemode request failed: %s\n", gamemode_error_string());
+					exit(EXIT_FAILURE);
+				}
 			}
 
 			exit(EXIT_SUCCESS);
