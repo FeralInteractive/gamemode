@@ -58,9 +58,11 @@ POSSIBILITY OF SUCH DAMAGE.
  *   -1 if the request failed
  *   -2 if the request was rejected
  *
- * int gamemode_query_status_for(pid_t pid) - Query the current status of gamemode for another
- * process 0 if gamemode is inactive 1 if gamemode is active 2 if gamemode is active and this client
- * is registered -1 if the query failed
+ * int gamemode_query_status_for(pid_t pid) - Query status of gamemode for another process
+ *   0 if gamemode is inactive
+ *   1 if gamemode is active
+ *   2 if gamemode is active and this client is registered
+ *   -1 if the query failed
  *
  * const char* gamemode_error_string() - Get an error string
  *   returns a string describing any of the above errors
