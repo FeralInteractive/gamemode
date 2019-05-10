@@ -56,6 +56,7 @@ POSSIBILITY OF SUCH DAMAGE.
 #include "gamemode_client.h"
 #include "logging.h"
 
+#include <getopt.h>
 #include <signal.h>
 #include <stdlib.h>
 #include <string.h>
@@ -64,12 +65,13 @@ POSSIBILITY OF SUCH DAMAGE.
 
 #define USAGE_TEXT                                                                                 \
 	"Usage: %s [-d] [-l] [-r] [-t] [-h] [-v]\n\n"                                                  \
-	"  -d  daemonize self after launch\n"                                                          \
-	"  -l  log to syslog\n"                                                                        \
-	"  -r  request gamemode and pause\n"                                                           \
-	"  -t  run tests\n"                                                                            \
-	"  -h  print this help\n"                                                                      \
-	"  -v  print version\n"                                                                        \
+	"  -r, --request            Request gamemode and pause\n"                                      \
+	"  -s, --status             Query the status of gamemode\n"                                    \
+	"  -d, --daemonize          Daemonize self after launch\n"                                     \
+	"  -l, --log-to-syslog      Log to syslog\n"                                                   \
+	"  -r, --test               Run tests\n"                                                       \
+	"  -h, --help               Print this help\n"                                                 \
+	"  -v, --version            Print version\n"                                                   \
 	"\n"                                                                                           \
 	"See man page for more information.\n"
 
@@ -102,8 +104,17 @@ int main(int argc, char *argv[])
 	bool daemon = false;
 	bool use_syslog = false;
 	int opt = 0;
-	int status;
-	while ((opt = getopt(argc, argv, "dlsrtvh")) != -1) {
+
+	/* Options struct for getopt_long */
+	static struct option long_options[] = {
+		{ "daemonize", no_argument, 0, 'd' }, { "log-to-syslog", no_argument, 0, 'l' },
+		{ "request", no_argument, 0, 'r' },   { "test", no_argument, 0, 't' },
+		{ "status", no_argument, 0, 's' },    { "help", no_argument, 0, 'h' },
+		{ "version", no_argument, 0, 'v' }
+	};
+	static const char *short_options = "dls::r::tvh";
+
+	while ((opt = getopt_long(argc, argv, short_options, long_options, 0)) != -1) {
 		switch (opt) {
 		case 'd':
 			daemon = true;
@@ -111,31 +122,41 @@ int main(int argc, char *argv[])
 		case 'l':
 			use_syslog = true;
 			break;
-		case 's': {
-			if ((status = gamemode_query_status()) < 0) {
+
+		case 's':
+
+			switch (gamemode_query_status()) {
+			case 0:
+				LOG_MSG("gamemode is inactive\n");
+				break;
+			case 1:
+				LOG_MSG("gamemode is active\n");
+				break;
+			case -1:
 				LOG_ERROR("gamemode status request failed: %s\n", gamemode_error_string());
 				exit(EXIT_FAILURE);
-			} else if (status > 0) {
-				LOG_MSG("gamemode is active\n");
-			} else {
-				LOG_MSG("gamemode is inactive\n");
+			default:
+				LOG_ERROR("gamemode_query_status returned unexpected value 2\n");
+				exit(EXIT_FAILURE);
 			}
 
 			exit(EXIT_SUCCESS);
-			break;
-		}
+
 		case 'r':
+
 			if (gamemode_request_start() < 0) {
 				LOG_ERROR("gamemode request failed: %s\n", gamemode_error_string());
 				exit(EXIT_FAILURE);
 			}
 
-			if ((status = gamemode_query_status()) == 2) {
+			switch (gamemode_query_status()) {
+			case 2:
 				LOG_MSG("gamemode request succeeded and is active\n");
-			} else if (status == 1) {
+				break;
+			case 1:
 				LOG_ERROR("gamemode request succeeded and is active but registration failed\n");
 				exit(EXIT_FAILURE);
-			} else {
+			case 0:
 				LOG_ERROR("gamemode request succeeded but is not active\n");
 				exit(EXIT_FAILURE);
 			}
@@ -153,23 +174,20 @@ int main(int argc, char *argv[])
 			}
 
 			exit(EXIT_SUCCESS);
-			break;
-		case 't':
-			status = game_mode_run_client_tests();
+
+		case 't': {
+			int status = game_mode_run_client_tests();
 			exit(status);
-			break;
+		}
 		case 'v':
 			LOG_MSG(VERSION_TEXT);
 			exit(EXIT_SUCCESS);
-			break;
 		case 'h':
 			LOG_MSG(USAGE_TEXT, argv[0]);
 			exit(EXIT_SUCCESS);
-			break;
 		default:
 			fprintf(stderr, USAGE_TEXT, argv[0]);
 			exit(EXIT_FAILURE);
-			break;
 		}
 	}
 

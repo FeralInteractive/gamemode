@@ -4,7 +4,7 @@
 .SH NAME
 gamemoded \- optimises system performance on demand
 .SH SYNOPSIS
-\fBgamemoded\fR [\fB\-d\fR] [\fB\-l\fR] [\fB\-h\fR] [\fB\-v\fR]
+\fBgamemoded\fR [OPTIONS...]
 .SH DESCRIPTION
 \fBGameMode\fR is a daemon/lib combo for Linux that allows games to request a set of optimisations be temporarily applied to the host OS.
 
@@ -12,26 +12,27 @@ The design has a clear cut abstraction between the host daemon and library (\fBg
 
 \fBGameMode\fR was designed primarily as a stop-gap solution to problems with the Intel and AMD CPU powersave or ondemand governors, but is intended to be expanded beyond just CPU governor states, as there are a wealth of automation tasks one might want to apply.
 .SH OPTIONS
+
 .TP 8
-.B \-d
+.B \-r, \-\-request
+Request gamemode and pause
+.TP 8
+.B \-s, \-\-status
+Query the status of gamemode
+.TP 8
+.B \-d, \-\-daemonize
 Run the daemon as a separate process (daemonize it)
 .TP 8
-.B \-l
+.B \-l, \-\-log-to-syslog
 Log to syslog
-.TP 8
-.B \-r
-Request gamemode and wait for any signal
-.TP 8
-.B \-s
-Query the current status of gamemode
-.TP 8
-.B \-h
+.TP 8 
+.B \-h, \-\-help
 Print help text
 .TP 8
-.B \-t
+.B \-t, \-\-test
 Run diagnostic tests on the current installation
 .TP 8
-.B \-v
+.B \-v, \-\-version
 Print the version
 
 .SH USAGE
