@@ -536,6 +536,49 @@ int run_gpu_optimisation_tests(struct GameModeConfig *config)
 	return gpustatus;
 }
 
+int run_renice_tests(struct GameModeConfig *config)
+{
+	/* read configuration "renice" (1..20) */
+	long int renice = config_get_renice_value(config);
+	if (renice == 0) {
+		return 1; /* not configured */
+	}
+
+	/* Verify renice starts at 0 */
+	int val = game_mode_get_renice(getpid());
+	if (val != 0) {
+		LOG_ERROR("Initial renice value is non-zero: %d\n", val);
+		return -1;
+	}
+
+	int ret = 0;
+
+	/* Ask for gamemode for ourselves */
+	gamemode_request_start();
+
+	/* Check renice is now requested value */
+	val = game_mode_get_renice(getpid());
+	if (val != renice) {
+		LOG_ERROR(
+		    "renice value not set correctly after gamemode_request_start\nExpected: %ld, Was: %d\n",
+		    renice,
+		    val);
+		ret = -1;
+	}
+
+	/* End gamemode for ourselves */
+	gamemode_request_end();
+
+	/* Check renice is returned to correct value */
+	val = game_mode_get_renice(getpid());
+	if (val != 0) {
+		LOG_ERROR("renice value non-zero after gamemode_request_end\nExpected: 0, Was: %d\n", val);
+		ret = -1;
+	}
+
+	return ret;
+}
+
 /**
  * game_mode_run_feature_tests runs a set of tests for each current feature (based on the current
  * config) returns 0 for success, -1 for failure
@@ -598,6 +641,21 @@ static int game_mode_run_feature_tests(struct GameModeConfig *config)
 	/* TODO: Unknown if this is testable, org.freedesktop.ScreenSaver has no query method */
 
 	/* Was the process reniced? */
+	{
+		LOG_MSG("::: Verifying renice\n");
+		int renicestatus = run_renice_tests(config);
+
+		if (renicestatus == 1)
+			LOG_MSG("::: Passed (no renice configured)\n");
+		else if (renicestatus == 0)
+			LOG_MSG("::: Passed\n");
+		else {
+			LOG_MSG("::: Failed!\n");
+			// Renice should be expected to work, if set
+			status = 1;
+		}
+	}
+
 	/* Was the scheduling applied? */
 	/* Were io priorities changed? */
 	/* Note: These don't get cleared up on un-register, so will have already been applied */

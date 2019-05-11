@@ -548,6 +548,11 @@ long config_get_renice_value(GameModeConfig *self)
 {
 	long value = 0;
 	memcpy_locked_config(self, &value, &self->values.renice, sizeof(long));
+	/* Validate the renice value */
+	if ((value < 1 || value > 20) && value != 0) {
+		LOG_ONCE(ERROR, "Configured renice value '%ld' is invalid, will not renice.\n", value);
+		value = 0;
+	}
 	return value;
 }
 

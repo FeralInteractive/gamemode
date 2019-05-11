@@ -54,13 +54,28 @@ POSSIBILITY OF SUCH DAMAGE.
  * This tries to change the scheduler of the client to soft realtime mode
  * available in some kernels as SCHED_ISO. It also tries to adjust the nice
  * level. If some of each fail, ignore this and log a warning.
- *
- * We don't need to store the current values because when the client exits,
- * everything will be good: Scheduling is only applied to the client and
- * its children.
  */
-void game_mode_apply_renice(const GameModeContext *self, const pid_t client)
+
+#define RENICE_INVALID -128 /* Special value to store invalid value */
+int game_mode_get_renice(const pid_t client)
 {
+	/* Clear errno as -1 is a regitimate return */
+	errno = 0;
+	int priority = getpriority(PRIO_PROCESS, (id_t)client);
+	if (priority == -1 && errno) {
+		LOG_ERROR("getprority(PRIO_PROCESS, %d) failed : %s\n", client, strerror(errno));
+		return RENICE_INVALID;
+	}
+	return -priority;
+}
+
+/* If expected is 0 then we try to apply our renice, otherwise, we try to remove it */
+void game_mode_apply_renice(const GameModeContext *self, const pid_t client, int expected)
+{
+	if (expected == RENICE_INVALID)
+		/* Silently bail if fed an invalid value */
+		return;
+
 	GameModeConfig *config = game_mode_config_from_context(self);
 
 	/*
@@ -69,18 +84,35 @@ void game_mode_apply_renice(const GameModeContext *self, const pid_t client)
 	long int renice = config_get_renice_value(config);
 	if (renice == 0) {
 		return;
-	} else if ((renice < 1) || (renice > 20)) {
-		LOG_ONCE(ERROR, "Configured renice value '%ld' is invalid, will not renice.\n", renice);
-		return;
-	} else {
-		renice = -renice;
 	}
 
-	/*
-	 * don't adjust priority if it was already adjusted
-	 */
-	if (getpriority(PRIO_PROCESS, (id_t)client) != 0) {
-		LOG_ERROR("Refused to renice client [%d]: already reniced\n", client);
+	/* Invert the renice value */
+	renice = -renice;
+
+	/* When expected is non-zero, we should try and remove the renice only if it doesn't match the
+	 * expected value */
+	if (expected != 0) {
+		expected = (int)renice;
+		renice = 0;
+	}
+
+	/* Clear errno as -1 is a regitimate return */
+	errno = 0;
+	int prio = getpriority(PRIO_PROCESS, (id_t)client);
+	if (prio == -1 && errno) {
+		/* process has likely ended, only log an error if we were actually trying to set a non-zero
+		 * value */
+		if (errno == ESRCH && renice != 0)
+			LOG_ERROR("getpriority returned ESRCH for process %d\n", client);
+	} else if (prio != expected) {
+		/*
+		 * Don't adjust priority if it does not match the expected value
+		 * ie. Another process has changed it, or it began non-standard
+		 */
+		LOG_ERROR("Refused to renice client [%d]: prio was (%d) but we expected (%d)\n",
+		          client,
+		          prio,
+		          expected);
 	} else if (setpriority(PRIO_PROCESS, (id_t)client, (int)renice)) {
 		LOG_HINTED(ERROR,
 		           "Failed to renice client [%d], ignoring error condition: %s\n",
