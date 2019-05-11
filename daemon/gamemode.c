@@ -513,6 +513,9 @@ int game_mode_context_unregister(GameModeContext *self, pid_t client, pid_t requ
 
 	game_mode_client_count_changed();
 
+	/* Restore the ioprio value for the process, expecting it to be the config value  */
+	game_mode_apply_ioprio(self, client, (int)config_get_ioprio_value(self->config));
+
 	/* Restore the renice value for the process, expecting it to be our config value */
 	game_mode_apply_renice(self, client, (int)config_get_renice_value(self->config));
 
