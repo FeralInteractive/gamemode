@@ -44,6 +44,7 @@ POSSIBILITY OF SUCH DAMAGE.
  */
 #define IOPRIO_RESET_DEFAULT -1
 #define IOPRIO_DONT_SET -2
+#define IOPRIO_DEFAULT 4
 
 /*
  * Opaque config context type

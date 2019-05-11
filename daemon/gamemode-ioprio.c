@@ -86,6 +86,25 @@ static inline int ioprio_set(int which, int who, int ioprio)
 	return (int)syscall(SYS_ioprio_set, which, who, ioprio);
 }
 
+static inline int ioprio_get(int which, int who)
+{
+	return (int)syscall(SYS_ioprio_get, which, who);
+}
+
+/**
+ * Get the i/o priorities
+ */
+int game_mode_get_ioprio(const pid_t client)
+{
+	int ret = ioprio_get(IOPRIO_WHO_PROCESS, client);
+	if (ret == -1) {
+		LOG_ERROR("Failed to get ioprio value for [%d] with error %s\n", client, strerror(errno));
+		ret = IOPRIO_DONT_SET;
+	}
+	/* We support only IOPRIO_CLASS_BE as IOPRIO_CLASS_RT required CAP_SYS_ADMIN */
+	return IOPRIO_PRIO_DATA(ret);
+}
+
 /**
  * Apply io priorities
  *
@@ -93,49 +112,51 @@ static inline int ioprio_set(int which, int who, int ioprio)
  * and can possibly reduce lags or latency when a game has to load assets
  * on demand.
  */
-void game_mode_apply_ioprio(const GameModeContext *self, const pid_t client)
+void game_mode_apply_ioprio(const GameModeContext *self, const pid_t client, int expected)
 {
+	if (expected == IOPRIO_DONT_SET)
+		/* Silently bail if fed a don't set (invalid) */
+		return;
+
 	GameModeConfig *config = game_mode_config_from_context(self);
 
-	LOG_MSG("Setting scheduling policies...\n");
-
-	/*
-	 * read configuration "ioprio" (0..7)
-	 */
+	/* read configuration "ioprio" (0..7) */
 	int ioprio = (int)config_get_ioprio_value(config);
-	if (IOPRIO_RESET_DEFAULT == ioprio) {
-		LOG_MSG("IO priority will be reset to default behavior (based on CPU priority).\n");
-		ioprio = 0;
-	} else if (IOPRIO_DONT_SET == ioprio) {
-		return;
-	} else {
-		/* maybe clamp the value */
-		int invalid_ioprio = ioprio;
-		ioprio = CLAMP(0, 7, ioprio);
-		if (ioprio != invalid_ioprio)
-			LOG_ONCE(ERROR,
-			         "IO priority value %d invalid, clamping to %d\n",
-			         invalid_ioprio,
-			         ioprio);
 
-		/* We support only IOPRIO_CLASS_BE as IOPRIO_CLASS_RT required CAP_SYS_ADMIN */
-		ioprio = IOPRIO_PRIO_VALUE(IOPRIO_CLASS_BE, ioprio);
+	/* Special value to simply not set the value */
+	if (ioprio == IOPRIO_DONT_SET)
+		return;
+
+	LOG_MSG("Setting ioprio value...\n");
+
+	/* If fed the default, we'll try and reset the value back */
+	if (expected != IOPRIO_DEFAULT) {
+		expected = (int)ioprio;
+		ioprio = IOPRIO_DEFAULT;
 	}
 
-	/*
-	 * Actually apply the io priority
-	 */
-	int c = IOPRIO_PRIO_CLASS(ioprio), p = IOPRIO_PRIO_DATA(ioprio);
-	if (ioprio_set(IOPRIO_WHO_PROCESS, client, ioprio) == 0) {
-		if (0 == ioprio)
-			LOG_MSG("Resetting client [%d] IO priority.\n", client);
-		else
-			LOG_MSG("Setting client [%d] IO priority to (%d,%d).\n", client, c, p);
-	} else {
-		LOG_ERROR("Setting client [%d] IO priority to (%d,%d) failed with error %d, ignoring\n",
+	int current = game_mode_get_ioprio(client);
+	if (current == IOPRIO_DONT_SET) {
+		/* Couldn't get the ioprio value, let's bail */
+		return;
+	} else if (current != expected) {
+		/* Don't try and adjust the ioprio value if the value we got doesn't match default */
+		LOG_ERROR("Refused to set ioprio on client [%d]: prio was (%d) but we expected (%d)\n",
 		          client,
-		          c,
-		          p,
-		          errno);
+		          current,
+		          expected);
+	} else {
+		/*
+		 * For now we only support IOPRIO_CLASS_BE
+		 * IOPRIO_CLASS_RT requires CAP_SYS_ADMIN but should be possible with a polkit process
+		 */
+		int p = ioprio;
+		ioprio = IOPRIO_PRIO_VALUE(IOPRIO_CLASS_BE, ioprio);
+		if (ioprio_set(IOPRIO_WHO_PROCESS, client, ioprio) != 0) {
+			LOG_ERROR("Setting client [%d] IO priority to (%d) failed with error %d, ignoring\n",
+			          client,
+			          p,
+			          errno);
+		}
 	}
 }

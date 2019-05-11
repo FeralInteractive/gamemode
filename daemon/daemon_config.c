@@ -31,6 +31,7 @@ POSSIBILITY OF SUCH DAMAGE.
 #define _GNU_SOURCE
 
 #include "daemon_config.h"
+#include "helpers.h"
 #include "logging.h"
 
 /* Ben Hoyt's inih library */
@@ -564,12 +565,30 @@ long config_get_ioprio_value(GameModeConfig *self)
 	long value = 0;
 	char ioprio_value[CONFIG_VALUE_MAX] = { 0 };
 	memcpy_locked_config(self, ioprio_value, &self->values.ioprio, sizeof(self->values.ioprio));
+
+	/* account for special string values */
 	if (0 == strncmp(ioprio_value, "off", sizeof(self->values.ioprio)))
 		value = IOPRIO_DONT_SET;
 	else if (0 == strncmp(ioprio_value, "default", sizeof(self->values.ioprio)))
 		value = IOPRIO_RESET_DEFAULT;
 	else
 		value = atoi(ioprio_value);
+
+	/* Validate values */
+	if (IOPRIO_RESET_DEFAULT == value) {
+		LOG_ONCE(MSG, "IO priority will be reset to default behavior (based on CPU priority).\n");
+		value = 0;
+	} else {
+		/* maybe clamp the value */
+		long invalid_ioprio = value;
+		value = CLAMP(0, 7, value);
+		if (value != invalid_ioprio)
+			LOG_ONCE(ERROR,
+			         "IO priority value %ld invalid, clamping to %ld\n",
+			         invalid_ioprio,
+			         value);
+	}
+
 	return value;
 }
 
