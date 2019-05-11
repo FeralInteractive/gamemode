@@ -148,18 +148,19 @@ int main(int argc, char *argv[])
 					exit(EXIT_FAILURE);
 				}
 			} else {
-				switch (gamemode_query_status()) {
-				case 0:
+				int ret = 0;
+				switch ((ret = gamemode_query_status())) {
+				case 0: /* inactive */
 					LOG_MSG("gamemode is inactive\n");
 					break;
-				case 1:
+				case 1: /* active */
 					LOG_MSG("gamemode is active\n");
 					break;
-				case -1:
+				case -1: /* error */
 					LOG_ERROR("gamemode status request failed: %s\n", gamemode_error_string());
 					exit(EXIT_FAILURE);
-				default:
-					LOG_ERROR("gamemode_query_status returned unexpected value 2\n");
+				default: /* unexpected value eg. 2 */
+					LOG_ERROR("gamemode_query_status returned unexpected value %d\n", ret);
 					exit(EXIT_FAILURE);
 				}
 			}
@@ -170,6 +171,8 @@ int main(int argc, char *argv[])
 
 			if (optarg != NULL) {
 				pid_t pid = atoi(optarg);
+
+				/* toggle gamemode for the process */
 				switch (gamemode_query_status_for(pid)) {
 				case 0: /* inactive */
 				case 1: /* active not not registered */
@@ -192,37 +195,43 @@ int main(int argc, char *argv[])
 					}
 					LOG_MSG("request succeeded\n");
 					break;
-				case -1:
+				case -1: /* error */
 					LOG_ERROR("gamemode_query_status_for(%d) failed: %s\n",
 					          pid,
 					          gamemode_error_string());
 					exit(EXIT_FAILURE);
 				}
+
 			} else {
+				/* Request gamemode for this process */
 				if (gamemode_request_start() < 0) {
 					LOG_ERROR("gamemode request failed: %s\n", gamemode_error_string());
 					exit(EXIT_FAILURE);
 				}
 
+				/* Request and report on the status */
 				switch (gamemode_query_status()) {
-				case 2:
+				case 2: /* active for this client */
 					LOG_MSG("gamemode request succeeded and is active\n");
 					break;
-				case 1:
+				case 1: /* active */
 					LOG_ERROR("gamemode request succeeded and is active but registration failed\n");
 					exit(EXIT_FAILURE);
-				case 0:
+				case 0: /* innactive */
 					LOG_ERROR("gamemode request succeeded but is not active\n");
+					exit(EXIT_FAILURE);
+				case -1: /* error */
+					LOG_ERROR("gamemode_query_status failed: %s\n", gamemode_error_string());
 					exit(EXIT_FAILURE);
 				}
 
-				// Simply pause and wait a SIGINT
+				/* Simply pause and wait a SIGINT */
 				if (signal(SIGINT, sigint_handler_noexit) == SIG_ERR) {
 					FATAL_ERRORNO("Could not catch SIGINT");
 				}
 				pause();
 
-				// Explicitly clean up
+				/* Explicitly clean up */
 				if (gamemode_request_end() < 0) {
 					LOG_ERROR("gamemode request failed: %s\n", gamemode_error_string());
 					exit(EXIT_FAILURE);
