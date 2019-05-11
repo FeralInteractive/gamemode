@@ -579,6 +579,53 @@ int run_renice_tests(struct GameModeConfig *config)
 	return ret;
 }
 
+int run_ioprio_tests(struct GameModeConfig *config)
+{
+	/* read configuration "ioprio" */
+	long int ioprio = config_get_ioprio_value(config);
+	if (ioprio == IOPRIO_DONT_SET) {
+		return 1; /* not configured */
+	}
+
+	/* Verify ioprio starts at 0 */
+	int val = game_mode_get_ioprio(getpid());
+	if (val != IOPRIO_DEFAULT) {
+		LOG_ERROR("Initial ioprio value is non-default\nExpected: %d, Was: %d\n",
+		          IOPRIO_DEFAULT,
+		          val);
+		return -1;
+	}
+
+	int ret = 0;
+
+	/* Ask for gamemode for ourselves */
+	gamemode_request_start();
+
+	/* Check renice is now requested value */
+	val = game_mode_get_ioprio(getpid());
+	if (val != ioprio) {
+		LOG_ERROR(
+		    "ioprio value not set correctly after gamemode_request_start\nExpected: %ld, Was: %d\n",
+		    ioprio,
+		    val);
+		ret = -1;
+	}
+
+	/* End gamemode for ourselves */
+	gamemode_request_end();
+
+	/* Check ioprio is returned to correct value */
+	val = game_mode_get_ioprio(getpid());
+	if (val != IOPRIO_DEFAULT) {
+		LOG_ERROR("ioprio value non-default after gamemode_request_end\nExpected: %d, Was: %d\n",
+		          IOPRIO_DEFAULT,
+		          val);
+		ret = -1;
+	}
+
+	return ret;
+}
+
 /**
  * game_mode_run_feature_tests runs a set of tests for each current feature (based on the current
  * config) returns 0 for success, -1 for failure
@@ -652,6 +699,22 @@ static int game_mode_run_feature_tests(struct GameModeConfig *config)
 		else {
 			LOG_MSG("::: Failed!\n");
 			// Renice should be expected to work, if set
+			status = 1;
+		}
+	}
+
+	/* Was the process ioprio set? */
+	{
+		LOG_MSG("::: Verifying ioprio\n");
+		int iopriostatus = run_ioprio_tests(config);
+
+		if (iopriostatus == 1)
+			LOG_MSG("::: Passed (no ioprio configured)\n");
+		else if (iopriostatus == 0)
+			LOG_MSG("::: Passed\n");
+		else {
+			LOG_MSG("::: Failed!\n");
+			// Ioprio should be expected to work, if set
 			status = 1;
 		}
 	}

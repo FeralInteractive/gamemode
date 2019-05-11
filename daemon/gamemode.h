@@ -122,7 +122,8 @@ char *game_mode_lookup_user_home(void);
  * Provides internal API functions specific to adjusting process
  * IO priorities.
  */
-void game_mode_apply_ioprio(const GameModeContext *self, const pid_t client);
+int game_mode_get_ioprio(const pid_t client);
+void game_mode_apply_ioprio(const GameModeContext *self, const pid_t client, int expected);
 
 /** gamemode-proc.c
  * Provides internal API functions specific to working with process
