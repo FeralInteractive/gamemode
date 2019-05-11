@@ -71,6 +71,8 @@ struct GameModeContext {
 	struct GameModeGPUInfo *stored_gpu; /**<Stored GPU info for the current GPU */
 	struct GameModeGPUInfo *target_gpu; /**<Target GPU info for the current GPU */
 
+	int initial_renice; /**<Initial renice value */
+
 	/* Reaper control */
 	struct {
 		pthread_t thread;
@@ -412,8 +414,11 @@ int game_mode_context_register(GameModeContext *self, pid_t client, pid_t reques
 		game_mode_context_enter(self);
 	}
 
+	/* Store current renice and apply */
+	self->initial_renice = game_mode_get_renice(client);
+	game_mode_apply_renice(self, client, 0 /* expect zero value to start with */);
+
 	/* Apply scheduler policies */
-	game_mode_apply_renice(self, client);
 	game_mode_apply_scheduling(self, client);
 
 	/* Apply io priorities */

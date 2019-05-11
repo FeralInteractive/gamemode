@@ -135,7 +135,8 @@ int game_mode_close_proc(const procfd_t procfd);
  * Provides internal API functions specific to adjusting process
  * scheduling.
  */
-void game_mode_apply_renice(const GameModeContext *self, const pid_t client);
+int game_mode_get_renice(const pid_t client);
+void game_mode_apply_renice(const GameModeContext *self, const pid_t client, int expected);
 void game_mode_apply_scheduling(const GameModeContext *self, const pid_t client);
 
 /** gamemode-wine.c
