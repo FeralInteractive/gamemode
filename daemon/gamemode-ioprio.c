@@ -36,7 +36,9 @@ POSSIBILITY OF SUCH DAMAGE.
 #include "helpers.h"
 #include "logging.h"
 
+#include <dirent.h>
 #include <errno.h>
+#include <stdio.h>
 #include <sys/syscall.h>
 #include <unistd.h>
 
@@ -135,28 +137,51 @@ void game_mode_apply_ioprio(const GameModeContext *self, const pid_t client, int
 		ioprio = IOPRIO_DEFAULT;
 	}
 
-	int current = game_mode_get_ioprio(client);
-	if (current == IOPRIO_DONT_SET) {
-		/* Couldn't get the ioprio value, let's bail */
+	/* Open the tasks dir for the client */
+	char tasks[128];
+	snprintf(tasks, sizeof(tasks), "/proc/%d/task", client);
+	DIR *client_task_dir = opendir(tasks);
+	if (client_task_dir == NULL) {
+		LOG_ERROR("Could not inspect tasks for client %d! Skipping ioprio optimisation.\n", client);
 		return;
-	} else if (current != expected) {
-		/* Don't try and adjust the ioprio value if the value we got doesn't match default */
-		LOG_ERROR("Refused to set ioprio on client [%d]: prio was (%d) but we expected (%d)\n",
-		          client,
-		          current,
-		          expected);
-	} else {
-		/*
-		 * For now we only support IOPRIO_CLASS_BE
-		 * IOPRIO_CLASS_RT requires CAP_SYS_ADMIN but should be possible with a polkit process
-		 */
-		int p = ioprio;
-		ioprio = IOPRIO_PRIO_VALUE(IOPRIO_CLASS_BE, ioprio);
-		if (ioprio_set(IOPRIO_WHO_PROCESS, client, ioprio) != 0) {
-			LOG_ERROR("Setting client [%d] IO priority to (%d) failed with error %d, ignoring\n",
-			          client,
-			          p,
-			          errno);
+	}
+
+	/* Iterate for all tasks of client process */
+	struct dirent *tid_entry;
+	while ((tid_entry = readdir(client_task_dir)) != NULL) {
+		/* Skip . and .. */
+		if (tid_entry->d_name[0] == '.')
+			continue;
+
+		/* task name is the name of the file */
+		int tid = atoi(tid_entry->d_name);
+
+		int current = game_mode_get_ioprio(tid);
+		if (current == IOPRIO_DONT_SET) {
+			/* Couldn't get the ioprio value
+			 * This could simply mean that the thread exited before fetching the ioprio
+			 * So we should continue
+			 */
+		} else if (current != expected) {
+			/* Don't try and adjust the ioprio value if the value we got doesn't match default */
+			LOG_ERROR("Refused to set ioprio on client [%d]: prio was (%d) but we expected (%d)\n",
+			          tid,
+			          current,
+			          expected);
+		} else {
+			/*
+			 * For now we only support IOPRIO_CLASS_BE
+			 * IOPRIO_CLASS_RT requires CAP_SYS_ADMIN but should be possible with a polkit process
+			 */
+			int p = ioprio;
+			ioprio = IOPRIO_PRIO_VALUE(IOPRIO_CLASS_BE, ioprio);
+			if (ioprio_set(IOPRIO_WHO_PROCESS, tid, ioprio) != 0) {
+				LOG_ERROR(
+				    "Setting client [%d] IO priority to (%d) failed with error %d, ignoring\n",
+				    tid,
+				    p,
+				    errno);
+			}
 		}
 	}
 }
