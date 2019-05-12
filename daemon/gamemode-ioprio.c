@@ -142,7 +142,8 @@ void game_mode_apply_ioprio(const GameModeContext *self, const pid_t client, int
 	snprintf(tasks, sizeof(tasks), "/proc/%d/task", client);
 	DIR *client_task_dir = opendir(tasks);
 	if (client_task_dir == NULL) {
-		LOG_ERROR("Could not inspect tasks for client %d! Skipping ioprio optimisation.\n", client);
+		LOG_ERROR("Could not inspect tasks for client [%d]! Skipping ioprio optimisation.\n",
+		          client);
 		return;
 	}
 
@@ -164,7 +165,8 @@ void game_mode_apply_ioprio(const GameModeContext *self, const pid_t client, int
 			 */
 		} else if (current != expected) {
 			/* Don't try and adjust the ioprio value if the value we got doesn't match default */
-			LOG_ERROR("Refused to set ioprio on client [%d]: prio was (%d) but we expected (%d)\n",
+			LOG_ERROR("Skipping ioprio on client [%d,%d]: ioprio was (%d) but we expected (%d)\n",
+			          client,
 			          tid,
 			          current,
 			          expected);
@@ -176,8 +178,10 @@ void game_mode_apply_ioprio(const GameModeContext *self, const pid_t client, int
 			int p = ioprio;
 			ioprio = IOPRIO_PRIO_VALUE(IOPRIO_CLASS_BE, ioprio);
 			if (ioprio_set(IOPRIO_WHO_PROCESS, tid, ioprio) != 0) {
+				/* This could simply mean the thread is gone now, as above */
 				LOG_ERROR(
-				    "Setting client [%d] IO priority to (%d) failed with error %d, ignoring\n",
+				    "Setting client [%d,%d] IO priority to (%d) failed with error %d, ignoring.\n",
+				    client,
 				    tid,
 				    p,
 				    errno);
