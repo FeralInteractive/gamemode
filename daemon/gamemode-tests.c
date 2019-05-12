@@ -809,7 +809,7 @@ static int game_mode_run_feature_tests(struct GameModeConfig *config)
 		else {
 			LOG_MSG("::: Failed!\n");
 			// Consider the CPU governor feature required
-			status = 1;
+			status = -1;
 		}
 	}
 
@@ -825,7 +825,7 @@ static int game_mode_run_feature_tests(struct GameModeConfig *config)
 		else {
 			LOG_MSG("::: Failed!\n");
 			// Any custom scripts should be expected to work
-			status = 1;
+			status = -1;
 		}
 	}
 
@@ -841,7 +841,7 @@ static int game_mode_run_feature_tests(struct GameModeConfig *config)
 		else {
 			LOG_MSG("::: Failed!\n");
 			// Any custom scripts should be expected to work
-			status = 1;
+			status = -1;
 		}
 	}
 
@@ -860,7 +860,7 @@ static int game_mode_run_feature_tests(struct GameModeConfig *config)
 		else {
 			LOG_MSG("::: Failed!\n");
 			// Renice should be expected to work, if set
-			status = 1;
+			status = -1;
 		}
 	}
 
@@ -876,7 +876,7 @@ static int game_mode_run_feature_tests(struct GameModeConfig *config)
 		else {
 			LOG_MSG("::: Failed!\n");
 			// Ioprio should be expected to work, if set
-			status = 1;
+			status = -1;
 		}
 	}
 
