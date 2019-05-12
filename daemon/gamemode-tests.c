@@ -874,9 +874,8 @@ static int game_mode_run_feature_tests(struct GameModeConfig *config)
 		else if (iopriostatus == 0)
 			LOG_MSG("::: Passed\n");
 		else {
-			LOG_MSG(
-			    "::: Failed! (known: https://github.com/FeralInteractive/gamemode/issues/140)\n");
-			status = 1;
+			LOG_MSG("::: Failed!\n");
+			status = -1;
 		}
 	}
 
