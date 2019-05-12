@@ -36,6 +36,8 @@ POSSIBILITY OF SUCH DAMAGE.
 #include "logging.h"
 
 #include <libgen.h>
+#include <pthread.h>
+#include <sys/syscall.h>
 #include <sys/types.h>
 #include <sys/wait.h>
 #include <unistd.h>
@@ -536,6 +538,145 @@ int run_gpu_optimisation_tests(struct GameModeConfig *config)
 	return gpustatus;
 }
 
+/**
+ * Multithreaded process simulation
+ *
+ * Some of the optimisations that gamemode implements needs to be tested against a full process
+ * tree, otherwise we may only be applying them to only the main thread
+ */
+typedef struct {
+	pthread_barrier_t *barrier;
+	pid_t this;
+} ThreadInfo;
+
+static void *fake_thread_wait(void *arg)
+{
+	ThreadInfo *info = (ThreadInfo *)arg;
+
+	/* Store the thread ID */
+	info->this = (pid_t)syscall(SYS_gettid);
+
+	/**
+	 * Wait twice
+	 * First to sync that all threads have started
+	 * Second to sync all threads exiting
+	 */
+	/* TODO: Error handle */
+	pthread_barrier_wait(info->barrier);
+	pthread_barrier_wait(info->barrier);
+
+	return NULL;
+}
+
+/**
+ * Function to test a thread for specific attributes
+ * Arguments are:
+ *   expected value
+ *   the thread id
+ */
+typedef int (*testfunc)(int, pid_t);
+
+/* Runs a process tree in a child and tests each thread */
+static pid_t run_process_tree(int innactive, int active, testfunc func)
+{
+	/* Create a fake game-like multithreaded fork */
+	pid_t child = fork();
+	if (child == 0) {
+		/* Some stetup */
+		const unsigned int numthreads = 3;
+		pthread_barrier_t barrier;
+		pthread_barrier_init(&barrier, NULL, numthreads + 1);
+
+		/* First, request gamemode for this child process before it created the threads */
+		gamemode_request_start();
+
+		/* Spawn a few child threads */
+		pthread_t threads[numthreads];
+		ThreadInfo info[numthreads];
+		for (unsigned int i = 0; i < numthreads; i++) {
+			info[i].barrier = &barrier;
+			int err = pthread_create(&threads[i], NULL, fake_thread_wait, &info[i]);
+			if (err != 0) {
+				LOG_ERROR("Failed to spawn thread! Error: %d\n", err);
+				exit(EXIT_FAILURE);
+			}
+		}
+
+		/* Wait for threads to be created */
+		pthread_barrier_wait(&barrier);
+
+		/* Test each spawned thread */
+		int ret = 0;
+		for (unsigned int i = 0; i < numthreads; i++)
+			ret ^= func(active, info[i].this);
+
+		if (ret != 0) {
+			LOG_ERROR("Initial ioprio values for new threads were incorrect!\n");
+			gamemode_request_end();
+			exit(ret);
+		}
+
+		/* Request gamemode end */
+		gamemode_request_end();
+
+		/* Test each spawned thread */
+		for (unsigned int i = 0; i < numthreads; i++)
+			ret ^= func(innactive, info[i].this);
+		if (ret != 0) {
+			LOG_ERROR("Ioprio values for threads were not reset after gamemode_request_end!\n");
+			exit(ret);
+		}
+
+		/* Request gamemode again - this time after threads were created */
+		gamemode_request_start();
+
+		/* Test each spawned thread */
+		for (unsigned int i = 0; i < numthreads; i++)
+			ret ^= func(active, info[i].this);
+		if (ret != 0) {
+			LOG_ERROR("ioprio values for threads were not set correctly!\n");
+			exit(ret);
+		}
+
+		/* Request gamemode end */
+		gamemode_request_end();
+
+		/* Test each spawned thread */
+		for (unsigned int i = 0; i < numthreads; i++)
+			ret ^= func(innactive, info[i].this);
+		if (ret != 0) {
+			LOG_ERROR("Ioprio values for threads were not reset after gamemode_request_end!\n");
+			exit(ret);
+		}
+
+		/* Tell the threads to continue */
+		pthread_barrier_wait(&barrier);
+
+		/* Wait for threads to join */
+		/* TODO: Error check */
+		for (unsigned int i = 0; i < numthreads; i++)
+			ret &= pthread_join(threads[i], NULL);
+
+		/* We're done, so return the error code generated */
+		exit(ret);
+	}
+
+	/* Wait for the child */
+	int wstatus = 0;
+	waitpid(child, &wstatus, 0);
+
+	int status = 0;
+	if (WIFEXITED(wstatus))
+		status = WEXITSTATUS(wstatus);
+	else {
+		/* TODO: Gather some error information */
+		LOG_ERROR("Multithreaded child exited abnormally!\n");
+		status = -1;
+	}
+
+	return status;
+}
+
 int run_renice_tests(struct GameModeConfig *config)
 {
 	/* read configuration "renice" (1..20) */
@@ -579,6 +720,19 @@ int run_renice_tests(struct GameModeConfig *config)
 	return ret;
 }
 
+int test_ioprio(int expected, pid_t this)
+{
+	int val = game_mode_get_ioprio(this);
+	if (val != expected) {
+		LOG_ERROR("ioprio value was incorrect for thread %d!\nExpected: %d, Was: %d\n",
+		          this,
+		          expected,
+		          val);
+		return -1;
+	}
+	return 0;
+}
+
 int run_ioprio_tests(struct GameModeConfig *config)
 {
 	/* read configuration "ioprio" */
@@ -620,6 +774,13 @@ int run_ioprio_tests(struct GameModeConfig *config)
 		LOG_ERROR("ioprio value non-default after gamemode_request_end\nExpected: %d, Was: %d\n",
 		          IOPRIO_DEFAULT,
 		          val);
+		ret = -1;
+	}
+
+	/* Check multiprocess nice works as well */
+	val = run_process_tree(IOPRIO_DEFAULT, (int)ioprio, test_ioprio);
+	if (val != 0) {
+		LOG_ERROR("Multithreaded ioprio tests failed!\n");
 		ret = -1;
 	}
 
