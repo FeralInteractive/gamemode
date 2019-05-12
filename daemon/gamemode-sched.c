@@ -35,8 +35,10 @@ POSSIBILITY OF SUCH DAMAGE.
 #include "gamemode.h"
 #include "logging.h"
 
+#include <dirent.h>
 #include <errno.h>
 #include <sched.h>
+#include <stdio.h>
 #include <string.h>
 #include <sys/resource.h>
 #include <sys/sysinfo.h>
@@ -96,30 +98,53 @@ void game_mode_apply_renice(const GameModeContext *self, const pid_t client, int
 		renice = 0;
 	}
 
-	/* Clear errno as -1 is a regitimate return */
-	errno = 0;
-	int prio = getpriority(PRIO_PROCESS, (id_t)client);
-	if (prio == -1 && errno) {
-		/* process has likely ended, only log an error if we were actually trying to set a non-zero
-		 * value */
-		if (errno == ESRCH && renice != 0)
-			LOG_ERROR("getpriority returned ESRCH for process %d\n", client);
-	} else if (prio != expected) {
-		/*
-		 * Don't adjust priority if it does not match the expected value
-		 * ie. Another process has changed it, or it began non-standard
-		 */
-		LOG_ERROR("Refused to renice client [%d]: prio was (%d) but we expected (%d)\n",
-		          client,
-		          prio,
-		          expected);
-	} else if (setpriority(PRIO_PROCESS, (id_t)client, (int)renice)) {
-		LOG_HINTED(ERROR,
-		           "Failed to renice client [%d], ignoring error condition: %s\n",
-		           "    -- Your user may not have permission to do this. Please read the docs\n"
-		           "    -- to learn how to adjust the pam limits.\n",
-		           client,
-		           strerror(errno));
+	/* Open the tasks dir for the client */
+	char tasks[128];
+	snprintf(tasks, sizeof(tasks), "/proc/%d/task", client);
+	DIR *client_task_dir = opendir(tasks);
+	if (client_task_dir == NULL) {
+		LOG_ERROR("Could not inspect tasks for client [%d]! Skipping ioprio optimisation.\n",
+		          client);
+		return;
+	}
+
+	/* Iterate for all tasks of client process */
+	struct dirent *tid_entry;
+	while ((tid_entry = readdir(client_task_dir)) != NULL) {
+		/* Skip . and .. */
+		if (tid_entry->d_name[0] == '.')
+			continue;
+
+		/* task name is the name of the file */
+		int tid = atoi(tid_entry->d_name);
+
+		/* Clear errno as -1 is a regitimate return */
+		errno = 0;
+		int prio = getpriority(PRIO_PROCESS, (id_t)tid);
+		if (prio == -1 && errno) {
+			/* process has likely ended, only log an error if we were actually trying to set a
+			 * non-zero value */
+			if (errno == ESRCH && renice != 0)
+				LOG_ERROR("getpriority returned ESRCH for process %d\n", tid);
+		} else if (prio != expected) {
+			/*
+			 * Don't adjust priority if it does not match the expected value
+			 * ie. Another process has changed it, or it began non-standard
+			 */
+			LOG_ERROR("Refused to renice client [%d,%d]: prio was (%d) but we expected (%d)\n",
+			          client,
+			          tid,
+			          prio,
+			          expected);
+		} else if (setpriority(PRIO_PROCESS, (id_t)client, (int)renice)) {
+			LOG_HINTED(ERROR,
+			           "Failed to renice client [%d,%d], ignoring error condition: %s\n",
+			           "    -- Your user may not have permission to do this. Please read the docs\n"
+			           "    -- to learn how to adjust the pam limits.\n",
+			           client,
+			           tid,
+			           strerror(errno));
+		}
 	}
 }
 
