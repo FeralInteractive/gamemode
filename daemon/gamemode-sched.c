@@ -121,11 +121,13 @@ void game_mode_apply_renice(const GameModeContext *self, const pid_t client, int
 		/* Clear errno as -1 is a regitimate return */
 		errno = 0;
 		int prio = getpriority(PRIO_PROCESS, (id_t)tid);
+
 		if (prio == -1 && errno) {
-			/* process has likely ended, only log an error if we were actually trying to set a
-			 * non-zero value */
-			if (errno == ESRCH && renice != 0)
-				LOG_ERROR("getpriority returned ESRCH for process %d\n", tid);
+			/* Process may well have ended */
+			LOG_ERROR("getpriority failed for client [%d,%d] with error: %s\n",
+			          client,
+			          tid,
+			          strerror(errno));
 		} else if (prio != expected) {
 			/*
 			 * Don't adjust priority if it does not match the expected value
