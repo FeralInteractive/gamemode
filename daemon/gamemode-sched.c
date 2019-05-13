@@ -138,7 +138,7 @@ void game_mode_apply_renice(const GameModeContext *self, const pid_t client, int
 			          tid,
 			          prio,
 			          expected);
-		} else if (setpriority(PRIO_PROCESS, (id_t)client, (int)renice)) {
+		} else if (setpriority(PRIO_PROCESS, (id_t)tid, (int)renice)) {
 			LOG_HINTED(ERROR,
 			           "Failed to renice client [%d,%d], ignoring error condition: %s\n",
 			           "    -- Your user may not have permission to do this. Please read the docs\n"
