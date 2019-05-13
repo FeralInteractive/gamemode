@@ -627,6 +627,7 @@ static pid_t run_tests_on_process_tree(int innactive, int active, int (*func)(pi
 			fail |= (active != func(info[i].this));
 		if (fail) {
 			LOG_ERROR("values for threads were not set correctly!\n");
+			gamemode_request_end();
 			exit(-1);
 		}
 
