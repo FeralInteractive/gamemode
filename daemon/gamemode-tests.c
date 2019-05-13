@@ -865,9 +865,6 @@ static int game_mode_run_feature_tests(struct GameModeConfig *config)
 		}
 	}
 
-	/* Does the screensaver get inhibited? */
-	/* TODO: Unknown if this is testable, org.freedesktop.ScreenSaver has no query method */
-
 	/* Was the process reniced? */
 	{
 		LOG_MSG("::: Verifying renice\n");
@@ -878,9 +875,9 @@ static int game_mode_run_feature_tests(struct GameModeConfig *config)
 		else if (renicestatus == 0)
 			LOG_MSG("::: Passed\n");
 		else {
-			LOG_MSG("::: Failed! (non-fatal, known issue with multithreaded programs)\n");
+			LOG_MSG("::: Failed!\n");
 			// Renice should be expected to work, if set
-			status = 1;
+			status = -1;
 		}
 	}
 
@@ -899,10 +896,10 @@ static int game_mode_run_feature_tests(struct GameModeConfig *config)
 		}
 	}
 
-	/* Was the scheduling applied? */
-	/* Were io priorities changed? */
-	/* Note: These don't get cleared up on un-register, so will have already been applied */
 	/* TODO */
+	/* Was the scheduling applied and removed? Does it get applied to a full process tree? */
+	/* Does the screensaver get inhibited? Unknown if this is testable, org.freedesktop.ScreenSaver
+	 * has no query method */
 
 	if (status != -1)
 		LOG_MSG(":: Passed%s\n\n", status > 0 ? " (with optional failures)" : "");
