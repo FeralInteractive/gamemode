@@ -611,7 +611,7 @@ static pid_t run_process_tree(int innactive, int active, testfunc func)
 			ret ^= func(active, info[i].this);
 
 		if (ret != 0) {
-			LOG_ERROR("Initial ioprio values for new threads were incorrect!\n");
+			LOG_ERROR("Initial values for new threads were incorrect!\n");
 			gamemode_request_end();
 			exit(ret);
 		}
@@ -623,7 +623,7 @@ static pid_t run_process_tree(int innactive, int active, testfunc func)
 		for (unsigned int i = 0; i < numthreads; i++)
 			ret ^= func(innactive, info[i].this);
 		if (ret != 0) {
-			LOG_ERROR("Ioprio values for threads were not reset after gamemode_request_end!\n");
+			LOG_ERROR("values for threads were not reset after gamemode_request_end!\n");
 			exit(ret);
 		}
 
@@ -634,7 +634,7 @@ static pid_t run_process_tree(int innactive, int active, testfunc func)
 		for (unsigned int i = 0; i < numthreads; i++)
 			ret ^= func(active, info[i].this);
 		if (ret != 0) {
-			LOG_ERROR("ioprio values for threads were not set correctly!\n");
+			LOG_ERROR("values for threads were not set correctly!\n");
 			exit(ret);
 		}
 
@@ -645,7 +645,7 @@ static pid_t run_process_tree(int innactive, int active, testfunc func)
 		for (unsigned int i = 0; i < numthreads; i++)
 			ret ^= func(innactive, info[i].this);
 		if (ret != 0) {
-			LOG_ERROR("Ioprio values for threads were not reset after gamemode_request_end!\n");
+			LOG_ERROR("values for threads were not reset after gamemode_request_end!\n");
 			exit(ret);
 		}
 
