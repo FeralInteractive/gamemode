@@ -561,9 +561,14 @@ static void *fake_thread_wait(void *arg)
 	 * First to sync that all threads have started
 	 * Second to sync all threads exiting
 	 */
-	/* TODO: Error handle */
-	pthread_barrier_wait(info->barrier);
-	pthread_barrier_wait(info->barrier);
+	int ret = 0;
+	ret = pthread_barrier_wait(info->barrier);
+	if (ret != 0 && ret != PTHREAD_BARRIER_SERIAL_THREAD)
+		FATAL_ERROR("pthread_barrier_wait failed in child with error %d!\n", ret);
+
+	ret = pthread_barrier_wait(info->barrier);
+	if (ret != 0 && ret != PTHREAD_BARRIER_SERIAL_THREAD)
+		FATAL_ERROR("pthread_barrier_wait failed in child with error %d!\n", ret);
 
 	return NULL;
 }
@@ -646,10 +651,12 @@ static pid_t run_tests_on_process_tree(int innactive, int active, int (*func)(pi
 		pthread_barrier_wait(&barrier);
 
 		/* Wait for threads to join */
-		/* TODO: Error check */
 		int ret = 0;
 		for (unsigned int i = 0; i < numthreads; i++)
 			ret &= pthread_join(threads[i], NULL);
+
+		if (ret != 0)
+			LOG_ERROR("Thread cleanup in multithreaded tests failed!\n");
 
 		/* We're done, so return the error code generated */
 		exit(ret);
@@ -663,7 +670,6 @@ static pid_t run_tests_on_process_tree(int innactive, int active, int (*func)(pi
 	if (WIFEXITED(wstatus))
 		status = WEXITSTATUS(wstatus);
 	else {
-		/* TODO: Gather some error information */
 		LOG_ERROR("Multithreaded child exited abnormally!\n");
 		status = -1;
 	}
@@ -993,7 +999,6 @@ int game_mode_run_client_tests(void)
 		return -1;
 
 	/* Controls whether we require a supervisor to actually make requests */
-	/* TODO: This effects all tests below */
 	if (config_get_require_supervisor(config) != 0) {
 		LOG_ERROR("Tests currently unsupported when require_supervisor is set\n");
 		return -1;
