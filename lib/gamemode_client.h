@@ -233,7 +233,7 @@ __attribute__((always_inline)) static inline const char *gamemode_error_string(v
 }
 
 /**
- * Redirect to the real libgamemod
+ * Redirect to the real libgamemode
  * Allow automatically requesting game mode
  * Also prints errors as they happen.
  */
