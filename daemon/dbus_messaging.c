@@ -207,6 +207,17 @@ void game_mode_client_count_changed(void)
 }
 
 /**
+ * Handles the Refresh Config request
+ */
+static int method_refresh_config(sd_bus_message *m, void *userdata,
+                                 __attribute__((unused)) sd_bus_error *ret_error)
+{
+	GameModeContext *context = userdata;
+	int status = game_mode_refresh_config(context);
+	return sd_bus_reply_method_return(m, "i", status);
+}
+
+/**
  * D-BUS vtable to dispatch virtual methods
  */
 static const sd_bus_vtable gamemode_vtable[] = {
@@ -222,6 +233,7 @@ static const sd_bus_vtable gamemode_vtable[] = {
 	              SD_BUS_VTABLE_UNPRIVILEGED),
 	SD_BUS_METHOD("QueryStatusByPID", "ii", "i", method_query_status_by_pid,
 	              SD_BUS_VTABLE_UNPRIVILEGED),
+	SD_BUS_METHOD("RefreshConfig", "", "i", method_refresh_config, SD_BUS_VTABLE_UNPRIVILEGED),
 	SD_BUS_VTABLE_END
 };
 

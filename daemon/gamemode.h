@@ -111,6 +111,11 @@ int game_mode_context_query_status(GameModeContext *self, pid_t pid, pid_t reque
  */
 GameModeConfig *game_mode_config_from_context(const GameModeContext *context);
 
+/*
+ * Refresh the current configuration
+ */
+int game_mode_refresh_config(GameModeContext *context);
+
 /** gamemode-env.c
  * Provides internal API functions specific to working environment
  * variables.

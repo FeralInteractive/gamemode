@@ -99,6 +99,17 @@ static void game_mode_context_leave(GameModeContext *self);
 static char *game_mode_context_find_exe(pid_t pid);
 static void game_mode_execute_scripts(char scripts[CONFIG_LIST_MAX][CONFIG_VALUE_MAX], int timeout);
 
+static void start_reaper_thread(GameModeContext *self)
+{
+	pthread_mutex_init(&self->reaper.mutex, NULL);
+	pthread_cond_init(&self->reaper.condition, NULL);
+
+	self->reaper.running = true;
+	if (pthread_create(&self->reaper.thread, NULL, game_mode_context_reaper, self) != 0) {
+		FATAL_ERROR("Couldn't construct a new thread");
+	}
+}
+
 void game_mode_context_init(GameModeContext *self)
 {
 	if (had_context_init) {
@@ -120,14 +131,25 @@ void game_mode_context_init(GameModeContext *self)
 	game_mode_initialise_gpu(self->config, &self->target_gpu);
 
 	pthread_rwlock_init(&self->rwlock, NULL);
-	pthread_mutex_init(&self->reaper.mutex, NULL);
-	pthread_cond_init(&self->reaper.condition, NULL);
 
 	/* Get the reaper thread going */
-	self->reaper.running = true;
-	if (pthread_create(&self->reaper.thread, NULL, game_mode_context_reaper, self) != 0) {
-		FATAL_ERROR("Couldn't construct a new thread");
-	}
+	start_reaper_thread(self);
+}
+
+static void end_reaper_thread(GameModeContext *self)
+{
+	self->reaper.running = false;
+
+	/* We might be stuck waiting, so wake it up again */
+	pthread_mutex_lock(&self->reaper.mutex);
+	pthread_cond_signal(&self->reaper.condition);
+	pthread_mutex_unlock(&self->reaper.mutex);
+
+	/* Join the thread as soon as possible */
+	pthread_join(self->reaper.thread, NULL);
+
+	pthread_cond_destroy(&self->reaper.condition);
+	pthread_mutex_destroy(&self->reaper.mutex);
 }
 
 void game_mode_context_destroy(GameModeContext *self)
@@ -143,18 +165,8 @@ void game_mode_context_destroy(GameModeContext *self)
 
 	had_context_init = false;
 	game_mode_client_free(self->client);
-	self->reaper.running = false;
 
-	/* We might be stuck waiting, so wake it up again */
-	pthread_mutex_lock(&self->reaper.mutex);
-	pthread_cond_signal(&self->reaper.condition);
-	pthread_mutex_unlock(&self->reaper.mutex);
-
-	/* Join the thread as soon as possible */
-	pthread_join(self->reaper.thread, NULL);
-
-	pthread_cond_destroy(&self->reaper.condition);
-	pthread_mutex_destroy(&self->reaper.mutex);
+	end_reaper_thread(self);
 
 	/* Destroy the gpu object */
 	game_mode_free_gpu(&self->stored_gpu);
@@ -324,6 +336,20 @@ int game_mode_context_num_clients(GameModeContext *self)
 	return atomic_load(&self->refcount);
 }
 
+static int game_mode_apply_client_optimisations(GameModeContext *self, pid_t client)
+{
+	/* Store current renice and apply */
+	game_mode_apply_renice(self, client, 0 /* expect zero value to start with */);
+
+	/* Store current ioprio value and apply  */
+	game_mode_apply_ioprio(self, client, IOPRIO_DEFAULT);
+
+	/* Apply scheduler policies */
+	game_mode_apply_scheduling(self, client);
+
+	return 0;
+}
+
 int game_mode_context_register(GameModeContext *self, pid_t client, pid_t requester)
 {
 	errno = 0;
@@ -412,14 +438,7 @@ int game_mode_context_register(GameModeContext *self, pid_t client, pid_t reques
 		game_mode_context_enter(self);
 	}
 
-	/* Store current renice and apply */
-	game_mode_apply_renice(self, client, 0 /* expect zero value to start with */);
-
-	/* Store current ioprio value and apply  */
-	game_mode_apply_ioprio(self, client, IOPRIO_DEFAULT);
-
-	/* Apply scheduler policies */
-	game_mode_apply_scheduling(self, client);
+	game_mode_apply_client_optimisations(self, client);
 
 	game_mode_client_count_changed();
 
@@ -431,6 +450,17 @@ error_cleanup:
 	free(executable);
 	game_mode_client_free(cl);
 	return -1;
+}
+
+static int game_mode_remove_client_optimisations(GameModeContext *self, pid_t client)
+{
+	/* Restore the ioprio value for the process, expecting it to be the config value  */
+	game_mode_apply_ioprio(self, client, (int)config_get_ioprio_value(self->config));
+
+	/* Restore the renice value for the process, expecting it to be our config value */
+	game_mode_apply_renice(self, client, (int)config_get_renice_value(self->config));
+
+	return 0;
 }
 
 int game_mode_context_unregister(GameModeContext *self, pid_t client, pid_t requester)
@@ -508,11 +538,7 @@ int game_mode_context_unregister(GameModeContext *self, pid_t client, pid_t requ
 
 	game_mode_client_count_changed();
 
-	/* Restore the ioprio value for the process, expecting it to be the config value  */
-	game_mode_apply_ioprio(self, client, (int)config_get_ioprio_value(self->config));
-
-	/* Restore the renice value for the process, expecting it to be our config value */
-	game_mode_apply_renice(self, client, (int)config_get_renice_value(self->config));
+	game_mode_remove_client_optimisations(self, client);
 
 	return 0;
 }
@@ -733,4 +759,47 @@ static void game_mode_execute_scripts(char scripts[CONFIG_LIST_MAX][CONFIG_VALUE
 		}
 		i++;
 	}
+}
+
+/*
+ * Refresh the current configuration
+ *
+ * Refreshing the configuration live would be problematic for various optimisation values, to ensure
+ * we have a fully clean state, we tear down the whole gamemode state and regrow it with a new
+ * config, remembering the registered games
+ */
+int game_mode_refresh_config(GameModeContext *self)
+{
+	LOG_MSG("Refreshing config...");
+
+	/* Stop the reaper thread first */
+	end_reaper_thread(self);
+
+	/* Remove current client optimisations */
+	pthread_rwlock_rdlock(&self->rwlock);
+	for (GameModeClient *cl = self->client; cl; cl = cl->next)
+		game_mode_remove_client_optimisations(self, cl->pid);
+	pthread_rwlock_unlock(&self->rwlock);
+
+	/* Shut down the global context */
+	game_mode_context_leave(self);
+
+	/* Reload the config */
+	config_reload(self->config);
+
+	/* Start the global context back up */
+	game_mode_context_enter(self);
+
+	/* Re-apply all current optimisations */
+	pthread_rwlock_rdlock(&self->rwlock);
+	for (GameModeClient *cl = self->client; cl; cl = cl->next)
+		game_mode_apply_client_optimisations(self, cl->pid);
+	pthread_rwlock_unlock(&self->rwlock);
+
+	/* Restart the reaper thread back up again */
+	start_reaper_thread(self);
+
+	LOG_MSG("Config refreshed...");
+
+	return 0;
 }
