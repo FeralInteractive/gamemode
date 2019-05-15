@@ -637,6 +637,35 @@ static void game_mode_client_free(GameModeClient *client)
 	free(client);
 }
 
+/* Internal refresh config function (assumes no contention with reaper thread) */
+static void game_mode_reload_config_internal(GameModeContext *self)
+{
+	LOG_MSG("Reloading config...\n");
+
+	/* Remove current client optimisations */
+	pthread_rwlock_rdlock(&self->rwlock);
+	for (GameModeClient *cl = self->client; cl; cl = cl->next)
+		game_mode_remove_client_optimisations(self, cl->pid);
+	pthread_rwlock_unlock(&self->rwlock);
+
+	/* Shut down the global context */
+	game_mode_context_leave(self);
+
+	/* Reload the config */
+	config_reload(self->config);
+
+	/* Start the global context back up */
+	game_mode_context_enter(self);
+
+	/* Re-apply all current optimisations */
+	pthread_rwlock_rdlock(&self->rwlock);
+	for (GameModeClient *cl = self->client; cl; cl = cl->next)
+		game_mode_apply_client_optimisations(self, cl->pid);
+	pthread_rwlock_unlock(&self->rwlock);
+
+	LOG_MSG("Config reload complete\n");
+}
+
 /**
  * We continuously run until told otherwise.
  */
@@ -663,6 +692,12 @@ static void *game_mode_context_reaper(void *userdata)
 
 		/* Expire remaining entries */
 		game_mode_context_auto_expire(self);
+
+		/* Check if we should be reloading the config, and do so if needed */
+		if (config_needs_reload(self->config)) {
+			LOG_MSG("Detected config file changes\n");
+			game_mode_reload_config_internal(self);
+		}
 
 		ts.tv_sec = time(NULL) + reaper_interval;
 	}
@@ -762,44 +797,21 @@ static void game_mode_execute_scripts(char scripts[CONFIG_LIST_MAX][CONFIG_VALUE
 }
 
 /*
- * Refresh the current configuration
+ * Reload the current configuration
  *
- * Refreshing the configuration live would be problematic for various optimisation values, to ensure
- * we have a fully clean state, we tear down the whole gamemode state and regrow it with a new
- * config, remembering the registered games
+ * Reloading the configuration completely live would be problematic for various optimisation values,
+ * to ensure we have a fully clean state, we tear down the whole gamemode state and regrow it with a
+ * new config, remembering the registered games
  */
-int game_mode_refresh_config(GameModeContext *self)
+int game_mode_reload_config(GameModeContext *self)
 {
-	LOG_MSG("Refreshing config...");
-
 	/* Stop the reaper thread first */
 	end_reaper_thread(self);
 
-	/* Remove current client optimisations */
-	pthread_rwlock_rdlock(&self->rwlock);
-	for (GameModeClient *cl = self->client; cl; cl = cl->next)
-		game_mode_remove_client_optimisations(self, cl->pid);
-	pthread_rwlock_unlock(&self->rwlock);
-
-	/* Shut down the global context */
-	game_mode_context_leave(self);
-
-	/* Reload the config */
-	config_reload(self->config);
-
-	/* Start the global context back up */
-	game_mode_context_enter(self);
-
-	/* Re-apply all current optimisations */
-	pthread_rwlock_rdlock(&self->rwlock);
-	for (GameModeClient *cl = self->client; cl; cl = cl->next)
-		game_mode_apply_client_optimisations(self, cl->pid);
-	pthread_rwlock_unlock(&self->rwlock);
+	game_mode_reload_config_internal(self);
 
 	/* Restart the reaper thread back up again */
 	start_reaper_thread(self);
-
-	LOG_MSG("Config refreshed...");
 
 	return 0;
 }
