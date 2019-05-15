@@ -642,25 +642,29 @@ static void game_mode_reload_config_internal(GameModeContext *self)
 {
 	LOG_MSG("Reloading config...\n");
 
-	/* Remove current client optimisations */
-	pthread_rwlock_rdlock(&self->rwlock);
-	for (GameModeClient *cl = self->client; cl; cl = cl->next)
-		game_mode_remove_client_optimisations(self, cl->pid);
-	pthread_rwlock_unlock(&self->rwlock);
+	/* Make sure we have a readwrite lock on ourselves */
+	pthread_rwlock_wrlock(&self->rwlock);
 
-	/* Shut down the global context */
-	game_mode_context_leave(self);
+	/* Remove current optimisations when we're already active */
+	if (game_mode_context_num_clients(self)) {
+		for (GameModeClient *cl = self->client; cl; cl = cl->next)
+			game_mode_remove_client_optimisations(self, cl->pid);
+
+		game_mode_context_leave(self);
+	}
 
 	/* Reload the config */
 	config_reload(self->config);
 
-	/* Start the global context back up */
-	game_mode_context_enter(self);
-
 	/* Re-apply all current optimisations */
-	pthread_rwlock_rdlock(&self->rwlock);
-	for (GameModeClient *cl = self->client; cl; cl = cl->next)
-		game_mode_apply_client_optimisations(self, cl->pid);
+	if (game_mode_context_num_clients(self)) {
+		/* Start the global context back up */
+		game_mode_context_enter(self);
+
+		for (GameModeClient *cl = self->client; cl; cl = cl->next)
+			game_mode_apply_client_optimisations(self, cl->pid);
+	}
+
 	pthread_rwlock_unlock(&self->rwlock);
 
 	LOG_MSG("Config reload complete\n");
