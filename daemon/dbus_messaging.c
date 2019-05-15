@@ -213,7 +213,7 @@ static int method_refresh_config(sd_bus_message *m, void *userdata,
                                  __attribute__((unused)) sd_bus_error *ret_error)
 {
 	GameModeContext *context = userdata;
-	int status = game_mode_refresh_config(context);
+	int status = game_mode_reload_config(context);
 	return sd_bus_reply_method_return(m, "i", status);
 }
 

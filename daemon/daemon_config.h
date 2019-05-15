@@ -69,6 +69,11 @@ void config_init(GameModeConfig *self);
 void config_reload(GameModeConfig *self);
 
 /*
+ * Check if the config has changed and will need a reload
+ */
+bool config_needs_reload(GameModeConfig *self);
+
+/*
  * Destroy a config
  * Invalidates the config
  */
