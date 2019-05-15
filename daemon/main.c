@@ -108,14 +108,12 @@ int main(int argc, char *argv[])
 	int opt = 0;
 
 	/* Options struct for getopt_long */
-	static struct option long_options[] = { { "daemonize", no_argument, 0, 'd' },
-		                                    { "log-to-syslog", no_argument, 0, 'l' },
-		                                    { "request", optional_argument, 0, 'r' },
-		                                    { "test", no_argument, 0, 't' },
-		                                    { "status", optional_argument, 0, 's' },
-		                                    { "help", no_argument, 0, 'h' },
-		                                    { "version", no_argument, 0, 'v' },
-		                                    { NULL, 0, NULL, 0 }, };
+	static struct option long_options[] = {
+		{ "daemonize", no_argument, 0, 'd' },     { "log-to-syslog", no_argument, 0, 'l' },
+		{ "request", optional_argument, 0, 'r' }, { "test", no_argument, 0, 't' },
+		{ "status", optional_argument, 0, 's' },  { "help", no_argument, 0, 'h' },
+		{ "version", no_argument, 0, 'v' },       { NULL, 0, NULL, 0 },
+	};
 	static const char *short_options = "dls::r::tvh";
 
 	while ((opt = getopt_long(argc, argv, short_options, long_options, 0)) != -1) {
