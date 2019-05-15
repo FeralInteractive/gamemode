@@ -188,4 +188,6 @@ void game_mode_apply_ioprio(const GameModeContext *self, const pid_t client, int
 			}
 		}
 	}
+
+	closedir(client_task_dir);
 }
