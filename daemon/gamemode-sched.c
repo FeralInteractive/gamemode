@@ -148,6 +148,8 @@ void game_mode_apply_renice(const GameModeContext *self, const pid_t client, int
 			           strerror(errno));
 		}
 	}
+
+	closedir(client_task_dir);
 }
 
 void game_mode_apply_scheduling(const GameModeContext *self, const pid_t client)
