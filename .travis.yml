@@ -2,15 +2,18 @@ dist: xenial
 language: c
 compiler: gcc
 sudo: false
-
 addons:
   apt:
     packages:
+      - clang
       - clang-format
       - python3-pip
       - python3-setuptools
       - libsystemd-dev
       - ninja-build
+  artifacts:
+    paths:
+    - $(git ls-files -o | tr "\n" ":")
 
 before_script:
   - pip3 install wheel
@@ -21,3 +24,4 @@ script:
   - ./scripts/format-check.sh
   - ./bootstrap.sh -Dwith-examples=true
   - gamemoded -v
+  - ./scripts/static-analyser-check.sh 
