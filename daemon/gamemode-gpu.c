@@ -84,6 +84,7 @@ int game_mode_initialise_gpu(GameModeConfig *config, GameModeGPUInfo **info)
 	new_info->vendor = gamemode_get_gpu_vendor(new_info->device);
 	if (!GPUVendorValid(new_info->vendor)) {
 		LOG_ERROR("Found invalid vendor, will not apply optimisations!\n");
+		free(new_info);
 		return -1;
 	}
 
