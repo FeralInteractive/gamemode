@@ -163,7 +163,7 @@ static int run_basic_client_tests(void)
 		return -1;
 	}
 
-	/* Verify that gamemode is now innactive */
+	/* Verify that gamemode is now inactive */
 	if (verify_deactivated() != 0)
 		return -1;
 
@@ -246,7 +246,7 @@ static int run_dual_client_tests(void)
 		usleep(100000);
 	}
 
-	/* Verify that gamemode is now innactive */
+	/* Verify that gamemode is now inactive */
 	if (verify_deactivated() != 0)
 		return -1;
 
@@ -300,7 +300,7 @@ static int run_gamemoderun_and_reaper_tests(struct GameModeConfig *config)
 	LOG_MSG("...Waiting for reaper thread (reaper_frequency set to %ld seconds)...\n", freq);
 	sleep((unsigned int)freq);
 
-	/* Verify that gamemode is now innactive */
+	/* Verify that gamemode is now inactive */
 	if (verify_deactivated() != 0)
 		return -1;
 
@@ -574,7 +574,7 @@ static void *fake_thread_wait(void *arg)
 }
 
 /* Runs a process tree in a child and tests each thread */
-static pid_t run_tests_on_process_tree(int innactive, int active, int (*func)(pid_t))
+static pid_t run_tests_on_process_tree(int inactive, int active, int (*func)(pid_t))
 {
 	/* Create a fake game-like multithreaded fork */
 	pid_t child = fork();
@@ -618,7 +618,7 @@ static pid_t run_tests_on_process_tree(int innactive, int active, int (*func)(pi
 
 		/* Test each spawned thread */
 		for (unsigned int i = 0; i < numthreads; i++)
-			fail |= (innactive != func(info[i].this));
+			fail |= (inactive != func(info[i].this));
 		if (fail) {
 			LOG_ERROR("values for threads were not reset after gamemode_request_end!\n");
 			exit(-1);
@@ -641,7 +641,7 @@ static pid_t run_tests_on_process_tree(int innactive, int active, int (*func)(pi
 
 		/* Test each spawned thread */
 		for (unsigned int i = 0; i < numthreads; i++)
-			fail |= (innactive != func(info[i].this));
+			fail |= (inactive != func(info[i].this));
 		if (fail) {
 			LOG_ERROR("values for threads were not reset after gamemode_request_end!\n");
 			exit(-1);
