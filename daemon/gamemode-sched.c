@@ -35,8 +35,10 @@ POSSIBILITY OF SUCH DAMAGE.
 #include "gamemode.h"
 #include "logging.h"
 
+#include <dirent.h>
 #include <errno.h>
 #include <sched.h>
+#include <stdio.h>
 #include <string.h>
 #include <sys/resource.h>
 #include <sys/sysinfo.h>
@@ -54,13 +56,28 @@ POSSIBILITY OF SUCH DAMAGE.
  * This tries to change the scheduler of the client to soft realtime mode
  * available in some kernels as SCHED_ISO. It also tries to adjust the nice
  * level. If some of each fail, ignore this and log a warning.
- *
- * We don't need to store the current values because when the client exits,
- * everything will be good: Scheduling is only applied to the client and
- * its children.
  */
-void game_mode_apply_renice(const GameModeContext *self, const pid_t client)
+
+#define RENICE_INVALID -128 /* Special value to store invalid value */
+int game_mode_get_renice(const pid_t client)
 {
+	/* Clear errno as -1 is a regitimate return */
+	errno = 0;
+	int priority = getpriority(PRIO_PROCESS, (id_t)client);
+	if (priority == -1 && errno) {
+		LOG_ERROR("getprority(PRIO_PROCESS, %d) failed : %s\n", client, strerror(errno));
+		return RENICE_INVALID;
+	}
+	return -priority;
+}
+
+/* If expected is 0 then we try to apply our renice, otherwise, we try to remove it */
+void game_mode_apply_renice(const GameModeContext *self, const pid_t client, int expected)
+{
+	if (expected == RENICE_INVALID)
+		/* Silently bail if fed an invalid value */
+		return;
+
 	GameModeConfig *config = game_mode_config_from_context(self);
 
 	/*
@@ -69,26 +86,70 @@ void game_mode_apply_renice(const GameModeContext *self, const pid_t client)
 	long int renice = config_get_renice_value(config);
 	if (renice == 0) {
 		return;
-	} else if ((renice < 1) || (renice > 20)) {
-		LOG_ONCE(ERROR, "Configured renice value '%ld' is invalid, will not renice.\n", renice);
-		return;
-	} else {
-		renice = -renice;
 	}
 
-	/*
-	 * don't adjust priority if it was already adjusted
-	 */
-	if (getpriority(PRIO_PROCESS, (id_t)client) != 0) {
-		LOG_ERROR("Refused to renice client [%d]: already reniced\n", client);
-	} else if (setpriority(PRIO_PROCESS, (id_t)client, (int)renice)) {
-		LOG_HINTED(ERROR,
-		           "Failed to renice client [%d], ignoring error condition: %s\n",
-		           "    -- Your user may not have permission to do this. Please read the docs\n"
-		           "    -- to learn how to adjust the pam limits.\n",
-		           client,
-		           strerror(errno));
+	/* Invert the renice value */
+	renice = -renice;
+
+	/* When expected is non-zero, we should try and remove the renice only if it doesn't match the
+	 * expected value */
+	if (expected != 0) {
+		expected = (int)renice;
+		renice = 0;
 	}
+
+	/* Open the tasks dir for the client */
+	char tasks[128];
+	snprintf(tasks, sizeof(tasks), "/proc/%d/task", client);
+	DIR *client_task_dir = opendir(tasks);
+	if (client_task_dir == NULL) {
+		LOG_ERROR("Could not inspect tasks for client [%d]! Skipping ioprio optimisation.\n",
+		          client);
+		return;
+	}
+
+	/* Iterate for all tasks of client process */
+	struct dirent *tid_entry;
+	while ((tid_entry = readdir(client_task_dir)) != NULL) {
+		/* Skip . and .. */
+		if (tid_entry->d_name[0] == '.')
+			continue;
+
+		/* task name is the name of the file */
+		int tid = atoi(tid_entry->d_name);
+
+		/* Clear errno as -1 is a regitimate return */
+		errno = 0;
+		int prio = getpriority(PRIO_PROCESS, (id_t)tid);
+
+		if (prio == -1 && errno) {
+			/* Process may well have ended */
+			LOG_ERROR("getpriority failed for client [%d,%d] with error: %s\n",
+			          client,
+			          tid,
+			          strerror(errno));
+		} else if (prio != expected) {
+			/*
+			 * Don't adjust priority if it does not match the expected value
+			 * ie. Another process has changed it, or it began non-standard
+			 */
+			LOG_ERROR("Refused to renice client [%d,%d]: prio was (%d) but we expected (%d)\n",
+			          client,
+			          tid,
+			          prio,
+			          expected);
+		} else if (setpriority(PRIO_PROCESS, (id_t)tid, (int)renice)) {
+			LOG_HINTED(ERROR,
+			           "Failed to renice client [%d,%d], ignoring error condition: %s\n",
+			           "    -- Your user may not have permission to do this. Please read the docs\n"
+			           "    -- to learn how to adjust the pam limits.\n",
+			           client,
+			           tid,
+			           strerror(errno));
+		}
+	}
+
+	closedir(client_task_dir);
 }
 
 void game_mode_apply_scheduling(const GameModeContext *self, const pid_t client)

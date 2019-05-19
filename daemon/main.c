@@ -56,6 +56,7 @@ POSSIBILITY OF SUCH DAMAGE.
 #include "gamemode_client.h"
 #include "logging.h"
 
+#include <getopt.h>
 #include <signal.h>
 #include <stdlib.h>
 #include <string.h>
@@ -64,12 +65,15 @@ POSSIBILITY OF SUCH DAMAGE.
 
 #define USAGE_TEXT                                                                                 \
 	"Usage: %s [-d] [-l] [-r] [-t] [-h] [-v]\n\n"                                                  \
-	"  -d  daemonize self after launch\n"                                                          \
-	"  -l  log to syslog\n"                                                                        \
-	"  -r  request gamemode and pause\n"                                                           \
-	"  -t  run tests\n"                                                                            \
-	"  -h  print this help\n"                                                                      \
-	"  -v  print version\n"                                                                        \
+	"  -r[PID], --request=[PID] Toggle gamemode for process\n"                                     \
+	"                           When no PID given, requests gamemode and pauses\n"                 \
+	"  -s[PID], --status=[PID]  Query the status of gamemode for process\n"                        \
+	"                           When no PID given, queries the status globally\n"                  \
+	"  -d, --daemonize          Daemonize self after launch\n"                                     \
+	"  -l, --log-to-syslog      Log to syslog\n"                                                   \
+	"  -r, --test               Run tests\n"                                                       \
+	"  -h, --help               Print this help\n"                                                 \
+	"  -v, --version            Print version\n"                                                   \
 	"\n"                                                                                           \
 	"See man page for more information.\n"
 
@@ -102,8 +106,17 @@ int main(int argc, char *argv[])
 	bool daemon = false;
 	bool use_syslog = false;
 	int opt = 0;
-	int status;
-	while ((opt = getopt(argc, argv, "dlsrtvh")) != -1) {
+
+	/* Options struct for getopt_long */
+	static struct option long_options[] = {
+		{ "daemonize", no_argument, 0, 'd' },     { "log-to-syslog", no_argument, 0, 'l' },
+		{ "request", optional_argument, 0, 'r' }, { "test", no_argument, 0, 't' },
+		{ "status", optional_argument, 0, 's' },  { "help", no_argument, 0, 'h' },
+		{ "version", no_argument, 0, 'v' },       { NULL, 0, NULL, 0 },
+	};
+	static const char *short_options = "dls::r::tvh";
+
+	while ((opt = getopt_long(argc, argv, short_options, long_options, 0)) != -1) {
 		switch (opt) {
 		case 'd':
 			daemon = true;
@@ -111,65 +124,135 @@ int main(int argc, char *argv[])
 		case 'l':
 			use_syslog = true;
 			break;
-		case 's': {
-			if ((status = gamemode_query_status()) < 0) {
-				LOG_ERROR("gamemode status request failed: %s\n", gamemode_error_string());
-				exit(EXIT_FAILURE);
-			} else if (status > 0) {
-				LOG_MSG("gamemode is active\n");
+
+		case 's':
+			if (optarg != NULL) {
+				pid_t pid = atoi(optarg);
+				switch (gamemode_query_status_for(pid)) {
+				case 0: /* inactive */
+					LOG_MSG("gamemode is inactive\n");
+					break;
+				case 1: /* active not not registered */
+					LOG_MSG("gamemode is active but [%d] not registered\n", pid);
+					break;
+				case 2: /* active for client */
+					LOG_MSG("gamemode is active and [%d] registered\n", pid);
+					break;
+				case -1:
+					LOG_ERROR("gamemode_query_status_for(%d) failed: %s\n",
+					          pid,
+					          gamemode_error_string());
+					exit(EXIT_FAILURE);
+				default:
+					LOG_ERROR("gamemode_query_status returned unexpected value 2\n");
+					exit(EXIT_FAILURE);
+				}
 			} else {
-				LOG_MSG("gamemode is inactive\n");
+				int ret = 0;
+				switch ((ret = gamemode_query_status())) {
+				case 0: /* inactive */
+					LOG_MSG("gamemode is inactive\n");
+					break;
+				case 1: /* active */
+					LOG_MSG("gamemode is active\n");
+					break;
+				case -1: /* error */
+					LOG_ERROR("gamemode status request failed: %s\n", gamemode_error_string());
+					exit(EXIT_FAILURE);
+				default: /* unexpected value eg. 2 */
+					LOG_ERROR("gamemode_query_status returned unexpected value %d\n", ret);
+					exit(EXIT_FAILURE);
+				}
 			}
 
 			exit(EXIT_SUCCESS);
-			break;
-		}
+
 		case 'r':
-			if (gamemode_request_start() < 0) {
-				LOG_ERROR("gamemode request failed: %s\n", gamemode_error_string());
-				exit(EXIT_FAILURE);
-			}
 
-			if ((status = gamemode_query_status()) == 2) {
-				LOG_MSG("gamemode request succeeded and is active\n");
-			} else if (status == 1) {
-				LOG_ERROR("gamemode request succeeded and is active but registration failed\n");
-				exit(EXIT_FAILURE);
+			if (optarg != NULL) {
+				pid_t pid = atoi(optarg);
+
+				/* toggle gamemode for the process */
+				switch (gamemode_query_status_for(pid)) {
+				case 0: /* inactive */
+				case 1: /* active not not registered */
+					LOG_MSG("gamemode not active for client, requesting start for %d...\n", pid);
+					if (gamemode_request_start_for(pid) < 0) {
+						LOG_ERROR("gamemode_request_start_for(%d) failed: %s\n",
+						          pid,
+						          gamemode_error_string());
+						exit(EXIT_FAILURE);
+					}
+					LOG_MSG("request succeeded\n");
+					break;
+				case 2: /* active for client */
+					LOG_MSG("gamemode active for client, requesting end for %d...\n", pid);
+					if (gamemode_request_end_for(pid) < 0) {
+						LOG_ERROR("gamemode_request_end_for(%d) failed: %s\n",
+						          pid,
+						          gamemode_error_string());
+						exit(EXIT_FAILURE);
+					}
+					LOG_MSG("request succeeded\n");
+					break;
+				case -1: /* error */
+					LOG_ERROR("gamemode_query_status_for(%d) failed: %s\n",
+					          pid,
+					          gamemode_error_string());
+					exit(EXIT_FAILURE);
+				}
+
 			} else {
-				LOG_ERROR("gamemode request succeeded but is not active\n");
-				exit(EXIT_FAILURE);
-			}
+				/* Request gamemode for this process */
+				if (gamemode_request_start() < 0) {
+					LOG_ERROR("gamemode request failed: %s\n", gamemode_error_string());
+					exit(EXIT_FAILURE);
+				}
 
-			// Simply pause and wait a SIGINT
-			if (signal(SIGINT, sigint_handler_noexit) == SIG_ERR) {
-				FATAL_ERRORNO("Could not catch SIGINT");
-			}
-			pause();
+				/* Request and report on the status */
+				switch (gamemode_query_status()) {
+				case 2: /* active for this client */
+					LOG_MSG("gamemode request succeeded and is active\n");
+					break;
+				case 1: /* active */
+					LOG_ERROR("gamemode request succeeded and is active but registration failed\n");
+					exit(EXIT_FAILURE);
+				case 0: /* innactive */
+					LOG_ERROR("gamemode request succeeded but is not active\n");
+					exit(EXIT_FAILURE);
+				case -1: /* error */
+					LOG_ERROR("gamemode_query_status failed: %s\n", gamemode_error_string());
+					exit(EXIT_FAILURE);
+				}
 
-			// Explicitly clean up
-			if (gamemode_request_end() < 0) {
-				LOG_ERROR("gamemode request failed: %s\n", gamemode_error_string());
-				exit(EXIT_FAILURE);
+				/* Simply pause and wait a SIGINT */
+				if (signal(SIGINT, sigint_handler_noexit) == SIG_ERR) {
+					FATAL_ERRORNO("Could not catch SIGINT");
+				}
+				pause();
+
+				/* Explicitly clean up */
+				if (gamemode_request_end() < 0) {
+					LOG_ERROR("gamemode request failed: %s\n", gamemode_error_string());
+					exit(EXIT_FAILURE);
+				}
 			}
 
 			exit(EXIT_SUCCESS);
-			break;
-		case 't':
-			status = game_mode_run_client_tests();
+
+		case 't': {
+			int status = game_mode_run_client_tests();
 			exit(status);
-			break;
+		}
 		case 'v':
 			LOG_MSG(VERSION_TEXT);
 			exit(EXIT_SUCCESS);
-			break;
 		case 'h':
 			LOG_MSG(USAGE_TEXT, argv[0]);
 			exit(EXIT_SUCCESS);
-			break;
 		default:
 			fprintf(stderr, USAGE_TEXT, argv[0]);
 			exit(EXIT_FAILURE);
-			break;
 		}
 	}
 
