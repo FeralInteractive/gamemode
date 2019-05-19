@@ -217,7 +217,7 @@ int main(int argc, char *argv[])
 				case 1: /* active */
 					LOG_ERROR("gamemode request succeeded and is active but registration failed\n");
 					exit(EXIT_FAILURE);
-				case 0: /* innactive */
+				case 0: /* inactive */
 					LOG_ERROR("gamemode request succeeded but is not active\n");
 					exit(EXIT_FAILURE);
 				case -1: /* error */
