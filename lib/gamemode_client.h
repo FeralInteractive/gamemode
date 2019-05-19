@@ -42,6 +42,9 @@ POSSIBILITY OF SUCH DAMAGE.
  *   0 if the request was sent successfully
  *   -1 if the request failed
  *
+ * GAMEMODE_AUTO can be defined to make the above two functions apply during static init and
+ * destruction, as appropriate. In this configuration, errors will be printed to stderr
+ *
  * int gamemode_query_status() - Query the current status of gamemode
  *   0 if gamemode is inactive
  *   1 if gamemode is active
@@ -66,15 +69,15 @@ POSSIBILITY OF SUCH DAMAGE.
  *
  * const char* gamemode_error_string() - Get an error string
  *   returns a string describing any of the above errors
+ *
+ * Note: All the above requests can be blocking - dbus requests can and will block while the daemon
+ * handles the request. It is not recommended to make these calls in performance critical code
  */
 
 #include <stdbool.h>
 #include <stdio.h>
-#include <stdlib.h>
-#include <unistd.h>
 
 #include <dlfcn.h>
-#include <errno.h>
 #include <string.h>
 
 #include <sys/types.h>
@@ -232,7 +235,7 @@ __attribute__((always_inline)) static inline const char *gamemode_error_string(v
 }
 
 /**
- * Redirect to the real libgamemod
+ * Redirect to the real libgamemode
  * Allow automatically requesting game mode
  * Also prints errors as they happen.
  */
