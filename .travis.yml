@@ -19,5 +19,5 @@ before_script:
 
 script:
   - ./scripts/format-check.sh
-  - ./bootstrap.sh
+  - ./bootstrap.sh -Dwith-examples=true
   - gamemoded -v
