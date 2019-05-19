@@ -64,7 +64,7 @@ bool game_mode_detect_wine_loader(const char *exe)
 char *game_mode_resolve_wine_preloader(const pid_t pid)
 {
 	char buffer[PATH_MAX];
-	char *proc_path = NULL, *wine_exe = NULL, *wineprefix = NULL;
+	char *wine_exe = NULL, *wineprefix = NULL;
 
 	/* Open the directory, we are potentially reading multiple files from it */
 	procfd_t proc_fd = game_mode_open_proc(pid);
@@ -143,7 +143,6 @@ char *game_mode_resolve_wine_preloader(const pid_t pid)
 error_cleanup:
 	game_mode_close_proc(proc_fd);
 	free(wineprefix);
-	free(proc_path);
 	return wine_exe;
 
 fail:
@@ -155,10 +154,10 @@ fail_cmdline:
 	goto error_cleanup;
 
 fail_env:
-	LOG_ERROR("Failed to access process environment in '%s': %s\n", proc_path, strerror(errno));
+	LOG_ERROR("Failed to access process environment for client %d: %s\n", pid, strerror(errno));
 	goto error_cleanup;
 
 fail_proc:
-	LOG_ERROR("Failed to access process data in '%s': %s\n", proc_path, strerror(errno));
+	LOG_ERROR("Failed to access process data for client %d: %s\n", pid, strerror(errno));
 	goto error_cleanup;
 }
