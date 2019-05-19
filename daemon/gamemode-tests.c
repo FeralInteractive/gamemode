@@ -36,6 +36,8 @@ POSSIBILITY OF SUCH DAMAGE.
 #include "logging.h"
 
 #include <libgen.h>
+#include <pthread.h>
+#include <sys/syscall.h>
 #include <sys/types.h>
 #include <sys/wait.h>
 #include <unistd.h>
@@ -537,6 +539,249 @@ int run_gpu_optimisation_tests(struct GameModeConfig *config)
 }
 
 /**
+ * Multithreaded process simulation
+ *
+ * Some of the optimisations that gamemode implements needs to be tested against a full process
+ * tree, otherwise we may only be applying them to only the main thread
+ */
+typedef struct {
+	pthread_barrier_t *barrier;
+	pid_t this;
+} ThreadInfo;
+
+static void *fake_thread_wait(void *arg)
+{
+	ThreadInfo *info = (ThreadInfo *)arg;
+
+	/* Store the thread ID */
+	info->this = (pid_t)syscall(SYS_gettid);
+
+	/**
+	 * Wait twice
+	 * First to sync that all threads have started
+	 * Second to sync all threads exiting
+	 */
+	int ret = 0;
+	ret = pthread_barrier_wait(info->barrier);
+	if (ret != 0 && ret != PTHREAD_BARRIER_SERIAL_THREAD)
+		FATAL_ERROR("pthread_barrier_wait failed in child with error %d!\n", ret);
+
+	ret = pthread_barrier_wait(info->barrier);
+	if (ret != 0 && ret != PTHREAD_BARRIER_SERIAL_THREAD)
+		FATAL_ERROR("pthread_barrier_wait failed in child with error %d!\n", ret);
+
+	return NULL;
+}
+
+/* Runs a process tree in a child and tests each thread */
+static pid_t run_tests_on_process_tree(int innactive, int active, int (*func)(pid_t))
+{
+	/* Create a fake game-like multithreaded fork */
+	pid_t child = fork();
+	if (child == 0) {
+		/* Some stetup */
+		bool fail = false;
+		const unsigned int numthreads = 3;
+		pthread_barrier_t barrier;
+		pthread_barrier_init(&barrier, NULL, numthreads + 1);
+
+		/* First, request gamemode for this child process before it created the threads */
+		gamemode_request_start();
+
+		/* Spawn a few child threads */
+		pthread_t threads[numthreads];
+		ThreadInfo info[numthreads];
+		for (unsigned int i = 0; i < numthreads; i++) {
+			info[i].barrier = &barrier;
+			int err = pthread_create(&threads[i], NULL, fake_thread_wait, &info[i]);
+			if (err != 0) {
+				LOG_ERROR("Failed to spawn thread! Error: %d\n", err);
+				exit(EXIT_FAILURE);
+			}
+		}
+
+		/* Wait for threads to be created */
+		pthread_barrier_wait(&barrier);
+
+		/* Test each spawned thread */
+		for (unsigned int i = 0; i < numthreads; i++)
+			fail |= (active != func(info[i].this));
+
+		if (fail) {
+			LOG_ERROR("Initial values for new threads were incorrect!\n");
+			gamemode_request_end();
+			exit(-1);
+		}
+
+		/* Request gamemode end */
+		gamemode_request_end();
+
+		/* Test each spawned thread */
+		for (unsigned int i = 0; i < numthreads; i++)
+			fail |= (innactive != func(info[i].this));
+		if (fail) {
+			LOG_ERROR("values for threads were not reset after gamemode_request_end!\n");
+			exit(-1);
+		}
+
+		/* Request gamemode again - this time after threads were created */
+		gamemode_request_start();
+
+		/* Test each spawned thread */
+		for (unsigned int i = 0; i < numthreads; i++)
+			fail |= (active != func(info[i].this));
+		if (fail) {
+			LOG_ERROR("values for threads were not set correctly!\n");
+			gamemode_request_end();
+			exit(-1);
+		}
+
+		/* Request gamemode end */
+		gamemode_request_end();
+
+		/* Test each spawned thread */
+		for (unsigned int i = 0; i < numthreads; i++)
+			fail |= (innactive != func(info[i].this));
+		if (fail) {
+			LOG_ERROR("values for threads were not reset after gamemode_request_end!\n");
+			exit(-1);
+		}
+
+		/* Tell the threads to continue */
+		pthread_barrier_wait(&barrier);
+
+		/* Wait for threads to join */
+		int ret = 0;
+		for (unsigned int i = 0; i < numthreads; i++)
+			ret &= pthread_join(threads[i], NULL);
+
+		if (ret != 0)
+			LOG_ERROR("Thread cleanup in multithreaded tests failed!\n");
+
+		/* We're done, so return the error code generated */
+		exit(ret);
+	}
+
+	/* Wait for the child */
+	int wstatus = 0;
+	waitpid(child, &wstatus, 0);
+
+	int status = 0;
+	if (WIFEXITED(wstatus))
+		status = WEXITSTATUS(wstatus);
+	else {
+		LOG_ERROR("Multithreaded child exited abnormally!\n");
+		status = -1;
+	}
+
+	return status;
+}
+
+int run_renice_tests(struct GameModeConfig *config)
+{
+	/* read configuration "renice" (1..20) */
+	long int renice = config_get_renice_value(config);
+	if (renice == 0) {
+		return 1; /* not configured */
+	}
+
+	/* Verify renice starts at 0 */
+	int val = game_mode_get_renice(getpid());
+	if (val != 0) {
+		LOG_ERROR("Initial renice value is non-zero: %d\n", val);
+		return -1;
+	}
+
+	int ret = 0;
+
+	/* Ask for gamemode for ourselves */
+	gamemode_request_start();
+
+	/* Check renice is now requested value */
+	val = game_mode_get_renice(getpid());
+	if (val != renice) {
+		LOG_ERROR(
+		    "renice value not set correctly after gamemode_request_start\nExpected: %ld, Was: %d\n",
+		    renice,
+		    val);
+		ret = -1;
+	}
+
+	/* End gamemode for ourselves */
+	gamemode_request_end();
+
+	/* Check renice is returned to correct value */
+	val = game_mode_get_renice(getpid());
+	if (val != 0) {
+		LOG_ERROR("renice value non-zero after gamemode_request_end\nExpected: 0, Was: %d\n", val);
+		ret = -1;
+	}
+
+	/* Check multiprocess nice works as well */
+	val = run_tests_on_process_tree(0, (int)renice, game_mode_get_renice);
+	if (val != 0) {
+		LOG_ERROR("Multithreaded renice tests failed!\n");
+		ret = -1;
+	}
+
+	return ret;
+}
+
+int run_ioprio_tests(struct GameModeConfig *config)
+{
+	/* read configuration "ioprio" */
+	long int ioprio = config_get_ioprio_value(config);
+	if (ioprio == IOPRIO_DONT_SET) {
+		return 1; /* not configured */
+	}
+
+	/* Verify ioprio starts at 0 */
+	int val = game_mode_get_ioprio(getpid());
+	if (val != IOPRIO_DEFAULT) {
+		LOG_ERROR("Initial ioprio value is non-default\nExpected: %d, Was: %d\n",
+		          IOPRIO_DEFAULT,
+		          val);
+		return -1;
+	}
+
+	int ret = 0;
+
+	/* Ask for gamemode for ourselves */
+	gamemode_request_start();
+
+	/* Check renice is now requested value */
+	val = game_mode_get_ioprio(getpid());
+	if (val != ioprio) {
+		LOG_ERROR(
+		    "ioprio value not set correctly after gamemode_request_start\nExpected: %ld, Was: %d\n",
+		    ioprio,
+		    val);
+		ret = -1;
+	}
+
+	/* End gamemode for ourselves */
+	gamemode_request_end();
+
+	/* Check ioprio is returned to correct value */
+	val = game_mode_get_ioprio(getpid());
+	if (val != IOPRIO_DEFAULT) {
+		LOG_ERROR("ioprio value non-default after gamemode_request_end\nExpected: %d, Was: %d\n",
+		          IOPRIO_DEFAULT,
+		          val);
+		ret = -1;
+	}
+
+	/* Check multiprocess nice works as well */
+	val = run_tests_on_process_tree(IOPRIO_DEFAULT, (int)ioprio, game_mode_get_ioprio);
+	if (val != 0) {
+		LOG_ERROR("Multithreaded ioprio tests failed!\n");
+		ret = -1;
+	}
+
+	return ret;
+}
+
+/**
  * game_mode_run_feature_tests runs a set of tests for each current feature (based on the current
  * config) returns 0 for success, -1 for failure
  */
@@ -558,7 +803,7 @@ static int game_mode_run_feature_tests(struct GameModeConfig *config)
 		else {
 			LOG_MSG("::: Failed!\n");
 			// Consider the CPU governor feature required
-			status = 1;
+			status = -1;
 		}
 	}
 
@@ -574,7 +819,7 @@ static int game_mode_run_feature_tests(struct GameModeConfig *config)
 		else {
 			LOG_MSG("::: Failed!\n");
 			// Any custom scripts should be expected to work
-			status = 1;
+			status = -1;
 		}
 	}
 
@@ -590,18 +835,45 @@ static int game_mode_run_feature_tests(struct GameModeConfig *config)
 		else {
 			LOG_MSG("::: Failed!\n");
 			// Any custom scripts should be expected to work
-			status = 1;
+			status = -1;
 		}
 	}
 
-	/* Does the screensaver get inhibited? */
-	/* TODO: Unknown if this is testable, org.freedesktop.ScreenSaver has no query method */
-
 	/* Was the process reniced? */
-	/* Was the scheduling applied? */
-	/* Were io priorities changed? */
-	/* Note: These don't get cleared up on un-register, so will have already been applied */
+	{
+		LOG_MSG("::: Verifying renice\n");
+		int renicestatus = run_renice_tests(config);
+
+		if (renicestatus == 1)
+			LOG_MSG("::: Passed (no renice configured)\n");
+		else if (renicestatus == 0)
+			LOG_MSG("::: Passed\n");
+		else {
+			LOG_MSG("::: Failed!\n");
+			// Renice should be expected to work, if set
+			status = -1;
+		}
+	}
+
+	/* Was the process ioprio set? */
+	{
+		LOG_MSG("::: Verifying ioprio\n");
+		int iopriostatus = run_ioprio_tests(config);
+
+		if (iopriostatus == 1)
+			LOG_MSG("::: Passed (no ioprio configured)\n");
+		else if (iopriostatus == 0)
+			LOG_MSG("::: Passed\n");
+		else {
+			LOG_MSG("::: Failed!\n");
+			status = -1;
+		}
+	}
+
 	/* TODO */
+	/* Was the scheduling applied and removed? Does it get applied to a full process tree? */
+	/* Does the screensaver get inhibited? Unknown if this is testable, org.freedesktop.ScreenSaver
+	 * has no query method */
 
 	if (status != -1)
 		LOG_MSG(":: Passed%s\n\n", status > 0 ? " (with optional failures)" : "");
@@ -727,7 +999,6 @@ int game_mode_run_client_tests(void)
 		return -1;
 
 	/* Controls whether we require a supervisor to actually make requests */
-	/* TODO: This effects all tests below */
 	if (config_get_require_supervisor(config) != 0) {
 		LOG_ERROR("Tests currently unsupported when require_supervisor is set\n");
 		return -1;

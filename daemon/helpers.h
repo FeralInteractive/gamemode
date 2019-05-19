@@ -39,7 +39,7 @@ POSSIBILITY OF SUCH DAMAGE.
 /**
  * Value clamping helper, works like MIN/MAX but constraints a value within the range.
  */
-#define CLAMP(lbound, ubound, value) MIN(MIN(lbound, ubound), MAX(MAX(lbound, ubound), value))
+#define CLAMP(l, u, value) MAX(MIN(l, u), MIN(MAX(l, u), value))
 
 /**
  * Little helper to safely print into a buffer, returns a pointer into the buffer

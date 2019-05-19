@@ -412,12 +412,14 @@ int game_mode_context_register(GameModeContext *self, pid_t client, pid_t reques
 		game_mode_context_enter(self);
 	}
 
-	/* Apply scheduler policies */
-	game_mode_apply_renice(self, client);
-	game_mode_apply_scheduling(self, client);
+	/* Store current renice and apply */
+	game_mode_apply_renice(self, client, 0 /* expect zero value to start with */);
 
-	/* Apply io priorities */
-	game_mode_apply_ioprio(self, client);
+	/* Store current ioprio value and apply  */
+	game_mode_apply_ioprio(self, client, IOPRIO_DEFAULT);
+
+	/* Apply scheduler policies */
+	game_mode_apply_scheduling(self, client);
 
 	game_mode_client_count_changed();
 
@@ -505,6 +507,12 @@ int game_mode_context_unregister(GameModeContext *self, pid_t client, pid_t requ
 	}
 
 	game_mode_client_count_changed();
+
+	/* Restore the ioprio value for the process, expecting it to be the config value  */
+	game_mode_apply_ioprio(self, client, (int)config_get_ioprio_value(self->config));
+
+	/* Restore the renice value for the process, expecting it to be our config value */
+	game_mode_apply_renice(self, client, (int)config_get_renice_value(self->config));
 
 	return 0;
 }
