@@ -39,6 +39,11 @@ POSSIBILITY OF SUCH DAMAGE.
 #include <systemd/sd-bus.h>
 #include <unistd.h>
 
+// D-Bus name, path, iface
+#define DAEMON_DBUS_NAME "com.feralinteractive.GameMode"
+#define DAEMON_DBUS_PATH "/com/feralinteractive/GameMode"
+#define DAEMON_DBUS_IFACE "com.feralinteractive.GameMode"
+
 // Storage for error strings
 static char error_string[512] = { 0 };
 
@@ -62,9 +67,9 @@ static int gamemode_request(const char *function, int arg)
 	} else {
 		// Attempt to send the requested function
 		ret = sd_bus_call_method(bus,
-		                         "com.feralinteractive.GameMode",
-		                         "/com/feralinteractive/GameMode",
-		                         "com.feralinteractive.GameMode",
+		                         DAEMON_DBUS_NAME,
+		                         DAEMON_DBUS_PATH,
+		                         DAEMON_DBUS_IFACE,
 		                         function,
 		                         &err,
 		                         &msg,
