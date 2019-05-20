@@ -79,7 +79,11 @@ path_libdir = join_paths(path_prefix, get_option('libdir'))
 path_libexecdir = join_paths(path_prefix, get_option('libexecdir'))
 
 # Find systemd via pkgconfig
+with_systemd = get_option('with-systemd')
 dep_systemd = dependency('libsystemd')
+
+# For the client, libdbus is used
+dep_dbus = dependency('dbus-1')
 
 # Allow meson to figure out how the compiler sets up threading
 dep_threads = dependency('threads')
@@ -87,7 +91,7 @@ dep_threads = dependency('threads')
 # On non glibc systems this might be a stub, i.e. for musl
 libdl = cc.find_library('dl', required: false)
 
-with_systemd = get_option('with-systemd')
+# Determine the location for the systemd unit
 if with_systemd == true
     # If the path isn't explicitly set, ask systemd for the systemd user unit directory
     path_systemd_unit_dir = get_option('with-systemd-user-unit-dir')
