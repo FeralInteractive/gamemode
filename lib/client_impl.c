@@ -36,6 +36,8 @@ POSSIBILITY OF SUCH DAMAGE.
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/stat.h>
+#include <sys/types.h>
 #include <systemd/sd-bus.h>
 #include <unistd.h>
 
@@ -44,8 +46,23 @@ POSSIBILITY OF SUCH DAMAGE.
 #define DAEMON_DBUS_PATH "/com/feralinteractive/GameMode"
 #define DAEMON_DBUS_IFACE "com.feralinteractive.GameMode"
 
+#define PORTAL_DBUS_NAME "org.freedesktop.portal.Desktop"
+#define PORTAL_DBUS_PATH "/org/freedesktop/portal/desktop"
+#define PORTAL_DBUS_IFACE "org.freedesktop.portal.GameMode"
+
 // Storage for error strings
 static char error_string[512] = { 0 };
+
+// Helper to check if we are running inside a flatpak
+static int in_flatpak(void)
+{
+	struct stat sb;
+	int r;
+
+	r = lstat("/.flatpak-info", &sb);
+
+	return r == 0 && sb.st_size > 0;
+}
 
 // Simple requestor function for a gamemode
 static int gamemode_request(const char *function, int arg)
@@ -65,11 +82,18 @@ static int gamemode_request(const char *function, int arg)
 		         "Could not connect to bus: %s",
 		         strerror(-ret));
 	} else {
+		int native = !in_flatpak();
+
+		// If we are inside a flatpak we need to talk to the portal instead
+		const char *dest = native ? DAEMON_DBUS_NAME : PORTAL_DBUS_NAME;
+		const char *path = native ? DAEMON_DBUS_PATH : PORTAL_DBUS_PATH;
+		const char *iface = native ? DAEMON_DBUS_IFACE : PORTAL_DBUS_IFACE;
+
 		// Attempt to send the requested function
 		ret = sd_bus_call_method(bus,
-		                         DAEMON_DBUS_NAME,
-		                         DAEMON_DBUS_PATH,
-		                         DAEMON_DBUS_IFACE,
+		                         dest,
+		                         path,
+		                         iface,
 		                         function,
 		                         &err,
 		                         &msg,
@@ -79,11 +103,12 @@ static int gamemode_request(const char *function, int arg)
 		if (ret < 0) {
 			snprintf(error_string,
 			         sizeof(error_string),
-			         "Could not call method %s on com.feralinteractive.GameMode\n"
+			         "Could not call method %s on %s\n"
 			         "\t%s\n"
 			         "\t%s\n"
 			         "\t%s\n",
 			         function,
+			         dest,
 			         err.name,
 			         err.message,
 			         strerror(-ret));
