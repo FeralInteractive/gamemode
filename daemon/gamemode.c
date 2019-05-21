@@ -595,7 +595,7 @@ static GameModeClient *game_mode_client_new(pid_t pid, char *executable)
 		return NULL;
 	}
 	*ret = c;
-	strncpy(ret->executable, executable, PATH_MAX);
+	strncpy(ret->executable, executable, PATH_MAX - 1);
 	return ret;
 }
 
