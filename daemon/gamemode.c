@@ -82,9 +82,6 @@ struct GameModeContext {
 
 static GameModeContext instance = { 0 };
 
-/* Maximum number of concurrent processes we'll sanely support */
-#define MAX_GAMES 256
-
 /**
  * Protect against signals
  */
@@ -384,12 +381,6 @@ int game_mode_context_register(GameModeContext *self, pid_t client, pid_t reques
 	} else if (config_get_require_supervisor(self->config)) {
 		LOG_ERROR("Direct request made but require_supervisor was set, rejecting request!\n");
 		err = -2;
-		goto error_cleanup;
-	}
-
-	/* Cap the total number of active clients */
-	if (game_mode_context_num_clients(self) + 1 > MAX_GAMES) {
-		LOG_ERROR("Max games (%d) reached, not registering %d\n", MAX_GAMES, client);
 		goto error_cleanup;
 	}
 
