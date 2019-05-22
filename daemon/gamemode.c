@@ -748,31 +748,13 @@ static char *game_mode_context_find_exe(pid_t pid)
 
 	char *exe = strdup(buffer);
 
-	/* Detect if the process is a wine loader process */
-	if (game_mode_detect_wine_preloader(exe)) {
-		LOG_MSG("Detected wine preloader for client %d [%s].\n", pid, exe);
-		goto wine_preloader;
-	}
-	if (game_mode_detect_wine_loader(exe)) {
-		LOG_MSG("Detected wine loader for client %d [%s].\n", pid, exe);
-		goto wine_preloader;
+	/* Resolve for wine if appropriate */
+	if ((wine_exe = game_mode_resolve_wine_preloader(exe, pid))) {
+		free(exe);
+		exe = wine_exe;
 	}
 
 	return exe;
-
-wine_preloader:
-
-	wine_exe = game_mode_resolve_wine_preloader(pid);
-	if (wine_exe) {
-		free(exe);
-		exe = wine_exe;
-		return exe;
-	}
-
-	/* We have to ignore this because the wine process is in some sort
-	 * of respawn mode
-	 */
-	free(exe);
 
 fail:
 	if (errno != 0) // otherwise a proper message was logged before

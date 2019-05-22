@@ -149,9 +149,7 @@ void game_mode_apply_scheduling(const GameModeContext *self, const pid_t client)
  * Provides internal API functions specific to handling wine
  * prefixes.
  */
-bool game_mode_detect_wine_loader(const char *exe);
-bool game_mode_detect_wine_preloader(const char *exe);
-char *game_mode_resolve_wine_preloader(const pid_t pid);
+char *game_mode_resolve_wine_preloader(const char *exe, const pid_t pid);
 
 /** gamemode-tests.c
  * Provides a test suite to verify gamemode behaviour
