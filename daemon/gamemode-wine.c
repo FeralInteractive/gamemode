@@ -43,7 +43,7 @@ POSSIBILITY OF SUCH DAMAGE.
 /**
  * Detect if the process is a wine preloader process
  */
-bool game_mode_detect_wine_preloader(const char *exe)
+static bool game_mode_detect_wine_preloader(const char *exe)
 {
 	return (strtail(exe, "/wine-preloader") || strtail(exe, "/wine64-preloader"));
 }
@@ -51,7 +51,7 @@ bool game_mode_detect_wine_preloader(const char *exe)
 /**
  * Detect if the process is a wine loader process
  */
-bool game_mode_detect_wine_loader(const char *exe)
+static bool game_mode_detect_wine_loader(const char *exe)
 {
 	return (strtail(exe, "/wine") || strtail(exe, "/wine64"));
 }
@@ -61,8 +61,15 @@ bool game_mode_detect_wine_loader(const char *exe)
  * This function is used if game_mode_context_find_exe() identified the
  * process as wine-preloader. Returns NULL when resolve fails.
  */
-char *game_mode_resolve_wine_preloader(const pid_t pid)
+char *game_mode_resolve_wine_preloader(const char *exe, const pid_t pid)
 {
+	/* Detect if the process is a wine loader process */
+	if (game_mode_detect_wine_preloader(exe) || game_mode_detect_wine_loader(exe)) {
+		LOG_MSG("Detected wine for client %d [%s].\n", pid, exe);
+	} else {
+		return NULL;
+	}
+
 	char buffer[PATH_MAX];
 	char *wine_exe = NULL, *wineprefix = NULL;
 
