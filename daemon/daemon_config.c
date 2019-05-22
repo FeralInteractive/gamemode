@@ -437,7 +437,7 @@ void config_init(GameModeConfig *self)
 	self->inotfd = inotify_init1(IN_NONBLOCK);
 	if (self->inotfd == -1)
 		LOG_ERROR(
-		    "inotify_init failed: %s, gamemode will be able to watch config files for edits!\n",
+		    "inotify_init failed: %s, gamemode will not be able to watch config files for edits!\n",
 		    strerror(errno));
 
 	for (unsigned int i = 0; i < CONFIG_NUM_LOCATIONS; i++) {
