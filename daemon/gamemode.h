@@ -151,17 +151,9 @@ void game_mode_free_gpu(GameModeGPUInfo **info);
 int game_mode_apply_gpu(const GameModeGPUInfo *info);
 int game_mode_get_gpu(GameModeGPUInfo *info);
 
-/**
- * Run the main D-BUS loop "forever"
+/** gamemode-dbus.c
+ * Provides an API interface for using dbus
  */
 void game_mode_context_loop(GameModeContext *context) __attribute__((noreturn));
-
-/**
- * Inhibit the screensaver
- */
 int game_mode_inhibit_screensaver(bool inhibit);
-
-/**
- * Signal the ClientCount property has changed
- */
 void game_mode_client_count_changed(void);
