@@ -27,7 +27,6 @@ daemon_sources = [
     'gamemode-wine.c',
     'gamemode-tests.c',
     'gamemode-gpu.c',
-    'daemonize.c',
     'dbus_messaging.c',
     'daemon_config.c',
     'helpers.c',
