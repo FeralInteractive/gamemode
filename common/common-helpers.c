@@ -1,6 +1,7 @@
 /*
 
 Copyright (c) 2017-2019, Feral Interactive
+Copyright (c) 2019, Red Hat
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -29,23 +30,12 @@ POSSIBILITY OF SUCH DAMAGE.
 
  */
 
-#pragma once
+#define _GNU_SOURCE
+#include "common-helpers.h"
 
-#include <stdbool.h>
-
-#include "gamemode.h"
-
-/**
- * Run the main D-BUS loop "forever"
+/* Starting with C99 we can use "inline" without "static" and thus avoid
+ * having multiple (local) definitions of the same inline function. One
+ * consequence of that is that if the compiler decides to *not* inline
+ * a specific call to the function the linker will expect an definition.
  */
-void game_mode_context_loop(GameModeContext *context) __attribute__((noreturn));
-
-/**
- * Inhibit the screensaver
- */
-int game_mode_inhibit_screensaver(bool inhibit);
-
-/**
- * Signal the ClientCount property has changed
- */
-void game_mode_client_count_changed(void);
+extern inline void cleanup_close(int *fd);

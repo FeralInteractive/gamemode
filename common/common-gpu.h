@@ -1,7 +1,6 @@
 /*
 
 Copyright (c) 2017-2019, Feral Interactive
-Copyright (c) 2019, Red Hat
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -30,12 +29,31 @@ POSSIBILITY OF SUCH DAMAGE.
 
  */
 
-#define _GNU_SOURCE
-#include "helpers.h"
+#pragma once
+#define CONFIG_VALUE_MAX 256
 
-/* Starting with C99 we can use "inline" without "static" and thus avoid
- * having multiple (local) definitions of the same inline function. One
- * consequence of that is that if the compiler decides to *not* inline
- * a specific call to the function the linker will expect an definition.
- */
-extern inline void cleanup_close(int *fd);
+/* Enums for GPU vendors */
+enum GPUVendor {
+	Vendor_Invalid = 0,
+	Vendor_NVIDIA = 0x10de,
+	Vendor_AMD = 0x1002,
+	Vendor_Intel = 0x8086
+};
+
+#define GPUVendorValid(vendor)                                                                     \
+	(vendor == Vendor_NVIDIA || vendor == Vendor_AMD || vendor == Vendor_Intel)
+
+/* Storage for GPU info*/
+struct GameModeGPUInfo {
+	long vendor;
+	long device; /* path to device, ie. /sys/class/drm/card#/ */
+
+	long nv_core;            /* Nvidia core clock */
+	long nv_mem;             /* Nvidia mem clock */
+	long nv_powermizer_mode; /* NV Powermizer Mode */
+
+	char amd_performance_level[CONFIG_VALUE_MAX]; /* The AMD performance level set to */
+};
+
+/* Get the vendor for a device */
+enum GPUVendor gamemode_get_gpu_vendor(long device);

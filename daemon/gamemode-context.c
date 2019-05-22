@@ -31,14 +31,14 @@ POSSIBILITY OF SUCH DAMAGE.
 
 #define _GNU_SOURCE
 
+#include "common-external.h"
+#include "common-governors.h"
+#include "common-helpers.h"
+#include "common-logging.h"
+#include "gamemode-config.h"
 #include "gamemode.h"
-#include "config.h"
-#include "daemon_config.h"
-#include "dbus_messaging.h"
-#include "external-helper.h"
-#include "governors-query.h"
-#include "helpers.h"
-#include "logging.h"
+
+#include "build-config.h"
 
 #include <fcntl.h>
 #include <pthread.h>

@@ -28,48 +28,66 @@ ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 POSSIBILITY OF SUCH DAMAGE.
 
  */
-#include "gpu-control.h"
-#include "logging.h"
 
-#include <stdio.h>
+#define _GNU_SOURCE
 
-/* Get the vendor for a device */
-enum GPUVendor gamemode_get_gpu_vendor(long device)
+#include "common-governors.h"
+#include "common-logging.h"
+
+#include <ctype.h>
+#include <errno.h>
+#include <sys/types.h>
+
+/**
+ * Sets all governors to a value
+ */
+static int set_gov_state(const char *value)
 {
-	enum GPUVendor vendor = Vendor_Invalid;
+	char governors[MAX_GOVERNORS][MAX_GOVERNOR_LENGTH] = { { 0 } };
+	int num = fetch_governors(governors);
+	int retval = EXIT_SUCCESS;
+	int res = 0;
 
-	/* Fill in GPU vendor */
-	char path[64] = { 0 };
-	if (snprintf(path, 64, "/sys/class/drm/card%ld/device/vendor", device) < 0) {
-		LOG_ERROR("snprintf failed, will not apply gpu optimisations!\n");
-		return Vendor_Invalid;
-	}
-	FILE *file = fopen(path, "r");
-	if (!file) {
-		LOG_ERROR("Couldn't open vendor file at %s, will not apply gpu optimisations!\n", path);
-		return Vendor_Invalid;
-	}
-	char buff[64];
-	bool got_line = fgets(buff, 64, file) != NULL;
-	fclose(file);
+	for (int i = 0; i < num; i++) {
+		const char *gov = governors[i];
+		FILE *f = fopen(gov, "w");
+		if (!f) {
+			LOG_ERROR("Failed to open file for write %s\n", gov);
+			continue;
+		}
 
-	if (got_line) {
-		vendor = strtol(buff, NULL, 0);
+		res = fprintf(f, "%s\n", value);
+		if (res < 0) {
+			LOG_ERROR("Failed to set governor %s to %s: %s", gov, value, strerror(errno));
+			retval = EXIT_FAILURE;
+		}
+		fclose(f);
+	}
+
+	return retval;
+}
+
+/**
+ * Main entry point, dispatch to the appropriate helper
+ */
+int main(int argc, char *argv[])
+{
+	if (argc == 2 && strncmp(argv[1], "get", 3) == 0) {
+		printf("%s", get_gov_state());
+	} else if (argc == 3 && strncmp(argv[1], "set", 3) == 0) {
+		const char *value = argv[2];
+
+		/* Must be root to set the state */
+		if (geteuid() != 0) {
+			LOG_ERROR("This program must be run as root\n");
+			return EXIT_FAILURE;
+		}
+
+		return set_gov_state(value);
 	} else {
-		LOG_ERROR("Coudn't read contents of file %s, will not apply optimisations!\n", path);
-		return Vendor_Invalid;
+		fprintf(stderr, "usage: cpugovctl [get] [set VALUE]\n");
+		return EXIT_FAILURE;
 	}
 
-	/* verify GPU vendor */
-	if (!GPUVendorValid(vendor)) {
-		LOG_ERROR("Unknown vendor value (0x%04x) found, cannot apply optimisations!\n",
-		          (unsigned int)vendor);
-		LOG_ERROR("Known values are: 0x%04x (NVIDIA) 0x%04x (AMD) 0x%04x (Intel)\n",
-		          (unsigned int)Vendor_NVIDIA,
-		          (unsigned int)Vendor_AMD,
-		          (unsigned int)Vendor_Intel);
-		return Vendor_Invalid;
-	}
-
-	return vendor;
+	return EXIT_SUCCESS;
 }

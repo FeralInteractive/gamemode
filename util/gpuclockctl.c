@@ -31,10 +31,9 @@ POSSIBILITY OF SUCH DAMAGE.
 
 #define _GNU_SOURCE
 
-#include "logging.h"
-
-#include "external-helper.h"
-#include "gpu-control.h"
+#include "common-external.h"
+#include "common-gpu.h"
+#include "common-logging.h"
 
 #include <limits.h>
 

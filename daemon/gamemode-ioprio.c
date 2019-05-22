@@ -31,10 +31,10 @@ POSSIBILITY OF SUCH DAMAGE.
 
 #define _GNU_SOURCE
 
-#include "daemon_config.h"
+#include "common-helpers.h"
+#include "common-logging.h"
+#include "gamemode-config.h"
 #include "gamemode.h"
-#include "helpers.h"
-#include "logging.h"
 
 #include <dirent.h>
 #include <errno.h>
