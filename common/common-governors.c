@@ -31,8 +31,8 @@ POSSIBILITY OF SUCH DAMAGE.
 
 #define _GNU_SOURCE
 
-#include "governors-query.h"
-#include "logging.h"
+#include "common-governors.h"
+#include "common-logging.h"
 
 #include <assert.h>
 #include <glob.h>

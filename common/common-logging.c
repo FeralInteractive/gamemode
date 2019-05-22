@@ -29,7 +29,8 @@ POSSIBILITY OF SUCH DAMAGE.
 
  */
 
-#include "logging.h"
+#include "common-logging.h"
+
 #include "syslog.h"
 
 static bool use_syslog = false;

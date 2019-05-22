@@ -1,35 +1,14 @@
-# Convenience library for the duplicated logging functionality
-common_sources = [
-    'logging.c',
-    'governors-query.c',
-    'external-helper.c',
-    'gpu-control.c',
-]
-
-daemon_common = static_library(
-    'daemon-common',
-    sources: common_sources,
-    install: false,
-)
-
-link_daemon_common = declare_dependency(
-    link_with: daemon_common,
-)
-
 # Main daemon
 daemon_sources = [
-    'main.c',
-    'gamemode.c',
-    'gamemode-env.c',
+    'gamemoded.c',
+    'gamemode-context.c',
     'gamemode-ioprio.c',
-    'gamemode-proc.c',
     'gamemode-sched.c',
     'gamemode-wine.c',
     'gamemode-tests.c',
     'gamemode-gpu.c',
-    'dbus_messaging.c',
-    'daemon_config.c',
-    'helpers.c',
+    'gamemode-dbus.c',
+    'gamemode-config.c',
 ]
 
 gamemoded_includes = libgamemode_includes
@@ -45,36 +24,9 @@ executable(
         inih_dependency,
         libdl,
     ],
-    include_directories: gamemoded_includes,
-    install: true,
-)
-
-# Small target util to get and set cpu governors
-cpugovctl_sources = [
-    'cpugovctl.c',
-]
-
-cpugovctl = executable(
-    'cpugovctl',
-    sources: cpugovctl_sources,
-    dependencies: [
-        link_daemon_common,
+    include_directories: [
+        gamemoded_includes,
+        include_daemon_common,
     ],
     install: true,
-    install_dir: path_libexecdir,
-)
-
-# Small target util to get and set gpu clocks values
-gpuclockctl_sources = [
-    'gpuclockctl.c',
-]
-
-gpuclockctl = executable(
-    'gpuclockctl',
-    sources: gpuclockctl_sources,
-    dependencies: [
-        link_daemon_common,
-    ],
-    install: true,
-    install_dir: path_libexecdir,
 )

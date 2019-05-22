@@ -49,11 +49,13 @@ POSSIBILITY OF SUCH DAMAGE.
 
 #define _GNU_SOURCE
 
-#include "config.h"
-#include "dbus_messaging.h"
+#include "common-logging.h"
+#include "gamemode-config.h"
 #include "gamemode.h"
+
 #include "gamemode_client.h"
-#include "logging.h"
+
+#include "build-config.h"
 
 #include <fcntl.h>
 #include <getopt.h>
