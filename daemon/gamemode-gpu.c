@@ -141,11 +141,6 @@ void game_mode_free_gpu(GameModeGPUInfo **info)
 	*info = NULL;
 }
 
-//#include <linux/limits.h>
-//#include <stdio.h>
-//#include <sys/wait.h>
-//#include <unistd.h>
-
 /**
  * Applies GPU optimisations when gamemode is active and removes them after
  */
