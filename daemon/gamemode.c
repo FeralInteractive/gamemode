@@ -56,7 +56,7 @@ POSSIBILITY OF SUCH DAMAGE.
 typedef struct GameModeClient {
 	pid_t pid;                   /**< Process ID */
 	struct GameModeClient *next; /**<Next client in the list */
-	char *executable;            /**<Process executable */
+	char executable[PATH_MAX];   /**<Process executable */
 } GameModeClient;
 
 struct GameModeContext {
@@ -331,28 +331,34 @@ int game_mode_context_register(GameModeContext *self, pid_t client, pid_t reques
 	/* Construct a new client if we can */
 	GameModeClient *cl = NULL;
 	char *executable = NULL;
+	int err = -1;
 
 	/* Check our requester config first */
 	if (requester != client) {
 		/* Lookup the executable first */
 		executable = game_mode_context_find_exe(requester);
 		if (!executable) {
-			return -1;
+			goto error_cleanup;
 		}
 
 		/* Check our blacklist and whitelist */
 		if (!config_get_supervisor_whitelisted(self->config, executable)) {
 			LOG_MSG("Supervisor [%s] was rejected (not in whitelist)\n", executable);
-			free(executable);
-			return -2;
+			err = -2;
+			goto error_cleanup;
 		} else if (config_get_supervisor_blacklisted(self->config, executable)) {
 			LOG_MSG("Supervisor [%s] was rejected (in blacklist)\n", executable);
-			free(executable);
-			return -2;
+			err = -2;
+			goto error_cleanup;
 		}
+
+		/* We're done with the requestor */
+		free(executable);
+		executable = NULL;
 	} else if (config_get_require_supervisor(self->config)) {
 		LOG_ERROR("Direct request made but require_supervisor was set, rejecting request!\n");
-		return -2;
+		err = -2;
+		goto error_cleanup;
 	}
 
 	/* Cap the total number of active clients */
@@ -392,10 +398,9 @@ int game_mode_context_register(GameModeContext *self, pid_t client, pid_t reques
 
 	/* From now on we depend on the client, initialize it */
 	cl = game_mode_client_new(client, executable);
-	if (cl)
-		executable = NULL; // ownership has been delegated
-	else
+	if (!cl)
 		goto error_cleanup;
+	free(executable); /* we're now done with memory */
 
 	/* Begin a write lock now to insert our new client at list start */
 	pthread_rwlock_wrlock(&self->rwlock);
@@ -430,7 +435,7 @@ error_cleanup:
 		LOG_ERROR("Failed to register client [%d]: %s\n", client, strerror(errno));
 	free(executable);
 	game_mode_client_free(cl);
-	return -1;
+	return err;
 }
 
 int game_mode_context_unregister(GameModeContext *self, pid_t client, pid_t requester)
@@ -580,7 +585,6 @@ int game_mode_context_query_status(GameModeContext *self, pid_t client, pid_t re
 static GameModeClient *game_mode_client_new(pid_t pid, char *executable)
 {
 	GameModeClient c = {
-		.executable = executable,
 		.next = NULL,
 		.pid = pid,
 	};
@@ -591,6 +595,7 @@ static GameModeClient *game_mode_client_new(pid_t pid, char *executable)
 		return NULL;
 	}
 	*ret = c;
+	strncpy(ret->executable, executable, PATH_MAX - 1);
 	return ret;
 }
 
@@ -604,9 +609,6 @@ static void game_mode_client_free(GameModeClient *client)
 	}
 	if (client->next) {
 		game_mode_client_free(client->next);
-	}
-	if (client->executable) {
-		free(client->executable);
 	}
 	free(client);
 }
