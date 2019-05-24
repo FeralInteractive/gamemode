@@ -207,23 +207,34 @@ void game_mode_client_count_changed(void)
 }
 
 /**
+ * Handles the Refresh Config request
+ */
+static int method_refresh_config(sd_bus_message *m, void *userdata,
+                                 __attribute__((unused)) sd_bus_error *ret_error)
+{
+	GameModeContext *context = userdata;
+	int status = game_mode_reload_config(context);
+	return sd_bus_reply_method_return(m, "i", status);
+}
+
+/**
  * D-BUS vtable to dispatch virtual methods
  */
-static const sd_bus_vtable gamemode_vtable[] = {
-	SD_BUS_VTABLE_START(0),
-	SD_BUS_PROPERTY("ClientCount", "i", property_get_client_count, 0,
-	                SD_BUS_VTABLE_PROPERTY_EMITS_CHANGE),
-	SD_BUS_METHOD("RegisterGame", "i", "i", method_register_game, SD_BUS_VTABLE_UNPRIVILEGED),
-	SD_BUS_METHOD("UnregisterGame", "i", "i", method_unregister_game, SD_BUS_VTABLE_UNPRIVILEGED),
-	SD_BUS_METHOD("QueryStatus", "i", "i", method_query_status, SD_BUS_VTABLE_UNPRIVILEGED),
-	SD_BUS_METHOD("RegisterGameByPID", "ii", "i", method_register_game_by_pid,
-	              SD_BUS_VTABLE_UNPRIVILEGED),
-	SD_BUS_METHOD("UnregisterGameByPID", "ii", "i", method_unregister_game_by_pid,
-	              SD_BUS_VTABLE_UNPRIVILEGED),
-	SD_BUS_METHOD("QueryStatusByPID", "ii", "i", method_query_status_by_pid,
-	              SD_BUS_VTABLE_UNPRIVILEGED),
-	SD_BUS_VTABLE_END
-};
+static const sd_bus_vtable gamemode_vtable[] =
+    { SD_BUS_VTABLE_START(0),
+	  SD_BUS_PROPERTY("ClientCount", "i", property_get_client_count, 0,
+	                  SD_BUS_VTABLE_PROPERTY_EMITS_CHANGE),
+	  SD_BUS_METHOD("RegisterGame", "i", "i", method_register_game, SD_BUS_VTABLE_UNPRIVILEGED),
+	  SD_BUS_METHOD("UnregisterGame", "i", "i", method_unregister_game, SD_BUS_VTABLE_UNPRIVILEGED),
+	  SD_BUS_METHOD("QueryStatus", "i", "i", method_query_status, SD_BUS_VTABLE_UNPRIVILEGED),
+	  SD_BUS_METHOD("RegisterGameByPID", "ii", "i", method_register_game_by_pid,
+	                SD_BUS_VTABLE_UNPRIVILEGED),
+	  SD_BUS_METHOD("UnregisterGameByPID", "ii", "i", method_unregister_game_by_pid,
+	                SD_BUS_VTABLE_UNPRIVILEGED),
+	  SD_BUS_METHOD("QueryStatusByPID", "ii", "i", method_query_status_by_pid,
+	                SD_BUS_VTABLE_UNPRIVILEGED),
+	  SD_BUS_METHOD("RefreshConfig", "", "i", method_refresh_config, SD_BUS_VTABLE_UNPRIVILEGED),
+	  SD_BUS_VTABLE_END };
 
 /**
  * Main process loop for the daemon. Run until quitting has been requested.

@@ -37,11 +37,14 @@ POSSIBILITY OF SUCH DAMAGE.
 /* Ben Hoyt's inih library */
 #include "ini.h"
 
+#include <dirent.h>
 #include <linux/limits.h>
 #include <pthread.h>
 #include <pwd.h>
 #include <stdio.h>
 #include <string.h>
+#include <sys/inotify.h>
+#include <sys/stat.h>
 #include <sys/types.h>
 
 /* Name and possible location of the config file */
@@ -59,6 +62,9 @@ POSSIBILITY OF SUCH DAMAGE.
 		return value;                                                                              \
 	}
 
+/* The number of current locations for config files */
+#define CONFIG_NUM_LOCATIONS 4
+
 /**
  * The config holds various details as needed
  * and a rwlock to allow config_reload to be called
@@ -66,7 +72,7 @@ POSSIBILITY OF SUCH DAMAGE.
 struct GameModeConfig {
 	pthread_rwlock_t rwlock;
 	int inotfd;
-	int inotwd;
+	int inotwd[CONFIG_NUM_LOCATIONS];
 
 	struct {
 		char whitelist[CONFIG_LIST_MAX][CONFIG_VALUE_MAX];
@@ -342,7 +348,7 @@ static void load_config_files(GameModeConfig *self)
 		const char *path;
 		bool protected;
 	};
-	struct ConfigLocation locations[] = {
+	struct ConfigLocation locations[CONFIG_NUM_LOCATIONS] = {
 		{ "/usr/share/gamemode", true }, /* shipped default config */
 		{ "/etc", true },                /* administrator config */
 		{ config_location_home, false }, /* $XDG_CONFIG_HOME or $HOME/.config/ */
@@ -350,11 +356,12 @@ static void load_config_files(GameModeConfig *self)
 	};
 
 	/* Load each file in order and overwrite values */
-	for (unsigned int i = 0; i < sizeof(locations) / sizeof(locations[0]); i++) {
+	for (unsigned int i = 0; i < CONFIG_NUM_LOCATIONS; i++) {
 		char *path = NULL;
 		if (locations[i].path && asprintf(&path, "%s/" CONFIG_NAME, locations[i].path) > 0) {
-			FILE *f = fopen(path, "r");
-			if (f) {
+			FILE *f = NULL;
+			DIR *d = NULL;
+			if ((f = fopen(path, "r"))) {
 				LOG_MSG("Loading config file [%s]\n", path);
 				load_protected = locations[i].protected;
 				int error = ini_parse_file(f, inih_handler, (void *)self);
@@ -364,6 +371,24 @@ static void load_config_files(GameModeConfig *self)
 					LOG_MSG("Failed to parse config file - error on line %d!\n", error);
 				}
 				fclose(f);
+
+				/* Register for inotify */
+				/* Watch for modification, deletion, moves, or attribute changes */
+				uint32_t fileflags = IN_MODIFY | IN_DELETE_SELF | IN_MOVE_SELF | IN_ATTRIB;
+				if ((self->inotwd[i] = inotify_add_watch(self->inotfd, path, fileflags)) == -1) {
+					LOG_ERROR("Failed to watch %s, error: %s", path, strerror(errno));
+				}
+
+			} else if ((d = opendir(locations[i].path))) {
+				/* We didn't find a file, so we'll wait on the directory */
+				/* Notify if a file is created, or move to the directory, or if the directory itself
+				 * is removed or moved away */
+				uint32_t dirflags = IN_CREATE | IN_MOVED_TO | IN_DELETE_SELF | IN_MOVE_SELF;
+				if ((self->inotwd[i] =
+				         inotify_add_watch(self->inotfd, locations[i].path, dirflags)) == -1) {
+					LOG_ERROR("Failed to watch %s, error: %s", path, strerror(errno));
+				}
+				closedir(d);
 			}
 			free(path);
 		}
@@ -409,8 +434,36 @@ void config_init(GameModeConfig *self)
 {
 	pthread_rwlock_init(&self->rwlock, NULL);
 
+	self->inotfd = inotify_init1(IN_NONBLOCK);
+	if (self->inotfd == -1)
+		LOG_ERROR(
+		    "inotify_init failed: %s, gamemode will be able to watch config files for edits!\n",
+		    strerror(errno));
+
+	for (unsigned int i = 0; i < CONFIG_NUM_LOCATIONS; i++) {
+		self->inotwd[i] = -1;
+	}
+
 	/* load the initial config */
 	load_config_files(self);
+}
+
+/*
+ * Destroy internal parts of config
+ */
+static void internal_destroy(GameModeConfig *self)
+{
+	pthread_rwlock_destroy(&self->rwlock);
+
+	for (unsigned int i = 0; i < CONFIG_NUM_LOCATIONS; i++) {
+		if (self->inotwd[i] != -1) {
+			/* TODO: Error handle */
+			inotify_rm_watch(self->inotfd, self->inotwd[i]);
+		}
+	}
+
+	if (self->inotfd != -1)
+		close(self->inotfd);
 }
 
 /*
@@ -418,7 +471,67 @@ void config_init(GameModeConfig *self)
  */
 void config_reload(GameModeConfig *self)
 {
-	load_config_files(self);
+	internal_destroy(self);
+
+	config_init(self);
+}
+
+/*
+ * Check if the config needs to be reloaded
+ */
+bool config_needs_reload(GameModeConfig *self)
+{
+	bool need = false;
+
+	/* Take a read lock while we use the inotify fd */
+	pthread_rwlock_rdlock(&self->rwlock);
+
+	const size_t buflen = sizeof(struct inotify_event) + NAME_MAX + 1;
+	char buffer[buflen] __attribute__((aligned(__alignof__(struct inotify_event))));
+
+	ssize_t len = read(self->inotfd, buffer, buflen);
+	if (len == -1) {
+		/* EAGAIN is returned when there's nothing to read on a non-blocking fd */
+		if (errno != EAGAIN)
+			LOG_ERROR("Could not read inotify fd: %s\n", strerror(errno));
+	} else if (len > 0) {
+		/* Iterate over each event we've been given */
+		size_t i = 0;
+		while (i < (size_t)len) {
+			struct inotify_event *event = (struct inotify_event *)&buffer[i];
+			/* We have picked up an event and need to handle it */
+			if (event->mask & IN_ISDIR) {
+				/* If the event is a dir event we need to take a look */
+				if (event->mask & IN_DELETE_SELF || event->mask & IN_MOVE_SELF) {
+					/* The directory itself changed, trigger a reload */
+					need = true;
+					break;
+
+				} else if (event->mask & IN_CREATE || event->mask & IN_MOVED_TO) {
+					/* A new file has appeared, check the file name */
+					if (strncmp(basename(event->name), CONFIG_NAME, strlen(CONFIG_NAME)) == 0) {
+						/* This is a gamemode config file, trigger a reload */
+						need = true;
+						break;
+					}
+				}
+
+			} else {
+				/* When the event isn't a dir event - one of our files has been interacted with
+				 * in some way, so let's reload regardless of the details
+				 */
+				need = true;
+				break;
+			}
+
+			i += sizeof(struct inotify_event) + event->len;
+		}
+	}
+
+	/* Return the read lock */
+	pthread_rwlock_unlock(&self->rwlock);
+
+	return need;
 }
 
 /*
@@ -426,7 +539,7 @@ void config_reload(GameModeConfig *self)
  */
 void config_destroy(GameModeConfig *self)
 {
-	pthread_rwlock_destroy(&self->rwlock);
+	internal_destroy(self);
 
 	/* Finally, free the memory */
 	free(self);
