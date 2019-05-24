@@ -431,7 +431,6 @@ int game_mode_context_register(GameModeContext *self, pid_t client, pid_t reques
 	/* Update the list */
 	cl->next = self->client;
 	self->client = cl;
-	pthread_rwlock_unlock(&self->rwlock);
 
 	/* First add, init */
 	if (atomic_fetch_add_explicit(&self->refcount, 1, memory_order_seq_cst) == 0) {
@@ -439,6 +438,7 @@ int game_mode_context_register(GameModeContext *self, pid_t client, pid_t reques
 	}
 
 	game_mode_apply_client_optimisations(self, client);
+	pthread_rwlock_unlock(&self->rwlock);
 
 	game_mode_client_count_changed();
 
@@ -517,7 +517,6 @@ int game_mode_context_unregister(GameModeContext *self, pid_t client, pid_t requ
 	}
 
 	/* Unlock here, potentially yielding */
-	pthread_rwlock_unlock(&self->rwlock);
 
 	if (!found) {
 		LOG_HINTED(
@@ -528,6 +527,7 @@ int game_mode_context_unregister(GameModeContext *self, pid_t client, pid_t requ
 		    "    -- with a nearby 'Removing expired game' which means we cleaned up properly\n"
 		    "    -- (we will log this event). This hint will be displayed only once.\n",
 		    client);
+		pthread_rwlock_unlock(&self->rwlock);
 		return -1;
 	}
 
@@ -536,9 +536,11 @@ int game_mode_context_unregister(GameModeContext *self, pid_t client, pid_t requ
 		game_mode_context_leave(self);
 	}
 
-	game_mode_client_count_changed();
-
 	game_mode_remove_client_optimisations(self, client);
+
+	pthread_rwlock_unlock(&self->rwlock);
+
+	game_mode_client_count_changed();
 
 	return 0;
 }
