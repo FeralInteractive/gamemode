@@ -438,6 +438,8 @@ int game_mode_context_register(GameModeContext *self, pid_t client, pid_t reques
 	}
 
 	game_mode_apply_client_optimisations(self, client);
+
+	/* Unlock now we're done applying optimisations */
 	pthread_rwlock_unlock(&self->rwlock);
 
 	game_mode_client_count_changed();
@@ -516,8 +518,6 @@ int game_mode_context_unregister(GameModeContext *self, pid_t client, pid_t requ
 		break;
 	}
 
-	/* Unlock here, potentially yielding */
-
 	if (!found) {
 		LOG_HINTED(
 		    ERROR,
@@ -538,6 +538,7 @@ int game_mode_context_unregister(GameModeContext *self, pid_t client, pid_t requ
 
 	game_mode_remove_client_optimisations(self, client);
 
+	/* Unlock now we're done applying optimisations */
 	pthread_rwlock_unlock(&self->rwlock);
 
 	game_mode_client_count_changed();
