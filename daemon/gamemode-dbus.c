@@ -34,8 +34,6 @@ POSSIBILITY OF SUCH DAMAGE.
 #include "common-logging.h"
 #include "gamemode.h"
 
-#include <stdlib.h>
-
 #include <systemd/sd-bus.h>
 #include <systemd/sd-daemon.h>
 

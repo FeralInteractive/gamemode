@@ -36,6 +36,7 @@ POSSIBILITY OF SUCH DAMAGE.
 #include "common-gpu.h"
 #include "common-helpers.h"
 #include "common-logging.h"
+
 #include "gamemode-config.h"
 #include "gamemode.h"
 

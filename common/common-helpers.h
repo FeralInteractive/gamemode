@@ -31,7 +31,6 @@ POSSIBILITY OF SUCH DAMAGE.
 
 #pragma once
 
-#include <stdio.h>
 #include <string.h>
 #include <sys/param.h>
 #include <unistd.h>

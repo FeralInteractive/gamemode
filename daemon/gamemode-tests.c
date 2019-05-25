@@ -36,16 +36,14 @@ POSSIBILITY OF SUCH DAMAGE.
 #include "common-gpu.h"
 #include "common-helpers.h"
 #include "common-logging.h"
+
 #include "gamemode-config.h"
 #include "gamemode.h"
 #include "gamemode_client.h"
 
-#include <libgen.h>
 #include <pthread.h>
 #include <sys/syscall.h>
-#include <sys/types.h>
 #include <sys/wait.h>
-#include <unistd.h>
 
 struct GameModeConfig;
 

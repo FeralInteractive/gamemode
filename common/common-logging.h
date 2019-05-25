@@ -37,7 +37,6 @@ POSSIBILITY OF SUCH DAMAGE.
 #include <stdlib.h>
 #include <string.h>
 #include <syslog.h>
-#include <unistd.h>
 
 /* Macros to help with basic logging */
 #define PLOG_MSG(...) printf(__VA_ARGS__)

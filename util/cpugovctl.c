@@ -34,9 +34,7 @@ POSSIBILITY OF SUCH DAMAGE.
 #include "common-governors.h"
 #include "common-logging.h"
 
-#include <ctype.h>
-#include <errno.h>
-#include <sys/types.h>
+#include <unistd.h>
 
 /**
  * Sets all governors to a value

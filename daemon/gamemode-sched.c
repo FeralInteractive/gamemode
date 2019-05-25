@@ -36,10 +36,7 @@ POSSIBILITY OF SUCH DAMAGE.
 #include "gamemode.h"
 
 #include <dirent.h>
-#include <errno.h>
 #include <sched.h>
-#include <stdio.h>
-#include <string.h>
 #include <sys/resource.h>
 #include <sys/sysinfo.h>
 
