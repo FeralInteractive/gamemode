@@ -32,7 +32,6 @@ POSSIBILITY OF SUCH DAMAGE.
 #pragma once
 
 #include <stdbool.h>
-#include <sys/types.h>
 
 #define INVALID_PROCFD -1
 

@@ -39,14 +39,10 @@ POSSIBILITY OF SUCH DAMAGE.
 #include "ini.h"
 
 #include <dirent.h>
-#include <linux/limits.h>
 #include <pthread.h>
 #include <pwd.h>
-#include <stdio.h>
-#include <string.h>
 #include <sys/inotify.h>
 #include <sys/stat.h>
-#include <sys/types.h>
 
 /* Name and possible location of the config file */
 #define CONFIG_NAME "gamemode.ini"

@@ -35,6 +35,7 @@ POSSIBILITY OF SUCH DAMAGE.
 #include "common-governors.h"
 #include "common-helpers.h"
 #include "common-logging.h"
+
 #include "gamemode-config.h"
 #include "gamemode.h"
 
@@ -42,11 +43,8 @@ POSSIBILITY OF SUCH DAMAGE.
 
 #include <fcntl.h>
 #include <pthread.h>
-#include <signal.h>
 #include <stdatomic.h>
-#include <sys/stat.h>
-#include <sys/types.h>
-#include <systemd/sd-daemon.h>
+#include <systemd/sd-daemon.h> /* TODO: Move usage to gamemode-dbus.c */
 #include <unistd.h>
 
 /**

@@ -37,10 +37,7 @@ POSSIBILITY OF SUCH DAMAGE.
 #include "gamemode.h"
 
 #include <dirent.h>
-#include <errno.h>
-#include <stdio.h>
 #include <sys/syscall.h>
-#include <unistd.h>
 
 /**
  * Define the syscall interface in Linux because it is missing from glibc

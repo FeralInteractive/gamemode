@@ -60,11 +60,8 @@ POSSIBILITY OF SUCH DAMAGE.
 #include <fcntl.h>
 #include <getopt.h>
 #include <signal.h>
-#include <stdlib.h>
-#include <string.h>
 #include <sys/stat.h>
-#include <sys/types.h>
-#include <systemd/sd-daemon.h>
+#include <systemd/sd-daemon.h> /* TODO: Move usage to gamemode-dbus.c */
 #include <unistd.h>
 
 #define USAGE_TEXT                                                                                 \

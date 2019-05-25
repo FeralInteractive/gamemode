@@ -36,6 +36,7 @@ POSSIBILITY OF SUCH DAMAGE.
 #include "common-logging.h"
 
 #include <limits.h>
+#include <unistd.h>
 
 /* NV constants */
 #define NV_CORE_OFFSET_ATTRIBUTE "GPUGraphicsClockOffset"

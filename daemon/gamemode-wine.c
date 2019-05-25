@@ -37,12 +37,7 @@ POSSIBILITY OF SUCH DAMAGE.
 
 #include <ctype.h>
 #include <fcntl.h>
-#include <linux/limits.h>
 #include <pwd.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <unistd.h>
 
 /**
  * Detect if the process is a wine preloader process

@@ -36,8 +36,6 @@ POSSIBILITY OF SUCH DAMAGE.
 
 #include <assert.h>
 #include <glob.h>
-#include <stdio.h>
-#include <string.h>
 
 /**
  * Discover all governers on the system.

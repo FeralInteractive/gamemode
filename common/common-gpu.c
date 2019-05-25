@@ -31,8 +31,6 @@ POSSIBILITY OF SUCH DAMAGE.
 #include "common-gpu.h"
 #include "common-logging.h"
 
-#include <stdio.h>
-
 /* Get the vendor for a device */
 enum GPUVendor gamemode_get_gpu_vendor(long device)
 {
