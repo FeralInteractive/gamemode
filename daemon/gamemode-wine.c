@@ -31,9 +31,9 @@ POSSIBILITY OF SUCH DAMAGE.
 
 #define _GNU_SOURCE
 
+#include "gamemode.h"
 #include "common-helpers.h"
 #include "common-logging.h"
-#include "gamemode.h"
 
 #include <ctype.h>
 #include <fcntl.h>

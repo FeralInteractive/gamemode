@@ -31,8 +31,8 @@ POSSIBILITY OF SUCH DAMAGE.
 
 #define _GNU_SOURCE
 
-#include "common-logging.h"
 #include "gamemode.h"
+#include "common-logging.h"
 
 #include <systemd/sd-bus.h>
 #include <systemd/sd-daemon.h>
@@ -216,6 +216,7 @@ static int method_refresh_config(sd_bus_message *m, void *userdata,
 /**
  * D-BUS vtable to dispatch virtual methods
  */
+/* clang-format off */
 static const sd_bus_vtable gamemode_vtable[] = {
 	SD_BUS_VTABLE_START(0),
 	SD_BUS_PROPERTY("ClientCount", "i", property_get_client_count, 0,
@@ -232,6 +233,7 @@ static const sd_bus_vtable gamemode_vtable[] = {
 	SD_BUS_METHOD("RefreshConfig", "", "i", method_refresh_config, SD_BUS_VTABLE_UNPRIVILEGED),
 	SD_BUS_VTABLE_END
 };
+/* clang-format on */
 
 /**
  * Main process loop for the daemon. Run until quitting has been requested.
