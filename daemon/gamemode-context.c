@@ -36,8 +36,8 @@ POSSIBILITY OF SUCH DAMAGE.
 #include "common-helpers.h"
 #include "common-logging.h"
 
-#include "gamemode-config.h"
 #include "gamemode.h"
+#include "gamemode-config.h"
 
 #include "build-config.h"
 
@@ -602,10 +602,12 @@ int game_mode_context_query_status(GameModeContext *self, pid_t client, pid_t re
  */
 static GameModeClient *game_mode_client_new(pid_t pid, char *executable)
 {
+	/* clang-format off */
 	GameModeClient c = {
 		.next = NULL,
 		.pid = pid,
 	};
+	/* clang-format on */
 	GameModeClient *ret = NULL;
 
 	ret = calloc(1, sizeof(struct GameModeClient));

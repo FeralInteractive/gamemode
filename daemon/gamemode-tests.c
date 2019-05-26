@@ -37,8 +37,8 @@ POSSIBILITY OF SUCH DAMAGE.
 #include "common-helpers.h"
 #include "common-logging.h"
 
-#include "gamemode-config.h"
 #include "gamemode.h"
+#include "gamemode-config.h"
 #include "gamemode_client.h"
 
 #include <pthread.h>
