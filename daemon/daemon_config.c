@@ -374,7 +374,7 @@ static void load_config_files(GameModeConfig *self)
 
 				/* Register for inotify */
 				/* Watch for modification, deletion, moves, or attribute changes */
-				uint32_t fileflags = IN_MODIFY | IN_DELETE_SELF | IN_MOVE_SELF | IN_ATTRIB;
+				uint32_t fileflags = IN_MODIFY | IN_DELETE_SELF | IN_MOVE_SELF;
 				if ((self->inotwd[i] = inotify_add_watch(self->inotfd, path, fileflags)) == -1) {
 					LOG_ERROR("Failed to watch %s, error: %s", path, strerror(errno));
 				}
@@ -506,22 +506,22 @@ bool config_needs_reload(GameModeConfig *self)
 					/* The directory itself changed, trigger a reload */
 					need = true;
 					break;
+				}
 
-				} else if (event->mask & IN_CREATE || event->mask & IN_MOVED_TO) {
-					/* A new file has appeared, check the file name */
+			} else {
+				/* When the event has a filename (ie. is from a dir watch), check the name */
+				if (event->len > 0) {
 					if (strncmp(basename(event->name), CONFIG_NAME, strlen(CONFIG_NAME)) == 0) {
 						/* This is a gamemode config file, trigger a reload */
 						need = true;
 						break;
 					}
+				} else {
+					/* Otherwise this is for one of our watches on a specific config file, so
+					 * trigger the reload regardless */
+					need = true;
+					break;
 				}
-
-			} else {
-				/* When the event isn't a dir event - one of our files has been interacted with
-				 * in some way, so let's reload regardless of the details
-				 */
-				need = true;
-				break;
 			}
 
 			i += sizeof(struct inotify_event) + event->len;
