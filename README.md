@@ -23,15 +23,15 @@ GameMode depends on `meson` for building and `systemd` for internal communicatio
 
 #### Ubuntu/Debian (you may also need `dbus-user-session`)
 ```bash
-apt install meson libsystemd-dev pkg-config ninja-build git
+apt install meson libsystemd-dev pkg-config ninja-build git libdbus1-dev
 ```
 #### Arch
 ```bash
-pacman -S meson systemd git
+pacman -S meson systemd git dbus
 ```
 #### Fedora
 ```bash
-dnf install meson systemd-devel pkg-config git
+dnf install meson systemd-devel pkg-config git dbus-devel
 ```
 #### Gentoo
 Gentoo has an ebuild which builds a stable release from sources. It will also pull in all the dependencies so you can work on the source code.

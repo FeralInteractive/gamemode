@@ -11,6 +11,7 @@ addons:
       - python3-setuptools
       - libsystemd-dev
       - ninja-build
+      - libdbus-1-dev
   artifacts:
     paths:
     - $(git ls-files -o | tr "\n" ":")
