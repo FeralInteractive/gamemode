@@ -602,6 +602,7 @@ int game_mode_context_query_status(GameModeContext *self, pid_t client, pid_t re
  */
 static GameModeClient *game_mode_client_new(pid_t pid, char *executable)
 {
+	/* This bit seems to be formatted differently by different clang-format versions */
 	/* clang-format off */
 	GameModeClient c = {
 		.next = NULL,
