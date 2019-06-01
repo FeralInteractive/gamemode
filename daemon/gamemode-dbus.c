@@ -216,6 +216,7 @@ static int method_refresh_config(sd_bus_message *m, void *userdata,
 /**
  * D-BUS vtable to dispatch virtual methods
  */
+/* This bit seems to be formatted differently by different clang-format versions */
 /* clang-format off */
 static const sd_bus_vtable gamemode_vtable[] = {
 	SD_BUS_VTABLE_START(0),
