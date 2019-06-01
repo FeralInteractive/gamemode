@@ -32,18 +32,17 @@ POSSIBILITY OF SUCH DAMAGE.
 #define _GNU_SOURCE
 
 #include "gamemode.h"
-#include "helpers.h"
-#include "logging.h"
+#include "common-helpers.h"
+#include "common-logging.h"
 
 #include <ctype.h>
 #include <fcntl.h>
-#include <stdlib.h>
-#include <unistd.h>
+#include <pwd.h>
 
 /**
  * Detect if the process is a wine preloader process
  */
-bool game_mode_detect_wine_preloader(const char *exe)
+static bool game_mode_detect_wine_preloader(const char *exe)
 {
 	return (strtail(exe, "/wine-preloader") || strtail(exe, "/wine64-preloader"));
 }
@@ -51,9 +50,86 @@ bool game_mode_detect_wine_preloader(const char *exe)
 /**
  * Detect if the process is a wine loader process
  */
-bool game_mode_detect_wine_loader(const char *exe)
+static bool game_mode_detect_wine_loader(const char *exe)
 {
 	return (strtail(exe, "/wine") || strtail(exe, "/wine64"));
+}
+
+/**
+ * Opens the process environment for a specific PID and returns
+ * a file descriptor to the directory /proc/PID. Doing it that way prevents
+ * the directory going MIA when a process exits while we are looking at it
+ * and allows us to handle fewer error cases.
+ */
+static procfd_t game_mode_open_proc(const pid_t pid)
+{
+	char buffer[PATH_MAX];
+	const char *proc_path = buffered_snprintf(buffer, "/proc/%d", pid);
+
+	return proc_path ? open(proc_path, O_RDONLY | O_CLOEXEC) : INVALID_PROCFD;
+}
+
+/**
+ * Closes the process environment.
+ */
+static int game_mode_close_proc(const procfd_t procfd)
+{
+	return close(procfd);
+}
+
+/**
+ * Lookup the process environment for a specific variable or return NULL.
+ * Requires an open directory FD from /proc/PID.
+ */
+static char *game_mode_lookup_proc_env(const procfd_t proc_fd, const char *var)
+{
+	char *environ = NULL;
+
+	int fd = openat(proc_fd, "environ", O_RDONLY | O_CLOEXEC);
+	if (fd != -1) {
+		FILE *stream = fdopen(fd, "r");
+		if (stream) {
+			/* Read every \0 terminated line from the environment */
+			char *line = NULL;
+			size_t len = 0;
+			size_t pos = strlen(var) + 1;
+			while (!environ && (getdelim(&line, &len, 0, stream) != -1)) {
+				/* Find a match including the "=" suffix */
+				if ((len > pos) && (strncmp(line, var, strlen(var)) == 0) && (line[pos - 1] == '='))
+					environ = strndup(line + pos, len - pos);
+			}
+			free(line);
+			fclose(stream);
+		} else
+			close(fd);
+	}
+
+	/* If found variable is empty, skip it */
+	if (environ && !strlen(environ)) {
+		free(environ);
+		environ = NULL;
+	}
+
+	return environ;
+}
+
+/**
+ * Lookup the home directory of the user in a safe way.
+ */
+static char *game_mode_lookup_user_home(void)
+{
+	/* Try loading env HOME first */
+	const char *home = secure_getenv("HOME");
+	if (!home) {
+		/* If HOME is not defined (or out of context), fall back to passwd */
+		struct passwd *pw = getpwuid(getuid());
+		if (!pw)
+			return NULL;
+		home = pw->pw_dir;
+	}
+
+	/* Try to allocate into our heap */
+	return home ? strdup(home) : NULL;
 }
 
 /**
@@ -61,8 +137,15 @@ bool game_mode_detect_wine_loader(const char *exe)
  * This function is used if game_mode_context_find_exe() identified the
  * process as wine-preloader. Returns NULL when resolve fails.
  */
-char *game_mode_resolve_wine_preloader(const pid_t pid)
+char *game_mode_resolve_wine_preloader(const char *exe, const pid_t pid)
 {
+	/* Detect if the process is a wine loader process */
+	if (game_mode_detect_wine_preloader(exe) || game_mode_detect_wine_loader(exe)) {
+		LOG_MSG("Detected wine for client %d [%s].\n", pid, exe);
+	} else {
+		return NULL;
+	}
+
 	char buffer[PATH_MAX];
 	char *wine_exe = NULL, *wineprefix = NULL;
 

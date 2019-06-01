@@ -30,22 +30,30 @@ POSSIBILITY OF SUCH DAMAGE.
  */
 
 #pragma once
+#define GPU_VALUE_MAX 256
 
-#include <stdbool.h>
+/* Enums for GPU vendors */
+enum GPUVendor {
+	Vendor_Invalid = 0,
+	Vendor_NVIDIA = 0x10de,
+	Vendor_AMD = 0x1002,
+	Vendor_Intel = 0x8086
+};
 
-#include "gamemode.h"
+#define GPUVendorValid(vendor)                                                                     \
+	(vendor == Vendor_NVIDIA || vendor == Vendor_AMD || vendor == Vendor_Intel)
 
-/**
- * Run the main D-BUS loop "forever"
- */
-void game_mode_context_loop(GameModeContext *context) __attribute__((noreturn));
+/* Storage for GPU info*/
+struct GameModeGPUInfo {
+	long vendor;
+	long device; /* path to device, ie. /sys/class/drm/card#/ */
 
-/**
- * Inhibit the screensaver
- */
-int game_mode_inhibit_screensaver(bool inhibit);
+	long nv_core;            /* Nvidia core clock */
+	long nv_mem;             /* Nvidia mem clock */
+	long nv_powermizer_mode; /* NV Powermizer Mode */
 
-/**
- * Signal the ClientCount property has changed
- */
-void game_mode_client_count_changed(void);
+	char amd_performance_level[GPU_VALUE_MAX]; /* The AMD performance level set to */
+};
+
+/* Get the vendor for a device */
+enum GPUVendor gamemode_get_gpu_vendor(long device);

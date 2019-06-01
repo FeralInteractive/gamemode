@@ -30,22 +30,19 @@ POSSIBILITY OF SUCH DAMAGE.
  */
 #define _GNU_SOURCE
 
-#include "daemon_config.h"
-#include "helpers.h"
-#include "logging.h"
+#include "gamemode-config.h"
+
+#include "common-helpers.h"
+#include "common-logging.h"
 
 /* Ben Hoyt's inih library */
 #include "ini.h"
 
 #include <dirent.h>
-#include <linux/limits.h>
 #include <pthread.h>
 #include <pwd.h>
-#include <stdio.h>
-#include <string.h>
 #include <sys/inotify.h>
 #include <sys/stat.h>
-#include <sys/types.h>
 
 /* Name and possible location of the config file */
 #define CONFIG_NAME "gamemode.ini"
@@ -437,7 +434,7 @@ void config_init(GameModeConfig *self)
 	self->inotfd = inotify_init1(IN_NONBLOCK);
 	if (self->inotfd == -1)
 		LOG_ERROR(
-		    "inotify_init failed: %s, gamemode will be able to watch config files for edits!\n",
+		    "inotify_init failed: %s, gamemode will not be able to watch config files for edits!\n",
 		    strerror(errno));
 
 	for (unsigned int i = 0; i < CONFIG_NUM_LOCATIONS; i++) {

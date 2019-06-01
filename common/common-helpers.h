@@ -29,68 +29,54 @@ POSSIBILITY OF SUCH DAMAGE.
 
  */
 
-#define _GNU_SOURCE
+#pragma once
 
-#include "gamemode.h"
-
-#include <fcntl.h>
-#include <pwd.h>
-#include <stdio.h>
-#include <stdlib.h>
 #include <string.h>
+#include <sys/param.h>
 #include <unistd.h>
 
 /**
- * Lookup the process environment for a specific variable or return NULL.
- * Requires an open directory FD from /proc/PID.
+ * Value clamping helper, works like MIN/MAX but constraints a value within the range.
  */
-char *game_mode_lookup_proc_env(const procfd_t proc_fd, const char *var)
+#define CLAMP(l, u, value) MAX(MIN(l, u), MIN(MAX(l, u), value))
+
+/**
+ * Little helper to safely print into a buffer, returns a pointer into the buffer
+ */
+#define buffered_snprintf(b, s, ...)                                                               \
+	(snprintf(b, sizeof(b), s, __VA_ARGS__) < (ssize_t)sizeof(b) ? b : NULL)
+
+/**
+ * Little helper to safely print into a buffer, returns a newly allocated string
+ */
+#define safe_snprintf(b, s, ...)                                                                   \
+	(snprintf(b, sizeof(b), s, __VA_ARGS__) < (ssize_t)sizeof(b) ? strndup(b, sizeof(b)) : NULL)
+
+/**
+ * Helper function: Test, if haystack ends with needle.
+ */
+static inline const char *strtail(const char *haystack, const char *needle)
 {
-	char *environ = NULL;
-
-	int fd = openat(proc_fd, "environ", O_RDONLY | O_CLOEXEC);
-	if (fd != -1) {
-		FILE *stream = fdopen(fd, "r");
-		if (stream) {
-			/* Read every \0 terminated line from the environment */
-			char *line = NULL;
-			size_t len = 0;
-			size_t pos = strlen(var) + 1;
-			while (!environ && (getdelim(&line, &len, 0, stream) != -1)) {
-				/* Find a match including the "=" suffix */
-				if ((len > pos) && (strncmp(line, var, strlen(var)) == 0) && (line[pos - 1] == '='))
-					environ = strndup(line + pos, len - pos);
-			}
-			free(line);
-			fclose(stream);
-		} else
-			close(fd);
-	}
-
-	/* If found variable is empty, skip it */
-	if (environ && !strlen(environ)) {
-		free(environ);
-		environ = NULL;
-	}
-
-	return environ;
+	char *pos = strstr(haystack, needle);
+	if (pos && (strlen(pos) == strlen(needle)))
+		return pos;
+	return NULL;
 }
 
 /**
- * Lookup the home directory of the user in a safe way.
+ * Helper function for autoclosing file-descriptors. Does nothing if the argument
+ * is NULL or the referenced integer < 0.
  */
-char *game_mode_lookup_user_home(void)
+inline void cleanup_close(int *fd_ptr)
 {
-	/* Try loading env HOME first */
-	const char *home = secure_getenv("HOME");
-	if (!home) {
-		/* If HOME is not defined (or out of context), fall back to passwd */
-		struct passwd *pw = getpwuid(getuid());
-		if (!pw)
-			return NULL;
-		home = pw->pw_dir;
-	}
+	if (fd_ptr == NULL || *fd_ptr < 0)
+		return;
 
-	/* Try to allocate into our heap */
-	return home ? strdup(home) : NULL;
+	(void)close(*fd_ptr);
 }
+
+/**
+ * Helper macro for autoclosing file-descriptors: use by prefixing the variable,
+ * like "autoclose_fd int fd = -1;".
+ */
+#define autoclose_fd __attribute__((cleanup(cleanup_close)))

@@ -31,13 +31,9 @@ POSSIBILITY OF SUCH DAMAGE.
 
 #define _GNU_SOURCE
 
-#include "external-helper.h"
-#include "logging.h"
+#include "common-external.h"
+#include "common-logging.h"
 
-#include <linux/limits.h>
-#include <stdio.h>
-#include <sys/time.h>
-#include <sys/types.h>
 #include <sys/wait.h>
 #include <unistd.h>
 

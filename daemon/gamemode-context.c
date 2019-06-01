@@ -31,22 +31,20 @@ POSSIBILITY OF SUCH DAMAGE.
 
 #define _GNU_SOURCE
 
+#include "common-external.h"
+#include "common-governors.h"
+#include "common-helpers.h"
+#include "common-logging.h"
+
 #include "gamemode.h"
-#include "config.h"
-#include "daemon_config.h"
-#include "dbus_messaging.h"
-#include "external-helper.h"
-#include "governors-query.h"
-#include "helpers.h"
-#include "logging.h"
+#include "gamemode-config.h"
+
+#include "build-config.h"
 
 #include <fcntl.h>
 #include <pthread.h>
-#include <signal.h>
 #include <stdatomic.h>
-#include <sys/stat.h>
-#include <sys/types.h>
-#include <systemd/sd-daemon.h>
+#include <systemd/sd-daemon.h> /* TODO: Move usage to gamemode-dbus.c */
 #include <unistd.h>
 
 /**
@@ -81,9 +79,6 @@ struct GameModeContext {
 };
 
 static GameModeContext instance = { 0 };
-
-/* Maximum number of concurrent processes we'll sanely support */
-#define MAX_GAMES 256
 
 /**
  * Protect against signals
@@ -387,12 +382,6 @@ int game_mode_context_register(GameModeContext *self, pid_t client, pid_t reques
 		goto error_cleanup;
 	}
 
-	/* Cap the total number of active clients */
-	if (game_mode_context_num_clients(self) + 1 > MAX_GAMES) {
-		LOG_ERROR("Max games (%d) reached, not registering %d\n", MAX_GAMES, client);
-		goto error_cleanup;
-	}
-
 	/* Check the PID first to spare a potentially expensive lookup for the exe */
 	pthread_rwlock_rdlock(&self->rwlock); // ensure our pointer is sane
 	const GameModeClient *existing = game_mode_context_has_client(self, client);
@@ -613,10 +602,13 @@ int game_mode_context_query_status(GameModeContext *self, pid_t client, pid_t re
  */
 static GameModeClient *game_mode_client_new(pid_t pid, char *executable)
 {
+	/* This bit seems to be formatted differently by different clang-format versions */
+	/* clang-format off */
 	GameModeClient c = {
 		.next = NULL,
 		.pid = pid,
 	};
+	/* clang-format on */
 	GameModeClient *ret = NULL;
 
 	ret = calloc(1, sizeof(struct GameModeClient));
@@ -757,31 +749,13 @@ static char *game_mode_context_find_exe(pid_t pid)
 
 	char *exe = strdup(buffer);
 
-	/* Detect if the process is a wine loader process */
-	if (game_mode_detect_wine_preloader(exe)) {
-		LOG_MSG("Detected wine preloader for client %d [%s].\n", pid, exe);
-		goto wine_preloader;
-	}
-	if (game_mode_detect_wine_loader(exe)) {
-		LOG_MSG("Detected wine loader for client %d [%s].\n", pid, exe);
-		goto wine_preloader;
+	/* Resolve for wine if appropriate */
+	if ((wine_exe = game_mode_resolve_wine_preloader(exe, pid))) {
+		free(exe);
+		exe = wine_exe;
 	}
 
 	return exe;
-
-wine_preloader:
-
-	wine_exe = game_mode_resolve_wine_preloader(pid);
-	if (wine_exe) {
-		free(exe);
-		exe = wine_exe;
-		return exe;
-	}
-
-	/* We have to ignore this because the wine process is in some sort
-	 * of respawn mode
-	 */
-	free(exe);
 
 fail:
 	if (errno != 0) // otherwise a proper message was logged before

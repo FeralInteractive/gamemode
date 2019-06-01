@@ -132,12 +132,18 @@ cdata.set_quoted('LIBEXECDIR', path_libexecdir)
 cdata.set_quoted('GAMEMODE_VERSION', meson.project_version())
 config_h = configure_file(
     configuration: cdata,
-    output: 'config.h',
+    output: 'build-config.h',
 )
 config_h_dir = include_directories('.')
 
 # Library is always required
 subdir('lib')
+
+# common lib is always required
+subdir('common')
+
+# Utilities are always required
+subdir('util')
 
 # The daemon can be disabled if necessary, allowing multilib builds of the
 # main library
