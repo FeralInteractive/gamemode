@@ -32,15 +32,17 @@ POSSIBILITY OF SUCH DAMAGE.
 
 #define _GNU_SOURCE
 
-#include "config.h"
-#include "external-helper.h"
-#include "helpers.h"
-#include "logging.h"
+#include "common-external.h"
+#include "common-gpu.h"
+#include "common-helpers.h"
+#include "common-logging.h"
 
 #include "gamemode.h"
+#include "gamemode-config.h"
 
-#include "daemon_config.h"
-#include "gpu-control.h"
+#include "build-config.h"
+
+_Static_assert(CONFIG_VALUE_MAX == GPU_VALUE_MAX, "Config max value and GPU value out of sync!");
 
 /**
  * Attempts to identify the current in use GPU information
@@ -140,11 +142,6 @@ void game_mode_free_gpu(GameModeGPUInfo **info)
 	free(*info);
 	*info = NULL;
 }
-
-//#include <linux/limits.h>
-//#include <stdio.h>
-//#include <sys/wait.h>
-//#include <unistd.h>
 
 /**
  * Applies GPU optimisations when gamemode is active and removes them after

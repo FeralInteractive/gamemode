@@ -49,18 +49,19 @@ POSSIBILITY OF SUCH DAMAGE.
 
 #define _GNU_SOURCE
 
-#include "config.h"
-#include "daemonize.h"
-#include "dbus_messaging.h"
 #include "gamemode.h"
-#include "gamemode_client.h"
-#include "logging.h"
+#include "common-logging.h"
+#include "gamemode-config.h"
 
+#include "gamemode_client.h"
+
+#include "build-config.h"
+
+#include <fcntl.h>
 #include <getopt.h>
 #include <signal.h>
-#include <stdlib.h>
-#include <string.h>
-#include <systemd/sd-daemon.h>
+#include <sys/stat.h>
+#include <systemd/sd-daemon.h> /* TODO: Move usage to gamemode-dbus.c */
 #include <unistd.h>
 
 #define USAGE_TEXT                                                                                 \
@@ -93,6 +94,49 @@ static void sigint_handler(__attribute__((unused)) int signo)
 static void sigint_handler_noexit(__attribute__((unused)) int signo)
 {
 	LOG_MSG("Quitting by request...\n");
+}
+
+/**
+ * Helper to perform standard UNIX daemonization
+ */
+static void daemonize(const char *name)
+{
+	/* Initial fork */
+	pid_t pid = fork();
+	if (pid < 0) {
+		FATAL_ERRORNO("Failed to fork");
+	}
+
+	if (pid != 0) {
+		LOG_MSG("Daemon launched as %s...\n", name);
+		exit(EXIT_SUCCESS);
+	}
+
+	/* Fork a second time */
+	pid = fork();
+	if (pid < 0) {
+		FATAL_ERRORNO("Failed to fork");
+	} else if (pid > 0) {
+		exit(EXIT_SUCCESS);
+	}
+
+	/* Now continue execution */
+	umask(0022);
+	if (setsid() < 0) {
+		FATAL_ERRORNO("Failed to create process group\n");
+	}
+	if (chdir("/") < 0) {
+		FATAL_ERRORNO("Failed to change to root directory\n");
+	}
+
+	/* replace standard file descriptors by /dev/null */
+	int devnull_r = open("/dev/null", O_RDONLY);
+	int devnull_w = open("/dev/null", O_WRONLY);
+	dup2(devnull_r, STDIN_FILENO);
+	dup2(devnull_w, STDOUT_FILENO);
+	dup2(devnull_w, STDERR_FILENO);
+	close(devnull_r);
+	close(devnull_w);
 }
 
 /**

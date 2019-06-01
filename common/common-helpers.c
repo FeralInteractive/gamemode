@@ -31,7 +31,7 @@ POSSIBILITY OF SUCH DAMAGE.
  */
 
 #define _GNU_SOURCE
-#include "helpers.h"
+#include "common-helpers.h"
 
 /* Starting with C99 we can use "inline" without "static" and thus avoid
  * having multiple (local) definitions of the same inline function. One

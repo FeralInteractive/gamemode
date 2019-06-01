@@ -31,22 +31,21 @@ POSSIBILITY OF SUCH DAMAGE.
 
 #define _GNU_SOURCE
 
-#include "gamemode.h"
-#include "helpers.h"
-#include "logging.h"
+#include "common-external.h"
+#include "common-governors.h"
+#include "common-gpu.h"
+#include "common-helpers.h"
+#include "common-logging.h"
 
-#include <libgen.h>
+#include "gamemode.h"
+#include "gamemode-config.h"
+#include "gamemode_client.h"
+
 #include <pthread.h>
 #include <sys/syscall.h>
-#include <sys/types.h>
 #include <sys/wait.h>
-#include <unistd.h>
 
-#include "daemon_config.h"
-#include "external-helper.h"
-#include "gamemode_client.h"
-#include "governors-query.h"
-#include "gpu-control.h"
+struct GameModeConfig;
 
 /* Initial verify step to ensure gamemode isn't already active */
 static int verify_gamemode_initial(struct GameModeConfig *config)

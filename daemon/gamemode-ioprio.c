@@ -31,16 +31,13 @@ POSSIBILITY OF SUCH DAMAGE.
 
 #define _GNU_SOURCE
 
-#include "daemon_config.h"
 #include "gamemode.h"
-#include "helpers.h"
-#include "logging.h"
+#include "common-helpers.h"
+#include "common-logging.h"
+#include "gamemode-config.h"
 
 #include <dirent.h>
-#include <errno.h>
-#include <stdio.h>
 #include <sys/syscall.h>
-#include <unistd.h>
 
 /**
  * Define the syscall interface in Linux because it is missing from glibc

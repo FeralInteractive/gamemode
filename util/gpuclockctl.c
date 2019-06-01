@@ -31,12 +31,12 @@ POSSIBILITY OF SUCH DAMAGE.
 
 #define _GNU_SOURCE
 
-#include "logging.h"
-
-#include "external-helper.h"
-#include "gpu-control.h"
+#include "common-external.h"
+#include "common-gpu.h"
+#include "common-logging.h"
 
 #include <limits.h>
+#include <unistd.h>
 
 /* NV constants */
 #define NV_CORE_OFFSET_ATTRIBUTE "GPUGraphicsClockOffset"
@@ -304,8 +304,8 @@ static int get_gpu_state_amd(struct GameModeGPUInfo *info)
 
 	int ret = 0;
 
-	char buff[CONFIG_VALUE_MAX] = { 0 };
-	if (!fgets(buff, CONFIG_VALUE_MAX, file)) {
+	char buff[GPU_VALUE_MAX] = { 0 };
+	if (!fgets(buff, GPU_VALUE_MAX, file)) {
 		LOG_ERROR("Could not read file %s (%s)!\n", path, strerror(errno));
 		ret = -1;
 	}
@@ -317,8 +317,8 @@ static int get_gpu_state_amd(struct GameModeGPUInfo *info)
 
 	if (ret == 0) {
 		/* Copy in the value from the file */
-		strncpy(info->amd_performance_level, buff, CONFIG_VALUE_MAX - 1);
-		info->amd_performance_level[CONFIG_VALUE_MAX - 1] = '\0';
+		strncpy(info->amd_performance_level, buff, GPU_VALUE_MAX - 1);
+		info->amd_performance_level[GPU_VALUE_MAX - 1] = '\0';
 	}
 
 	return ret;
@@ -468,7 +468,7 @@ int main(int argc, char *argv[])
 				LOG_ERROR("Must pass performance level for AMD gpu!\n");
 				print_usage_and_exit();
 			}
-			strncpy(info.amd_performance_level, argv[3], CONFIG_VALUE_MAX - 1);
+			strncpy(info.amd_performance_level, argv[3], GPU_VALUE_MAX - 1);
 			return set_gpu_state_amd(&info);
 			break;
 		default:

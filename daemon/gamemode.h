@@ -116,26 +116,12 @@ GameModeConfig *game_mode_config_from_context(const GameModeContext *context);
  */
 int game_mode_reload_config(GameModeContext *context);
 
-/** gamemode-env.c
- * Provides internal API functions specific to working environment
- * variables.
- */
-char *game_mode_lookup_proc_env(const procfd_t proc_fd, const char *var);
-char *game_mode_lookup_user_home(void);
-
 /** gamemode-ioprio.c
  * Provides internal API functions specific to adjusting process
  * IO priorities.
  */
 int game_mode_get_ioprio(const pid_t client);
 void game_mode_apply_ioprio(const GameModeContext *self, const pid_t client, int expected);
-
-/** gamemode-proc.c
- * Provides internal API functions specific to working with process
- * environments.
- */
-procfd_t game_mode_open_proc(const pid_t pid);
-int game_mode_close_proc(const procfd_t procfd);
 
 /** gamemode-sched.c
  * Provides internal API functions specific to adjusting process
@@ -149,9 +135,7 @@ void game_mode_apply_scheduling(const GameModeContext *self, const pid_t client)
  * Provides internal API functions specific to handling wine
  * prefixes.
  */
-bool game_mode_detect_wine_loader(const char *exe);
-bool game_mode_detect_wine_preloader(const char *exe);
-char *game_mode_resolve_wine_preloader(const pid_t pid);
+char *game_mode_resolve_wine_preloader(const char *exe, const pid_t pid);
 
 /** gamemode-tests.c
  * Provides a test suite to verify gamemode behaviour
@@ -166,3 +150,10 @@ int game_mode_initialise_gpu(GameModeConfig *config, GameModeGPUInfo **info);
 void game_mode_free_gpu(GameModeGPUInfo **info);
 int game_mode_apply_gpu(const GameModeGPUInfo *info);
 int game_mode_get_gpu(GameModeGPUInfo *info);
+
+/** gamemode-dbus.c
+ * Provides an API interface for using dbus
+ */
+void game_mode_context_loop(GameModeContext *context) __attribute__((noreturn));
+int game_mode_inhibit_screensaver(bool inhibit);
+void game_mode_client_count_changed(void);

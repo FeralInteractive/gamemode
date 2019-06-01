@@ -80,65 +80,30 @@ bool config_needs_reload(GameModeConfig *self);
 void config_destroy(GameModeConfig *self);
 
 /*
- * Get if the client is in the whitelist
- * returns false for an empty whitelist
+ * Get if the client is in the whitelist or blacklist
+ * config_get_client_whitelisted returns false for an empty whitelist
  */
 bool config_get_client_whitelisted(GameModeConfig *self, const char *client);
-
-/*
- * Get if the client is in the blacklist
- */
 bool config_get_client_blacklisted(GameModeConfig *self, const char *client);
 
 /*
- * Get the frequency (in seconds) for the reaper thread
- */
-long config_get_reaper_frequency(GameModeConfig *self);
-
-/*
- * Get whether we want to inhibit the screensaver (defaults to true)
- */
-bool config_get_inhibit_screensaver(GameModeConfig *self);
-
-/*
- * Get a set of scripts to call when gamemode starts
+ * Get the script sets to run at the start or end
  */
 void config_get_gamemode_start_scripts(GameModeConfig *self,
                                        char scripts[CONFIG_LIST_MAX][CONFIG_VALUE_MAX]);
-/*
- * Get a set of scripts to call when gamemode ends
- */
 void config_get_gamemode_end_scripts(GameModeConfig *self,
                                      char scripts[CONFIG_LIST_MAX][CONFIG_VALUE_MAX]);
 
 /*
- * Get the script timout value
+ * Various get methods for config values
  */
+long config_get_reaper_frequency(GameModeConfig *self);
+bool config_get_inhibit_screensaver(GameModeConfig *self);
 long config_get_script_timeout(GameModeConfig *self);
-
-/*
- * Get the chosen default governor
- */
 void config_get_default_governor(GameModeConfig *self, char governor[CONFIG_VALUE_MAX]);
-
-/*
- * Get the chosen desired governor
- */
 void config_get_desired_governor(GameModeConfig *self, char governor[CONFIG_VALUE_MAX]);
-
-/*
- * Get the chosen soft realtime behavior
- */
 void config_get_soft_realtime(GameModeConfig *self, char softrealtime[CONFIG_VALUE_MAX]);
-
-/*
- * Get the renice value
- */
 long config_get_renice_value(GameModeConfig *self);
-
-/*
- * Get the ioprio value
- */
 long config_get_ioprio_value(GameModeConfig *self);
 
 /*
