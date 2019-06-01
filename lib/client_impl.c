@@ -67,7 +67,7 @@ POSSIBILITY OF SUCH DAMAGE.
 #define LOG_ERROR fprintf(stderr, "ERROR: %s \n", error_string)
 #endif
 
-#ifdef DO_TRACE
+#if DO_TRACE
 #define TRACE(...) fprintf(stderr, __VA_ARGS__)
 #else
 #define TRACE(...)
