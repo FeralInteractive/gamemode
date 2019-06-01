@@ -42,6 +42,8 @@ POSSIBILITY OF SUCH DAMAGE.
 
 #include "build-config.h"
 
+_Static_assert(CONFIG_VALUE_MAX == GPU_VALUE_MAX, "Config max value and GPU value out of sync!");
+
 /**
  * Attempts to identify the current in use GPU information
  */
