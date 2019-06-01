@@ -56,6 +56,7 @@ The following games are known to integrate GameMode support (meaning they don't 
 * Total War Saga: Thrones of Britannia
 * Total War: WARHAMMER II
 * DiRT 4
+* Total War: Three Kingdoms
 
 ### Others
 Other apps which can integrate with GameMode include:
