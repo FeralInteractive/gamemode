@@ -57,10 +57,8 @@ POSSIBILITY OF SUCH DAMAGE.
 
 #ifdef NDEBUG
 #define DEBUG(...)
-#define LOG_ERROR
 #else
 #define DEBUG(...) fprintf(stderr, __VA_ARGS__)
-#define LOG_ERROR fprintf(stderr, "ERROR: %s \n", error_string)
 #endif
 
 #if DO_TRACE
@@ -100,7 +98,7 @@ static int log_error(const char *fmt, ...)
 	else if ((size_t)n >= sizeof(error_string))
 		DEBUG("Error log overflow");
 
-	TRACE("ERROR: %s \n", error_string);
+	fprintf(stderr, "GameMode ERROR: %s\n", error_string);
 
 	return -1;
 }
