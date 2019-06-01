@@ -30,7 +30,7 @@ POSSIBILITY OF SUCH DAMAGE.
  */
 
 #pragma once
-#define CONFIG_VALUE_MAX 256
+#define GPU_VALUE_MAX 256
 
 /* Enums for GPU vendors */
 enum GPUVendor {
@@ -52,7 +52,7 @@ struct GameModeGPUInfo {
 	long nv_mem;             /* Nvidia mem clock */
 	long nv_powermizer_mode; /* NV Powermizer Mode */
 
-	char amd_performance_level[CONFIG_VALUE_MAX]; /* The AMD performance level set to */
+	char amd_performance_level[GPU_VALUE_MAX]; /* The AMD performance level set to */
 };
 
 /* Get the vendor for a device */
