@@ -125,6 +125,7 @@ path_polkit_action_dir = join_paths(path_datadir, 'polkit-1', 'actions')
 
 with_daemon = get_option('with-daemon')
 with_examples = get_option('with-examples')
+with_util = get_option('with-util')
 
 # Provide a config.h
 cdata = configuration_data()
@@ -142,8 +143,11 @@ subdir('lib')
 # common lib is always required
 subdir('common')
 
-# Utilities are always required
-subdir('util')
+# Utilities are always required except when having both 64 and 32 bit versions
+# of libgamemode installed
+if with_util == true
+    subdir('util')
+endif
 
 # The daemon can be disabled if necessary, allowing multilib builds of the
 # main library
