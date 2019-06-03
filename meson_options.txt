@@ -12,3 +12,4 @@ option('with-dbus-service-dir', type: 'string', description: 'Explicitly set the
 # General options
 option('with-examples', type: 'boolean', description: 'Build sample programs', value: 'true')
 option('with-daemon', type: 'boolean', description: 'Build the daemon', value: 'true')
+option('with-util', type: 'boolean', description: 'Build the utilities', value: 'true')
