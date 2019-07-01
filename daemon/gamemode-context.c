@@ -51,11 +51,11 @@ POSSIBILITY OF SUCH DAMAGE.
  * The GameModeClient encapsulates the remote connection, providing a list
  * form to contain the pid and credentials.
  */
-typedef struct GameModeClient {
+struct GameModeClient {
 	pid_t pid;                   /**< Process ID */
 	struct GameModeClient *next; /**<Next client in the list */
 	char executable[PATH_MAX];   /**<Process executable */
-} GameModeClient;
+};
 
 struct GameModeContext {
 	pthread_rwlock_t rwlock; /**<Guard access to the client list */

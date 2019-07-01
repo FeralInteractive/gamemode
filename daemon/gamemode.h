@@ -43,6 +43,7 @@ typedef int procfd_t;
  */
 typedef struct GameModeContext GameModeContext;
 typedef struct GameModeConfig GameModeConfig;
+typedef struct GameModeClient GameModeClient;
 
 /**
  * Return the singleton instance
