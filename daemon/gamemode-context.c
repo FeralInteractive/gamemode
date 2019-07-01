@@ -52,6 +52,7 @@ POSSIBILITY OF SUCH DAMAGE.
  * form to contain the pid and credentials.
  */
 struct GameModeClient {
+	_Atomic int refcount;        /**<Allow outside usage */
 	pid_t pid;                   /**< Process ID */
 	struct GameModeClient *next; /**<Next client in the list */
 	char executable[PATH_MAX];   /**<Process executable */
@@ -86,7 +87,7 @@ static GameModeContext instance = { 0 };
 static volatile bool had_context_init = false;
 
 static GameModeClient *game_mode_client_new(pid_t pid, char *exe);
-static void game_mode_client_free(GameModeClient *client);
+static void game_mode_client_unref(GameModeClient *client);
 static const GameModeClient *game_mode_context_has_client(GameModeContext *self, pid_t client);
 static void *game_mode_context_reaper(void *userdata);
 static void game_mode_context_enter(GameModeContext *self);
@@ -159,7 +160,7 @@ void game_mode_context_destroy(GameModeContext *self)
 	}
 
 	had_context_init = false;
-	game_mode_client_free(self->client);
+	game_mode_client_unref(self->client);
 
 	end_reaper_thread(self);
 
@@ -444,7 +445,7 @@ error_cleanup:
 	if (errno != 0)
 		LOG_ERROR("Failed to register client [%d]: %s\n", client, strerror(errno));
 	free(executable);
-	game_mode_client_free(cl);
+	game_mode_client_unref(cl);
 	return err;
 }
 
@@ -508,7 +509,7 @@ int game_mode_context_unregister(GameModeContext *self, pid_t client, pid_t requ
 			self->client = cl->next;
 		}
 		cl->next = NULL;
-		game_mode_client_free(cl);
+		game_mode_client_unref(cl);
 		break;
 	}
 
@@ -616,20 +617,24 @@ static GameModeClient *game_mode_client_new(pid_t pid, char *executable)
 		return NULL;
 	}
 	*ret = c;
+	ret->refcount = ATOMIC_VAR_INIT(1);
 	strncpy(ret->executable, executable, PATH_MAX - 1);
 	return ret;
 }
 
 /**
- * Free a client and the next element in the list.
+ * Unref a client and the next element in the list, if non-null.
  */
-static void game_mode_client_free(GameModeClient *client)
+static void game_mode_client_unref(GameModeClient *client)
 {
 	if (!client) {
 		return;
 	}
+	if (atomic_fetch_sub_explicit(&client->refcount, 1, memory_order_seq_cst) > 1) {
+		return; /* object is still alive */
+	}
 	if (client->next) {
-		game_mode_client_free(client->next);
+		game_mode_client_unref(client->next);
 	}
 	free(client);
 }
