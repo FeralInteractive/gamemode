@@ -486,6 +486,7 @@ int game_mode_context_register(GameModeContext *self, pid_t client, pid_t reques
 	/* Unlock now we're done applying optimisations */
 	pthread_rwlock_unlock(&self->rwlock);
 
+	game_mode_client_registered(client);
 	game_mode_client_count_changed();
 
 	return 0;
@@ -586,6 +587,7 @@ int game_mode_context_unregister(GameModeContext *self, pid_t client, pid_t requ
 	pthread_rwlock_unlock(&self->rwlock);
 
 	game_mode_client_count_changed();
+	game_mode_client_unregistered(client);
 
 	return 0;
 }

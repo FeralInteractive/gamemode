@@ -37,6 +37,16 @@ POSSIBILITY OF SUCH DAMAGE.
 #include <systemd/sd-bus.h>
 #include <systemd/sd-daemon.h>
 
+#include <assert.h>
+#include <errno.h>
+#include <stdio.h>
+#include <stdlib.h>
+
+#define GAME_PATH_PREFIX "/com/feralinteractive/GameMode/Games/"
+/* maximum length of a valid game object path string:
+ *   The path prefix including \0 (sizeof) and 10 digits for uint32_t ('%u')*/
+#define GAME_PATH_MAX (sizeof(GAME_PATH_PREFIX) + 10)
+
 /* systemd dbus components */
 static sd_bus *bus = NULL;
 static sd_bus_slot *slot = NULL;
@@ -213,6 +223,90 @@ static int method_refresh_config(sd_bus_message *m, void *userdata,
 	return sd_bus_reply_method_return(m, "i", status);
 }
 
+static inline void game_object_bus_path(pid_t pid, char path[static GAME_PATH_MAX])
+{
+	snprintf(path, GAME_PATH_MAX, GAME_PATH_PREFIX "%u", (uint32_t)pid);
+}
+
+/**
+ * Handles the List Games
+ */
+static int method_list_games(sd_bus_message *m, void *userdata,
+                             __attribute__((unused)) sd_bus_error *ret_error)
+{
+	GameModeContext *context = userdata;
+	sd_bus_message *reply = NULL;
+	unsigned int count;
+	pid_t *clients;
+	int r;
+
+	r = sd_bus_message_new_method_return(m, &reply);
+	if (r < 0)
+		return r;
+
+	r = sd_bus_message_open_container(reply, 'a', "(io)");
+	if (r < 0)
+		return r;
+
+	clients = game_mode_context_list_clients(context, &count);
+
+	for (unsigned int i = 0; i < count; i++) {
+		char path[GAME_PATH_MAX] = {
+			0,
+		};
+		pid_t pid = clients[i];
+
+		game_object_bus_path(pid, path);
+		r = sd_bus_message_append(reply, "(io)", (int32_t)pid, path);
+
+		if (r < 0)
+			break;
+	}
+
+	free(clients);
+
+	if (r < 0)
+		return 0;
+
+	r = sd_bus_message_close_container(reply);
+	if (r < 0)
+		return r;
+
+	return sd_bus_send(NULL, reply, NULL);
+}
+
+/* Signal emission helper */
+static void game_mode_client_send_game_signal(pid_t pid, bool new_game)
+{
+	char path[GAME_PATH_MAX] = {
+		0,
+	};
+	int ret;
+
+	game_object_bus_path(pid, path);
+	ret = sd_bus_emit_signal(bus,
+	                         "/com/feralinteractive/GameMode",
+	                         "com.feralinteractive.GameMode",
+	                         new_game ? "GameRegistered" : "GameUnregistered",
+	                         "io",
+	                         (int32_t)pid,
+	                         path);
+	if (ret < 0)
+		fprintf(stderr, "failed to emit signal: %s", strerror(-ret));
+}
+
+/* Emit GameRegistered signal */
+void game_mode_client_registered(pid_t pid)
+{
+	game_mode_client_send_game_signal(pid, true);
+}
+
+/* Emit GameUnregistered signal */
+void game_mode_client_unregistered(pid_t pid)
+{
+	game_mode_client_send_game_signal(pid, false);
+}
+
 /**
  * D-BUS vtable to dispatch virtual methods
  */
@@ -232,6 +326,153 @@ static const sd_bus_vtable gamemode_vtable[] = {
 	SD_BUS_METHOD("QueryStatusByPID", "ii", "i", method_query_status_by_pid,
 	              SD_BUS_VTABLE_UNPRIVILEGED),
 	SD_BUS_METHOD("RefreshConfig", "", "i", method_refresh_config, SD_BUS_VTABLE_UNPRIVILEGED),
+	SD_BUS_METHOD("ListGames", "", "a(io)", method_list_games, SD_BUS_VTABLE_UNPRIVILEGED),
+
+	SD_BUS_SIGNAL("GameRegistered", "io", 0),
+	SD_BUS_SIGNAL("GameUnregistered", "io", 0),
+
+	SD_BUS_VTABLE_END
+};
+
+/**
+ * Game Objects
+ */
+
+static inline void pid_to_pointer(pid_t pid, void **pointer)
+{
+	_Static_assert(sizeof (void *) >= sizeof (pid_t),
+		       "pointer type not large enough to store pid_t");
+
+	*pointer = (void *) (intptr_t) pid;
+}
+
+static inline pid_t pid_from_pointer(const void *pointer)
+{
+	return (pid_t) (intptr_t) pointer;
+}
+
+static int game_object_find(sd_bus *local_bus, const char *path, const char *interface,
+			    void *userdata, void **found, sd_bus_error *ret_error)
+{
+	static const char prefix[] = "/com/feralinteractive/GameMode/Games/";
+	const char *start;
+	unsigned long int n;
+	char *end;
+
+	if (strncmp(path, prefix, strlen(prefix)) != 0)
+		return 0;
+
+	start = path + strlen(prefix);
+
+	errno = 0;
+	n = strtoul(start, &end, 10);
+
+	if (start == end || errno != 0)
+		return 0;
+
+	pid_to_pointer((pid_t) n, found);
+
+	return 1;
+}
+
+static int game_node_enumerator(sd_bus *local_bus, const char *path, void *userdata,
+				char ***nodes,
+				__attribute__((unused)) sd_bus_error *ret_error)
+{
+	GameModeContext *context = userdata;
+	unsigned int count;
+	pid_t *clients;
+	char **strv = NULL;
+
+	clients = game_mode_context_list_clients(context, &count);
+
+	strv = malloc (sizeof (char *) * (count + 1));
+
+	for (unsigned int i = 0; i < count; i++) {
+		char bus_path[GAME_PATH_MAX] = {0, };
+
+		game_object_bus_path(clients[i], bus_path);
+		strv[i] = strdup (bus_path);
+	}
+
+	strv[count] = NULL;
+	*nodes = strv;
+
+	free(clients);
+
+	return 1;
+}
+
+/**
+ * Handles the ProcessId property for Game objects
+ */
+static int game_object_get_process_id(sd_bus *local_bus, const char *path, const char *interface,
+				      const char *property, sd_bus_message *reply, void *userdata,
+				      sd_bus_error *ret_error)
+{
+	GameModeClient *client;
+	GameModeContext *context;
+	pid_t pid;
+	int pv;
+	int ret;
+
+	pid = pid_from_pointer(userdata);
+	context = game_mode_context_instance();
+	client = game_mode_context_lookup_client(context, pid);
+
+	pv = (int) pid;
+
+	if (client == NULL) {
+		return sd_bus_error_setf(ret_error,
+					 SD_BUS_ERROR_UNKNOWN_OBJECT,
+					 "No client registered with id '%d'", pv);
+	}
+
+	ret = sd_bus_message_append_basic(reply, 'i', &pv);
+	game_mode_client_unref(client);
+
+	return ret;
+}
+
+/**
+ * Handles the Exectuable property for Game objects
+ */
+static int game_object_get_executable(sd_bus *local_bus, const char *path, const char *interface,
+				      const char *property, sd_bus_message *reply, void *userdata,
+				      sd_bus_error *ret_error)
+{
+	GameModeClient *client;
+	GameModeContext *context;
+	const char *exec;
+	pid_t pid;
+	int ret;
+
+	pid = pid_from_pointer(userdata);
+
+	context = game_mode_context_instance();
+	client = game_mode_context_lookup_client(context, pid);
+
+	if (client == NULL) {
+		return sd_bus_error_setf(ret_error,
+					 SD_BUS_ERROR_UNKNOWN_OBJECT,
+					 "No client registered with id '%d'", (int) pid);
+	}
+
+	exec = game_mode_client_get_executable(client);
+	ret = sd_bus_message_append_basic(reply, 's', exec);
+	game_mode_client_unref(client);
+
+	return ret;
+}
+
+/* Same as above: this bit seems to be formatted differently by different clang-format versions */
+/* clang-format off */
+static const sd_bus_vtable game_vtable[] = {
+	SD_BUS_VTABLE_START(0),
+	SD_BUS_PROPERTY("ProcessId", "i", game_object_get_process_id, 0,
+	                SD_BUS_VTABLE_PROPERTY_EMITS_CHANGE),
+	SD_BUS_PROPERTY("Exectuable", "s", game_object_get_executable, 0,
+	                SD_BUS_VTABLE_PROPERTY_EMITS_CHANGE),
 	SD_BUS_VTABLE_END
 };
 /* clang-format on */
@@ -262,6 +503,27 @@ void game_mode_context_loop(GameModeContext *context)
 
 	if (ret < 0) {
 		FATAL_ERROR("Failed to install GameMode object: %s\n", strerror(-ret));
+	}
+
+	ret = sd_bus_add_fallback_vtable(bus,
+	                                 &slot,
+	                                 "/com/feralinteractive/GameMode/Games",
+	                                 "com.feralinteractive.GameMode.Game",
+	                                 game_vtable,
+	                                 game_object_find,
+	                                 context);
+
+	if (ret < 0) {
+		FATAL_ERROR("Failed to install Game object: %s\n", strerror(-ret));
+	}
+
+	ret = sd_bus_add_node_enumerator(bus,
+	                                 &slot,
+	                                 "/com/feralinteractive/GameMode/Games",
+	                                 game_node_enumerator,
+	                                 context);
+	if (ret < 0) {
+		FATAL_ERROR("Failed to install Game object enumerator: %s\n", strerror(-ret));
 	}
 
 	/* Request our name */
