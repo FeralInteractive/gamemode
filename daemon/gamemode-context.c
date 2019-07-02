@@ -87,7 +87,6 @@ static GameModeContext instance = { 0 };
 static volatile bool had_context_init = false;
 
 static GameModeClient *game_mode_client_new(pid_t pid, char *exe);
-static void game_mode_client_unref(GameModeClient *client);
 static const GameModeClient *game_mode_context_has_client(GameModeContext *self, pid_t client);
 static void *game_mode_context_reaper(void *userdata);
 static void game_mode_context_enter(GameModeContext *self);
@@ -625,7 +624,7 @@ static GameModeClient *game_mode_client_new(pid_t pid, char *executable)
 /**
  * Unref a client and the next element in the list, if non-null.
  */
-static void game_mode_client_unref(GameModeClient *client)
+void game_mode_client_unref(GameModeClient *client)
 {
 	if (!client) {
 		return;
