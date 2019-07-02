@@ -45,6 +45,7 @@ POSSIBILITY OF SUCH DAMAGE.
 #include <fcntl.h>
 #include <pthread.h>
 #include <stdatomic.h>
+#include <stdlib.h>
 #include <systemd/sd-daemon.h> /* TODO: Move usage to gamemode-dbus.c */
 #include <unistd.h>
 
@@ -330,6 +331,31 @@ static const GameModeClient *game_mode_context_has_client(GameModeContext *self,
 int game_mode_context_num_clients(GameModeContext *self)
 {
 	return atomic_load(&self->refcount);
+}
+
+pid_t *game_mode_context_list_clients(GameModeContext *self, unsigned int *count)
+{
+	pid_t *res = NULL;
+	unsigned int i = 0;
+	unsigned int n;
+
+	pthread_rwlock_rdlock(&self->rwlock);
+	n = (unsigned int)atomic_load(&self->refcount);
+
+	if (n > 0)
+		res = (pid_t *)malloc(n * sizeof(pid_t));
+
+	for (GameModeClient *cl = self->client; cl; cl = cl->next) {
+		assert(n > i);
+
+		res[i] = cl->pid;
+		i++;
+	}
+
+	*count = i;
+
+	pthread_rwlock_unlock(&self->rwlock);
+	return res;
 }
 
 static int game_mode_apply_client_optimisations(GameModeContext *self, pid_t client)
