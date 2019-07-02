@@ -203,15 +203,6 @@ static int property_get_client_count(sd_bus *local_bus, const char *path, const 
 	return sd_bus_message_append_basic(reply, 'i', &count);
 }
 
-void game_mode_client_count_changed(void)
-{
-	(void)sd_bus_emit_properties_changed(bus,
-	                                     "/com/feralinteractive/GameMode",
-	                                     "com.feralinteractive.GameMode",
-	                                     "ClientCount",
-	                                     NULL);
-}
-
 /**
  * Handles the Refresh Config request
  */
@@ -293,6 +284,12 @@ static void game_mode_client_send_game_signal(pid_t pid, bool new_game)
 	                         path);
 	if (ret < 0)
 		fprintf(stderr, "failed to emit signal: %s", strerror(-ret));
+
+	(void)sd_bus_emit_properties_changed(bus,
+	                                     "/com/feralinteractive/GameMode",
+	                                     "com.feralinteractive.GameMode",
+	                                     "ClientCount",
+	                                     NULL);
 }
 
 /* Emit GameRegistered signal */
