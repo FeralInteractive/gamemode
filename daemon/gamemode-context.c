@@ -358,6 +358,29 @@ pid_t *game_mode_context_list_clients(GameModeContext *self, unsigned int *count
 	return res;
 }
 
+GameModeClient *game_mode_context_lookup_client(GameModeContext *self, pid_t client)
+{
+	GameModeClient *found = NULL;
+
+	pthread_rwlock_rdlock(&self->rwlock);
+
+	/* Walk all clients and find a matching pid */
+	for (GameModeClient *cl = self->client; cl; cl = cl->next) {
+		if (cl->pid == client) {
+			found = cl;
+			break;
+		}
+	}
+
+	if (found) {
+		game_mode_client_ref(found);
+	}
+
+	pthread_rwlock_unlock(&self->rwlock);
+
+	return found;
+}
+
 static int game_mode_apply_client_optimisations(GameModeContext *self, pid_t client)
 {
 	/* Store current renice and apply */
