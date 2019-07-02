@@ -46,6 +46,15 @@ typedef struct GameModeConfig GameModeConfig;
 typedef struct GameModeClient GameModeClient;
 
 /**
+ * GameModeClient related functions
+ */
+
+/**
+ * Decrement the usage count of client.
+ */
+void game_mode_client_unref(GameModeClient *client);
+
+/**
  * Return the singleton instance
  */
 GameModeContext *game_mode_context_instance(void);
