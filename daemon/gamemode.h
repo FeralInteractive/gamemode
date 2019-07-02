@@ -96,6 +96,14 @@ void game_mode_context_destroy(GameModeContext *self);
 int game_mode_context_num_clients(GameModeContext *self);
 
 /**
+ * List the currently active clients.
+ * @param out holds the number of active clients.
+ *
+ * @returns A array of pid_t or NULL if there are no active clients.
+ */
+pid_t *game_mode_context_list_clients(GameModeContext *self, unsigned int *count);
+
+/**
  * Register a new game client with the context
  *
  * @param pid Process ID for the remote client
