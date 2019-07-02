@@ -41,6 +41,7 @@ POSSIBILITY OF SUCH DAMAGE.
 
 #include "build-config.h"
 
+#include <assert.h>
 #include <fcntl.h>
 #include <pthread.h>
 #include <stdatomic.h>
@@ -644,6 +645,24 @@ void game_mode_client_ref(GameModeClient *client)
 		return;
 	}
 	atomic_fetch_add_explicit(&client->refcount, 1, memory_order_seq_cst);
+}
+
+/**
+ * The process identifier of the client.
+ */
+pid_t game_mode_client_get_pid(GameModeClient *client)
+{
+	assert(client != NULL);
+	return client->pid;
+}
+
+/**
+ * The path to the executable of client.
+ */
+const char *game_mode_client_get_executable(GameModeClient *client)
+{
+	assert(client != NULL);
+	return client->executable;
 }
 
 /* Internal refresh config function (assumes no contention with reaper thread) */
