@@ -638,6 +638,14 @@ void game_mode_client_unref(GameModeClient *client)
 	free(client);
 }
 
+void game_mode_client_ref(GameModeClient *client)
+{
+	if (!client) {
+		return;
+	}
+	atomic_fetch_add_explicit(&client->refcount, 1, memory_order_seq_cst);
+}
+
 /* Internal refresh config function (assumes no contention with reaper thread) */
 static void game_mode_reload_config_internal(GameModeContext *self)
 {
