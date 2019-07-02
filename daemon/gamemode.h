@@ -60,6 +60,16 @@ void game_mode_client_unref(GameModeClient *client);
 void game_mode_client_ref(GameModeClient *client);
 
 /**
+ * The process identifier of the client.
+ */
+pid_t game_mode_client_get_pid(GameModeClient *client);
+
+/**
+ * The path to the executable of client.
+ */
+const char *game_mode_client_get_executable(GameModeClient *client);
+
+/**
  * Return the singleton instance
  */
 GameModeContext *game_mode_context_instance(void);
