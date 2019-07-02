@@ -197,6 +197,5 @@ int game_mode_get_gpu(GameModeGPUInfo *info);
  */
 void game_mode_context_loop(GameModeContext *context) __attribute__((noreturn));
 int game_mode_inhibit_screensaver(bool inhibit);
-void game_mode_client_count_changed(void);
 void game_mode_client_registered(pid_t);
 void game_mode_client_unregistered(pid_t);
