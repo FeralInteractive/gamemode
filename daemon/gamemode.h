@@ -104,6 +104,14 @@ int game_mode_context_num_clients(GameModeContext *self);
 pid_t *game_mode_context_list_clients(GameModeContext *self, unsigned int *count);
 
 /**
+ * Lookup up information about a client via the pid;
+ *
+ * @returns A pointer to a GameModeClient struct or NULL in case no client
+ *           with the corresponding id could be found. Adds a reference to
+ *           GameModeClient that needs to be released.
+ */
+GameModeClient *game_mode_context_lookup_client(GameModeContext *self, pid_t client);
+/**
  * Register a new game client with the context
  *
  * @param pid Process ID for the remote client
