@@ -42,10 +42,10 @@ POSSIBILITY OF SUCH DAMAGE.
 #include <stdio.h>
 #include <stdlib.h>
 
-#define GAME_PATH_PREFIX "/com/feralinteractive/GameMode/Games/"
+#define GAME_PATH_PREFIX "/com/feralinteractive/GameMode/Games"
 /* maximum length of a valid game object path string:
- *   The path prefix including \0 (sizeof) and 10 digits for uint32_t ('%u')*/
-#define GAME_PATH_MAX (sizeof(GAME_PATH_PREFIX) + 10)
+ *   The path prefix including \0 (sizeof), another '/', and 10 digits for uint32_t ('%u')*/
+#define GAME_PATH_MAX (sizeof(GAME_PATH_PREFIX) + 11)
 
 /* systemd dbus components */
 static sd_bus *bus = NULL;
@@ -216,7 +216,7 @@ static int method_refresh_config(sd_bus_message *m, void *userdata,
 
 static inline void game_object_bus_path(pid_t pid, char path[static GAME_PATH_MAX])
 {
-	snprintf(path, GAME_PATH_MAX, GAME_PATH_PREFIX "%u", (uint32_t)pid);
+	snprintf(path, GAME_PATH_MAX, GAME_PATH_PREFIX "/%u", (uint32_t)pid);
 }
 
 /**
@@ -351,7 +351,7 @@ static inline pid_t pid_from_pointer(const void *pointer)
 static int game_object_find(sd_bus *local_bus, const char *path, const char *interface,
 			    void *userdata, void **found, sd_bus_error *ret_error)
 {
-	static const char prefix[] = "/com/feralinteractive/GameMode/Games/";
+	static const char prefix[] = GAME_PATH_PREFIX "/";
 	const char *start;
 	unsigned long int n;
 	char *end;
@@ -504,7 +504,7 @@ void game_mode_context_loop(GameModeContext *context)
 
 	ret = sd_bus_add_fallback_vtable(bus,
 	                                 &slot,
-	                                 "/com/feralinteractive/GameMode/Games",
+	                                 GAME_PATH_PREFIX,
 	                                 "com.feralinteractive.GameMode.Game",
 	                                 game_vtable,
 	                                 game_object_find,
@@ -516,7 +516,7 @@ void game_mode_context_loop(GameModeContext *context)
 
 	ret = sd_bus_add_node_enumerator(bus,
 	                                 &slot,
-	                                 "/com/feralinteractive/GameMode/Games",
+	                                 GAME_PATH_PREFIX,
 	                                 game_node_enumerator,
 	                                 context);
 	if (ret < 0) {
