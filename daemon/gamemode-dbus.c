@@ -514,11 +514,7 @@ void game_mode_context_loop(GameModeContext *context)
 		FATAL_ERROR("Failed to install Game object: %s\n", strerror(-ret));
 	}
 
-	ret = sd_bus_add_node_enumerator(bus,
-	                                 &slot,
-	                                 GAME_PATH_PREFIX,
-	                                 game_node_enumerator,
-	                                 context);
+	ret = sd_bus_add_node_enumerator(bus, &slot, GAME_PATH_PREFIX, game_node_enumerator, context);
 	if (ret < 0) {
 		FATAL_ERROR("Failed to install Game object enumerator: %s\n", strerror(-ret));
 	}
