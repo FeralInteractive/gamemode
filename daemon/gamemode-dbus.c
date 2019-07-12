@@ -468,7 +468,7 @@ static const sd_bus_vtable game_vtable[] = {
 	SD_BUS_VTABLE_START(0),
 	SD_BUS_PROPERTY("ProcessId", "i", game_object_get_process_id, 0,
 	                SD_BUS_VTABLE_PROPERTY_EMITS_CHANGE),
-	SD_BUS_PROPERTY("Exectuable", "s", game_object_get_executable, 0,
+	SD_BUS_PROPERTY("Executable", "s", game_object_get_executable, 0,
 	                SD_BUS_VTABLE_PROPERTY_EMITS_CHANGE),
 	SD_BUS_VTABLE_END
 };
