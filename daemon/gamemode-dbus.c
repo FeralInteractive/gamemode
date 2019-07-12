@@ -257,7 +257,7 @@ static int method_list_games(sd_bus_message *m, void *userdata,
 	free(clients);
 
 	if (r < 0)
-		return 0;
+		return r;
 
 	r = sd_bus_message_close_container(reply);
 	if (r < 0)
