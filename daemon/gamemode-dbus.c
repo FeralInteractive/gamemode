@@ -257,7 +257,7 @@ static int method_list_games(sd_bus_message *m, void *userdata,
 	free(clients);
 
 	if (r < 0)
-		return 0;
+		return r;
 
 	r = sd_bus_message_close_container(reply);
 	if (r < 0)
@@ -468,7 +468,7 @@ static const sd_bus_vtable game_vtable[] = {
 	SD_BUS_VTABLE_START(0),
 	SD_BUS_PROPERTY("ProcessId", "i", game_object_get_process_id, 0,
 	                SD_BUS_VTABLE_PROPERTY_EMITS_CHANGE),
-	SD_BUS_PROPERTY("Exectuable", "s", game_object_get_executable, 0,
+	SD_BUS_PROPERTY("Executable", "s", game_object_get_executable, 0,
 	                SD_BUS_VTABLE_PROPERTY_EMITS_CHANGE),
 	SD_BUS_VTABLE_END
 };
