@@ -1,11 +1,10 @@
 #!/bin/bash
 # Helper script to launch games with gamemode
 
-# Path to install gamemoded auto script
-CONFIG_LIB_DIR="@GAMEMODE_LIB_DIR@/libgamemodeauto.so.0"
+# Path to installed libgamemodeauto. ld.so will substitute "\$LIB" to get the
+# appropriate path depending on whether the app is 32- or 64-bit.
+GAMEMODEAUTO="@GAMEMODE_PREFIX@/\$LIB/libgamemodeauto.so.0"
 
-# Set the ld preload path prefixed libgamemodeauto
-export LD_PRELOAD="${CONFIG_LIB_DIR}${LD_PRELOAD:+:$LD_PRELOAD}"
+export LD_PRELOAD="${GAMEMODEAUTO}${LD_PRELOAD:+:$LD_PRELOAD}"
 
-# Launch
 exec "$@"
