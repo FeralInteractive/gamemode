@@ -56,6 +56,12 @@ The library can be manually preloaded if needed:
 LD_PRELOAD=$LD_PRELOAD:/usr/\e$LIB/libgamemodeauto.so.0 ./game
 .RE
 
+It is possible to set additional start commands to gamemoderun by setting the environment variable:
+
+.RS 4
+GAMEMODERUNEXEC="command"
+.RE
+
 The \fBgamemode_client.h\fR header can be used by developers to build the requests into a program:
 
 .RS 4

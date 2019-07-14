@@ -5,6 +5,6 @@
 # appropriate path depending on whether the app is 32- or 64-bit.
 GAMEMODEAUTO="@GAMEMODE_PREFIX@/\$LIB/libgamemodeauto.so.0"
 
-export LD_PRELOAD="${GAMEMODEAUTO}${LD_PRELOAD:+:$LD_PRELOAD}"
+LD_PRELOAD="${GAMEMODEAUTO}${LD_PRELOAD:+:$LD_PRELOAD}"
 
-exec "$@"
+exec $GAMEMODERUNEXEC env LD_PRELOAD="${LD_PRELOAD}" "$@"
