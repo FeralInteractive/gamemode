@@ -198,6 +198,7 @@ report += [
     '',
     '    daemon:                                 @0@'.format(with_daemon),
     '    examples:                               @0@'.format(with_examples),
+    '    util:                                   @0@'.format(with_util),
     '    systemd:                                @0@'.format(with_systemd),
 ]
 
