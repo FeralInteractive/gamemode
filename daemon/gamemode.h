@@ -71,6 +71,11 @@ pid_t game_mode_client_get_pid(GameModeClient *client);
 const char *game_mode_client_get_executable(GameModeClient *client);
 
 /**
+ * The process identifier of the requester.
+ */
+pid_t game_mode_client_get_requester(GameModeClient *client);
+
+/**
  * The time that game mode was requested for the client.
  */
 u_int64_t game_mode_client_get_timestamp(GameModeClient *client);
