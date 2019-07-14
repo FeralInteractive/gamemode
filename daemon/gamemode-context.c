@@ -57,6 +57,7 @@ POSSIBILITY OF SUCH DAMAGE.
 struct GameModeClient {
 	_Atomic int refcount;        /**<Allow outside usage */
 	pid_t pid;                   /**< Process ID */
+	pid_t requester;             /**< Process ID that requested it */
 	struct GameModeClient *next; /**<Next client in the list */
 	char executable[PATH_MAX];   /**<Process executable */
 	time_t timestamp;            /**<When was the client registered */
@@ -90,7 +91,7 @@ static GameModeContext instance = { 0 };
  */
 static volatile bool had_context_init = false;
 
-static GameModeClient *game_mode_client_new(pid_t pid, char *exe);
+static GameModeClient *game_mode_client_new(pid_t pid, char *exe, pid_t req);
 static const GameModeClient *game_mode_context_has_client(GameModeContext *self, pid_t client);
 static void *game_mode_context_reaper(void *userdata);
 static void game_mode_context_enter(GameModeContext *self);
@@ -464,7 +465,7 @@ int game_mode_context_register(GameModeContext *self, pid_t client, pid_t reques
 	}
 
 	/* From now on we depend on the client, initialize it */
-	cl = game_mode_client_new(client, executable);
+	cl = game_mode_client_new(client, executable, requester);
 	if (!cl)
 		goto error_cleanup;
 	free(executable); /* we're now done with memory */
@@ -652,13 +653,14 @@ int game_mode_context_query_status(GameModeContext *self, pid_t client, pid_t re
  *
  * This is deliberately OOM safe
  */
-static GameModeClient *game_mode_client_new(pid_t pid, char *executable)
+static GameModeClient *game_mode_client_new(pid_t pid, char *executable, pid_t requester)
 {
 	/* This bit seems to be formatted differently by different clang-format versions */
 	/* clang-format off */
 	GameModeClient c = {
 		.next = NULL,
 		.pid = pid,
+		.requester = requester,
 		.timestamp = 0,
 	};
 	/* clang-format on */
@@ -724,6 +726,15 @@ const char *game_mode_client_get_executable(GameModeClient *client)
 {
 	assert(client != NULL);
 	return client->executable;
+}
+
+/**
+ * The process identifier of the requester.
+ */
+pid_t game_mode_client_get_requester(GameModeClient *client)
+{
+	assert(client != NULL);
+	return client->requester;
 }
 
 /**
