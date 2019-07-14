@@ -46,6 +46,7 @@ POSSIBILITY OF SUCH DAMAGE.
 #include <pthread.h>
 #include <stdatomic.h>
 #include <stdlib.h>
+#include <sys/time.h>
 #include <systemd/sd-daemon.h> /* TODO: Move usage to gamemode-dbus.c */
 #include <unistd.h>
 
@@ -58,6 +59,7 @@ struct GameModeClient {
 	pid_t pid;                   /**< Process ID */
 	struct GameModeClient *next; /**<Next client in the list */
 	char executable[PATH_MAX];   /**<Process executable */
+	time_t timestamp;            /**<When was the client registered */
 };
 
 struct GameModeContext {
@@ -657,9 +659,18 @@ static GameModeClient *game_mode_client_new(pid_t pid, char *executable)
 	GameModeClient c = {
 		.next = NULL,
 		.pid = pid,
+		.timestamp = 0,
 	};
 	/* clang-format on */
 	GameModeClient *ret = NULL;
+	struct timeval now = {
+		0,
+	};
+	int r;
+
+	r = gettimeofday(&now, NULL);
+	if (r == 0)
+		c.timestamp = now.tv_sec;
 
 	ret = calloc(1, sizeof(struct GameModeClient));
 	if (!ret) {
@@ -668,6 +679,7 @@ static GameModeClient *game_mode_client_new(pid_t pid, char *executable)
 	*ret = c;
 	ret->refcount = ATOMIC_VAR_INIT(1);
 	strncpy(ret->executable, executable, PATH_MAX - 1);
+
 	return ret;
 }
 
@@ -712,6 +724,15 @@ const char *game_mode_client_get_executable(GameModeClient *client)
 {
 	assert(client != NULL);
 	return client->executable;
+}
+
+/**
+ * The path to the executable of client.
+ */
+uint64_t game_mode_client_get_timestamp(GameModeClient *client)
+{
+	assert(client != NULL);
+	return (uint64_t)client->timestamp;
 }
 
 /* Internal refresh config function (assumes no contention with reaper thread) */

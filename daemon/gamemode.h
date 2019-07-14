@@ -32,6 +32,7 @@ POSSIBILITY OF SUCH DAMAGE.
 #pragma once
 
 #include <stdbool.h>
+#include <stdint.h>
 #include <sys/types.h>
 
 #define INVALID_PROCFD -1
@@ -68,6 +69,11 @@ pid_t game_mode_client_get_pid(GameModeClient *client);
  * The path to the executable of client.
  */
 const char *game_mode_client_get_executable(GameModeClient *client);
+
+/**
+ * The path to the executable of client.
+ */
+u_int64_t game_mode_client_get_timestamp(GameModeClient *client);
 
 /**
  * Return the singleton instance
