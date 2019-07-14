@@ -463,6 +463,39 @@ static int game_object_get_executable(sd_bus *local_bus, const char *path, const
 }
 
 /**
+ * Handles the Requester property for Game objects
+ */
+static int game_object_get_requester(sd_bus *local_bus, const char *path, const char *interface,
+				     const char *property, sd_bus_message *reply, void *userdata,
+				     sd_bus_error *ret_error)
+{
+	GameModeClient *client;
+	GameModeContext *context;
+	pid_t requester;
+	pid_t pid;
+	int ret;
+	int pv;
+
+	pid = pid_from_pointer(userdata);
+
+	context = game_mode_context_instance();
+	client = game_mode_context_lookup_client(context, pid);
+
+	if (client == NULL) {
+		return sd_bus_error_setf(ret_error,
+					 SD_BUS_ERROR_UNKNOWN_OBJECT,
+					 "No client registered with id '%d'", (int) pid);
+	}
+
+	requester = game_mode_client_get_requester(client);
+	pv = (int) requester;
+
+	ret = sd_bus_message_append_basic(reply, 'i', &pv);
+	game_mode_client_unref(client);
+
+	return ret;
+}
+/**
  * Handles the Timestamp property for Game objects
  */
 static int game_object_get_timestamp(sd_bus *local_bus, const char *path, const char *interface,
@@ -493,7 +526,6 @@ static int game_object_get_timestamp(sd_bus *local_bus, const char *path, const 
 	return ret;
 }
 
-
 /* Same as above: this bit seems to be formatted differently by different clang-format versions */
 /* clang-format off */
 static const sd_bus_vtable game_vtable[] = {
@@ -501,6 +533,8 @@ static const sd_bus_vtable game_vtable[] = {
 	SD_BUS_PROPERTY("ProcessId", "i", game_object_get_process_id, 0,
 	                SD_BUS_VTABLE_PROPERTY_EMITS_CHANGE),
 	SD_BUS_PROPERTY("Executable", "s", game_object_get_executable, 0,
+	                SD_BUS_VTABLE_PROPERTY_EMITS_CHANGE),
+	SD_BUS_PROPERTY("Requester", "i", game_object_get_requester, 0,
 	                SD_BUS_VTABLE_PROPERTY_EMITS_CHANGE),
 	SD_BUS_PROPERTY("Timestamp", "t", game_object_get_timestamp, 0,
 	                SD_BUS_VTABLE_PROPERTY_EMITS_CHANGE),
