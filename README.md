@@ -50,9 +50,10 @@ Config files are loaded and merged from the following directories, in order:
 ---
 ## Note for Hybrid GPU users
 
-It's not possible to integrate commands like optirun automatically inside GameMode, since GameMode only starts if the game is already started.
-However it is possible to use a hybrid GPU wrapper like optirun by starting the game with gamemoderun.
-You can do this by setting the environment variable `GAMEMODERUNEXEC` to your wrapper's launch command, so for example `GAMEMODERUNEXEC=optirun` or `GAMEMODERUN="env DRI_PRIME=1"`.
+It's not possible to integrate commands like optirun automatically inside GameMode, since the GameMode request is made once the game has already started. However it is possible to use a hybrid GPU wrapper like optirun by starting the game with `gamemoderun`.
+
+You can do this by setting the environment variable `GAMEMODERUNEXEC` to your wrapper's launch command, so for example `GAMEMODERUNEXEC=optirun` or `GAMEMODERUNEXEC="env DRI_PRIME=1"`. This environment variable can be set globally, so that the same prefix command does not have to be duplicated everywhere you want to use `gamemoderun`.
+
 GameMode will not be injected to the wrapper.
 
 ---

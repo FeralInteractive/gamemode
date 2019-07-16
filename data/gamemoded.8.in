@@ -44,7 +44,7 @@ Print the version
 gamemoderun \./game
 .RE
 
-Or by setting the steam launch options for a game:
+Or by setting the Steam launch options for a game:
 
 .RS 4
 gamemoderun %command%
@@ -61,6 +61,8 @@ It is possible to set additional start commands to gamemoderun by setting the en
 .RS 4
 GAMEMODERUNEXEC="command"
 .RE
+
+When this is set, gamemoderun will execute the command given by that environment variable, and the command line passed to gamemoderun will be passed as arguments to that command. GameMode will not be applied to the wrapper command, just the game itself.
 
 The \fBgamemode_client.h\fR header can be used by developers to build the requests into a program:
 
