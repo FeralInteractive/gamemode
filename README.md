@@ -1,5 +1,5 @@
 # GameMode
-**GameMode** is a daemon/lib combo for Linux that allows games to request a set of optimisations be temporarily applied to the host OS.
+**GameMode** is a daemon/lib combo for Linux that allows games to request a set of optimisations be temporarily applied to the host OS and/or a game process.
 
 GameMode was designed primarily as a stop-gap solution to problems with the Intel and AMD CPU powersave or ondemand governors, but is now host to a range of optimisation features and configurations.
 
@@ -61,11 +61,11 @@ GameMode will not be injected to the wrapper.
 
 ### Games
 The following games are known to integrate GameMode support (meaning they don't require any additional configuration to activate GameMode while running):
-* Rise of the Tomb Raider
-* Total War Saga: Thrones of Britannia
-* Total War: WARHAMMER II
 * DiRT 4
+* Rise of the Tomb Raider
 * Total War: Three Kingdoms
+* Total War: WARHAMMER II
+* Total War Saga: Thrones of Britannia
 
 ### Others
 Other apps which can integrate with GameMode include:
@@ -104,12 +104,12 @@ ACCEPT_KEYWORDS="**" emerge --ask ~games-util/gamemode-9999
 ```
 
 ### Build and Install GameMode
-Then clone, build and install a release version of GameMode at 1.3.1:
+Then clone, build and install a release version of GameMode at 1.4:
 
 ```bash
 git clone https://github.com/FeralInteractive/gamemode.git
 cd gamemode
-git checkout 1.3.1 # omit to build the master branch
+git checkout 1.4 # omit to build the master branch
 ./bootstrap.sh
 ```
 
