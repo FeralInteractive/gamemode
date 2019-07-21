@@ -1,3 +1,25 @@
+## 1.4
+
+### Changes
+
+* Add new D-Bus methods/properties for use by external tools such as the [GameMode GNOME Shell extension](https://github.com/gicmo/gamemode-extension/) (#129, #155, #161).
+* Fix I/O priority and niceness optimisations to apply to the whole process rather than just the thread that requests GameMode (#142).
+* `gamemoded` will now automatically reload the configuration file when it is changed and update optimisations on current clients (#144).
+* Add support for using the client library inside Flatpak by communicating with the daemon via a portal (#146).
+* Client library now uses libdbus rather than sd-bus (#147).
+* Fix `gamemoderun` to use the correct library path depending on whether the app is 32-bit or 64-bit.
+* Support the `GAMEMODERUNEXEC` environment variable to specify an extra wrapper command for games launched with `gamemoderun` (e.g. a hybrid GPU wrapper such as `optirun`) (#159).
+* Various other fixes and improvements.
+
+### Contributors
+
+* Christian Kellner @gicmo
+* Marc Di Luzio @mdiluz
+* Matthias Gerstner @mgerstner
+* Minze Zwerver @ysblokje
+* Stephan Lachnit @stephanlachnit
+* Timo Gurr @tgurr
+
 ## 1.3.1
 
 ### Changes
