@@ -29,6 +29,19 @@ Or edit the Steam launch options:
 ```bash
 gamemoderun %command%
 ```
+If you want gamemode to be active for **all** Proton games, you can set the `user_settings.py` (Usually in `steamapps/common/Proton/`) to the following:
+```
+import os
+
+user_settings = {
+	"LD_PRELOAD": "/usr/$LIB/libgamemodeauto.so.0"
+}
+
+preload = str(os.environ.get("LD_PRELOAD"))
+
+if preload != "None":
+	user_settings["LD_PRELOAD"] = preload +  " " + user_settings["LD_PRELOAD"]
+```
 
 Note: for older versions of GameMode (before 1.3) use this string in place of `gamemoderun`:
 ```
