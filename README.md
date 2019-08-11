@@ -29,6 +29,10 @@ Or edit the Steam launch options:
 ```bash
 gamemoderun %command%
 ```
+For Lutris, you can add the followed command into the Preferences > System options > Pre-launch command:
+```bash
+gamemoderun !!
+```
 
 Note: for older versions of GameMode (before 1.3) use this string in place of `gamemoderun`:
 ```
