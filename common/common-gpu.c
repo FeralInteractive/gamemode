@@ -54,7 +54,7 @@ enum GPUVendor gamemode_get_gpu_vendor(long device)
 	if (got_line) {
 		vendor = strtol(buff, NULL, 0);
 	} else {
-		LOG_ERROR("Coudn't read contents of file %s, will not apply optimisations!\n", path);
+		LOG_ERROR("Couldn't read contents of file %s, will not apply optimisations!\n", path);
 		return Vendor_Invalid;
 	}
 
