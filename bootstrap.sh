@@ -33,7 +33,7 @@ ninja
 # Verify user wants to install
 set +x
 if [ "$TRAVIS" != "true" ]; then
-	read -p "Install to $prefix? [Yy] " -r
+	read -p "Install to $prefix? [y/N] " -r
 	[[ $REPLY =~ ^[Yy]$ ]]
 fi
 set -x
