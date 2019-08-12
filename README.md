@@ -19,7 +19,7 @@ Issues with GameMode should be reported here in the issues section, and not repo
 ---
 ## Requesting GameMode
 
-For games which integrate GameMode support (see list later on), simply running the game will automatically activate GameMode.
+For games/launchers which integrate GameMode support (see list later on), simply running the game will automatically activate GameMode.
 
 For others, you must manually request GameMode when running the game. This can be done by launching the game through `gamemoderun`:
 ```bash
@@ -28,10 +28,6 @@ gamemoderun ./game
 Or edit the Steam launch options:
 ```bash
 gamemoderun %command%
-```
-For Lutris, you can add the followed command into the Preferences > System options > Pre-launch command:
-```bash
-gamemoderun !!
 ```
 
 Note: for older versions of GameMode (before 1.3) use this string in place of `gamemoderun`:
@@ -74,6 +70,7 @@ The following games are known to integrate GameMode support (meaning they don't 
 ### Others
 Other apps which can integrate with GameMode include:
 * GNOME Shell ([via extension](https://github.com/gicmo/gamemode-extension)) - indicates when GameMode is active in the top panel.
+* Lutris - Enables GameMode for all games by default if available (must have both 32- and 64-bit GameMode libraries installed), configurable in preferences.
 
 ---
 ## Development [![Build Status](https://travis-ci.org/FeralInteractive/gamemode.svg?branch=master)](https://travis-ci.org/FeralInteractive/gamemode)
