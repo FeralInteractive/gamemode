@@ -151,30 +151,16 @@ static void cleanup_pending_call(DBusPendingCall **call)
 }
 
 /* internal API */
-static int gamemode_request(const char *method, pid_t for_pid)
+static int make_request(DBusConnection *bus,
+			int native, const char *method,
+			pid_t *pids, int npids,
+			DBusError *error)
 {
-	_cleanup_bus_ DBusConnection *bus = NULL;
 	_cleanup_msg_ DBusMessage *msg = NULL;
 	_cleanup_dpc_ DBusPendingCall *call = NULL;
-	DBusMessageIter iter;
 	DBusError err;
-	dbus_int32_t pid;
-	int native;
+	DBusMessageIter iter;
 	int res = -1;
-
-	native = !in_flatpak();
-	pid = (dbus_int32_t)getpid();
-
-	TRACE("GM: [%d] request '%s' received (for pid: %d) [portal: %s]\n",
-	      (int)pid,
-	      method,
-	      (int)for_pid,
-	      (native ? "n" : "y"));
-
-	bus = hop_on_the_bus();
-
-	if (bus == NULL)
-		return -1;
 
 	// If we are inside a flatpak we need to talk to the portal instead
 	const char *dest = native ? DAEMON_DBUS_NAME : PORTAL_DBUS_NAME;
@@ -183,14 +169,15 @@ static int gamemode_request(const char *method, pid_t for_pid)
 
 	msg = dbus_message_new_method_call(dest, path, iface, method);
 
-	if (!msg)
-		return log_error("Could not create dbus message");
+	if (!msg) {
+		dbus_set_error_const(error, DBUS_ERROR_FAILED,
+				     "Could not create dbus message");
+		return -1;
+	}
 
 	dbus_message_iter_init_append(msg, &iter);
-	dbus_message_iter_append_basic(&iter, DBUS_TYPE_INT32, &pid);
-
-	if (for_pid != 0) {
-		dbus_int32_t p = (dbus_int32_t)for_pid;
+	for (int i = 0; i < npids; i++) {
+		dbus_int32_t p = (dbus_int32_t)pids[i];
 		dbus_message_iter_append_basic(&iter, DBUS_TYPE_INT32, &p);
 	}
 
@@ -202,20 +189,65 @@ static int gamemode_request(const char *method, pid_t for_pid)
 	dbus_pending_call_block(call);
 	msg = dbus_pending_call_steal_reply(call);
 
-	if (msg == NULL)
-		return log_error("Did not receive a reply");
+	if (msg == NULL) {
+		dbus_set_error_const(error, DBUS_ERROR_FAILED,
+				     "Did not receive a reply");
+		return -1;
+	}
 
 	dbus_error_init(&err);
 
-	if (dbus_set_error_from_message(&err, msg))
-		log_error("Could not call method '%s' on '%s': %s", method, dest, err.message);
-	else if (!dbus_message_iter_init(msg, &iter) ||
-	         dbus_message_iter_get_arg_type(&iter) != DBUS_TYPE_INT32)
-		log_error("Failed to parse response");
-	else
+	if (dbus_set_error_from_message(&err, msg)) {
+		dbus_set_error(error, err.name,
+			       "Could not call method '%s' on '%s': %s",
+			       method, dest, err.message);
+	} else if (!dbus_message_iter_init(msg, &iter) ||
+		   dbus_message_iter_get_arg_type(&iter) != DBUS_TYPE_INT32) {
+		dbus_set_error(error, DBUS_ERROR_INVALID_SIGNATURE,
+			       "Failed to parse response");
+	} else {
 		dbus_message_iter_get_basic(&iter, &res);
+	}
 
-	TRACE("GM: [%d] request '%s' done: %d\n", (int)pid, method, res);
+	/* free the local error */
+	if (dbus_error_is_set(&err))
+		dbus_error_free(&err);
+
+	return res;
+}
+
+static int gamemode_request(const char *method, pid_t for_pid)
+{
+	_cleanup_bus_ DBusConnection *bus = NULL;
+	DBusError err;
+	pid_t pids[2] = {0, for_pid};
+	int npids;
+	int native;
+	int res = -1;
+
+	native = !in_flatpak();
+	pids[0] = getpid();
+
+	TRACE("GM: [%d] request '%s' received (for pid: %d) [portal: %s]\n",
+	      (int)pids[0],
+	      method,
+	      (int)pids[1],
+	      (native ? "n" : "y"));
+
+	bus = hop_on_the_bus();
+
+	if (bus == NULL)
+		return -1;
+
+	npids = for_pid > 0 ? 2 : 1;
+
+	dbus_error_init(&err);
+	res = make_request(bus, native, method, pids, npids, &err);
+
+	if (res == -1)
+		log_error("D-Bus error: %s", err.message);
+
+	TRACE("GM: [%d] request '%s' done: %d\n", (int)pids[0], method, res);
 
 	if (dbus_error_is_set(&err))
 		dbus_error_free(&err);
