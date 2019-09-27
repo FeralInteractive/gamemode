@@ -76,12 +76,17 @@ static char error_string[512] = { 0 };
 // Helper to check if we are running inside a flatpak
 static int in_flatpak(void)
 {
-	struct stat sb;
-	int r;
+	static int status = -1;
 
-	r = lstat("/.flatpak-info", &sb);
+	if (status == -1) {
+		struct stat sb;
+		int r;
 
-	return r == 0 && sb.st_size > 0;
+		r = lstat("/.flatpak-info", &sb);
+		status = r == 0 && sb.st_size > 0;
+	}
+
+	return status;
 }
 
 static int log_error(const char *fmt, ...)
