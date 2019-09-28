@@ -26,7 +26,6 @@ executable(
     ],
     include_directories: [
         gamemoded_includes,
-        include_daemon_common,
     ],
     install: true,
 )

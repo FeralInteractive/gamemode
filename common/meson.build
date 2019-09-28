@@ -15,6 +15,5 @@ daemon_common = static_library(
 
 link_daemon_common = declare_dependency(
     link_with: daemon_common,
+    include_directories: [include_directories('.')]
 )
-
-include_daemon_common = include_directories('.')

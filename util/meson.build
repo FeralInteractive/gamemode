@@ -11,7 +11,6 @@ cpugovctl = executable(
         link_daemon_common,
     ],
     install: true,
-    include_directories: include_daemon_common,
     install_dir: path_libexecdir,
 )
 
@@ -27,6 +26,5 @@ gpuclockctl = executable(
         link_daemon_common,
     ],
     install: true,
-    include_directories: include_daemon_common,
     install_dir: path_libexecdir,
 )
