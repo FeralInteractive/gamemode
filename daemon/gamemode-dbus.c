@@ -169,7 +169,7 @@ static int method_unregister_game_by_pid(sd_bus_message *m, void *userdata,
 }
 
 /**
- * Handles the QueryStatus D-BUS Method
+ * Handles the QueryStatusByPID D-BUS Method
  */
 static int method_query_status_by_pid(sd_bus_message *m, void *userdata,
                                       __attribute__((unused)) sd_bus_error *ret_error)
@@ -188,8 +188,9 @@ static int method_query_status_by_pid(sd_bus_message *m, void *userdata,
 
 	return sd_bus_reply_method_return(m, "i", status);
 }
+
 /**
- * Handles the Active D-BUS Method
+ * Handles the ClientCount D-BUS Property
  */
 static int property_get_client_count(sd_bus *local_bus, const char *path, const char *interface,
                                      const char *property, sd_bus_message *reply, void *userdata,
