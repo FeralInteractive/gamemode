@@ -39,3 +39,4 @@ POSSIBILITY OF SUCH DAMAGE.
  * a specific call to the function the linker will expect an definition.
  */
 extern inline void cleanup_close(int *fd);
+extern inline void cleanup_free(void *ptr);
