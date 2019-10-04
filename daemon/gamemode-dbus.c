@@ -32,7 +32,9 @@ POSSIBILITY OF SUCH DAMAGE.
 #define _GNU_SOURCE
 
 #include "gamemode.h"
+#include "common-helpers.h"
 #include "common-logging.h"
+#include "common-pidfds.h"
 
 #include <systemd/sd-bus.h>
 #include <systemd/sd-daemon.h>
@@ -190,6 +192,84 @@ static int method_query_status_by_pid(sd_bus_message *m, void *userdata,
 }
 
 /**
+ * Handles the RegisterGameByPIDFd D-BUS Method
+ */
+static int method_register_game_by_pidfd(sd_bus_message *m, void *userdata,
+                                         __attribute__((unused)) sd_bus_error *ret_error)
+{
+	int fds[2] = { -1, -1 };
+	pid_t pids[2] = { 0, 0 };
+	GameModeContext *context = userdata;
+
+	int ret = sd_bus_message_read(m, "hh", &fds[0], &fds[1]);
+	if (ret < 0) {
+		LOG_ERROR("Failed to parse input parameters: %s\n", strerror(-ret));
+		return ret;
+	}
+
+	int reply = pidfds_to_pids(fds, pids, 2);
+
+	if (reply == 2)
+		reply = game_mode_context_register(context, pids[0], pids[1]);
+	else
+		reply = -1;
+
+	return sd_bus_reply_method_return(m, "i", reply);
+}
+
+/**
+ * Handles the UnregisterGameByPIDFd D-BUS Method
+ */
+static int method_unregister_game_by_pidfd(sd_bus_message *m, void *userdata,
+                                           __attribute__((unused)) sd_bus_error *ret_error)
+{
+	int fds[2] = { -1, -1 };
+	pid_t pids[2] = { 0, 0 };
+	GameModeContext *context = userdata;
+
+	int ret = sd_bus_message_read(m, "hh", &fds[0], &fds[1]);
+	if (ret < 0) {
+		LOG_ERROR("Failed to parse input parameters: %s\n", strerror(-ret));
+		return ret;
+	}
+
+	int reply = pidfds_to_pids(fds, pids, 2);
+
+	if (reply == 2)
+		reply = game_mode_context_unregister(context, pids[0], pids[1]);
+	else
+		reply = -1;
+
+	return sd_bus_reply_method_return(m, "i", reply);
+}
+
+/**
+ * Handles the QueryStatusByPIDFd D-BUS Method
+ */
+static int method_query_status_by_pidfd(sd_bus_message *m, void *userdata,
+                                        __attribute__((unused)) sd_bus_error *ret_error)
+{
+	int fds[2] = { -1, -1 };
+	pid_t pids[2] = { 0, 0 };
+	GameModeContext *context = userdata;
+
+	int ret = sd_bus_message_read(m, "hh", &fds[0], &fds[1]);
+	if (ret < 0) {
+		LOG_ERROR("Failed to parse input parameters: %s\n", strerror(-ret));
+		return ret;
+	}
+
+	int reply = pidfds_to_pids(fds, pids, 2);
+
+	if (reply == 2)
+		reply = game_mode_context_query_status(context, pids[0], pids[1]);
+	else
+		reply = -1;
+
+	return sd_bus_reply_method_return(m, "i", reply);
+}
+
+/**
  * Handles the ClientCount D-BUS Property
  */
 static int property_get_client_count(sd_bus *local_bus, const char *path, const char *interface,
@@ -322,6 +402,12 @@ static const sd_bus_vtable gamemode_vtable[] = {
 	SD_BUS_METHOD("UnregisterGameByPID", "ii", "i", method_unregister_game_by_pid,
 	              SD_BUS_VTABLE_UNPRIVILEGED),
 	SD_BUS_METHOD("QueryStatusByPID", "ii", "i", method_query_status_by_pid,
+	              SD_BUS_VTABLE_UNPRIVILEGED),
+	SD_BUS_METHOD("RegisterGameByPIDFd", "hh", "i", method_register_game_by_pidfd,
+	              SD_BUS_VTABLE_UNPRIVILEGED),
+	SD_BUS_METHOD("UnregisterGameByPIDFd", "hh", "i", method_unregister_game_by_pidfd,
+	              SD_BUS_VTABLE_UNPRIVILEGED),
+	SD_BUS_METHOD("QueryStatusByPIDFd", "hh", "i", method_query_status_by_pidfd,
 	              SD_BUS_VTABLE_UNPRIVILEGED),
 	SD_BUS_METHOD("RefreshConfig", "", "i", method_refresh_config, SD_BUS_VTABLE_UNPRIVILEGED),
 	SD_BUS_METHOD("ListGames", "", "a(io)", method_list_games, SD_BUS_VTABLE_UNPRIVILEGED),
