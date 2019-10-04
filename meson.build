@@ -141,11 +141,11 @@ config_h = configure_file(
 )
 config_h_dir = include_directories('.')
 
-# Library is always required
-subdir('lib')
-
 # common lib is always required
 subdir('common')
+
+# Library is always required
+subdir('lib')
 
 # Utilities are always required except when having both 64 and 32 bit versions
 # of libgamemode installed
