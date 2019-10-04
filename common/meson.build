@@ -19,3 +19,18 @@ link_daemon_common = declare_dependency(
     link_with: daemon_common,
     include_directories: [include_directories('.')]
 )
+
+lib_common = static_library(
+    'lib-common',
+    sources: [
+        'common-helpers.c',
+        'common-pidfds.c'
+    ],
+    install: false,
+    include_directories: [config_h_dir]
+)
+
+link_lib_common = declare_dependency(
+    link_with: lib_common,
+    include_directories: [include_directories('.')]
+)
