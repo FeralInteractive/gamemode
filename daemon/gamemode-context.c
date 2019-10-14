@@ -403,7 +403,6 @@ int game_mode_context_register(GameModeContext *self, pid_t client, pid_t reques
 	errno = 0;
 
 	/* Construct a new client if we can */
-	GameModeClient *cl = NULL;
 	char *executable = NULL;
 	int err = -1;
 
@@ -465,7 +464,7 @@ int game_mode_context_register(GameModeContext *self, pid_t client, pid_t reques
 	}
 
 	/* From now on we depend on the client, initialize it */
-	cl = game_mode_client_new(client, executable, requester);
+	GameModeClient *cl = game_mode_client_new(client, executable, requester);
 	if (!cl)
 		goto error_cleanup;
 	free(executable); /* we're now done with memory */
@@ -497,7 +496,6 @@ error_cleanup:
 	if (errno != 0)
 		LOG_ERROR("Failed to register client [%d]: %s\n", client, strerror(errno));
 	free(executable);
-	game_mode_client_unref(cl);
 	return err;
 }
 
