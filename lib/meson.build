@@ -12,6 +12,7 @@ gamemode = shared_library(
         'client_impl.c',
     ],
     dependencies: [
+        link_lib_common,
         dep_dbus,
     ],
     install: true,

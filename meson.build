@@ -128,20 +128,24 @@ with_examples = get_option('with-examples')
 with_util = get_option('with-util')
 
 # Provide a config.h
+pidfd_open = cc.has_function('pidfd_open', args: '-D_GNU_SOURCE')
+
 cdata = configuration_data()
 cdata.set_quoted('LIBEXECDIR', path_libexecdir)
 cdata.set_quoted('GAMEMODE_VERSION', meson.project_version())
+cdata.set10('HAVE_FN_PIDFD_OPEN', pidfd_open)
+
 config_h = configure_file(
     configuration: cdata,
     output: 'build-config.h',
 )
 config_h_dir = include_directories('.')
 
-# Library is always required
-subdir('lib')
-
 # common lib is always required
 subdir('common')
+
+# Library is always required
+subdir('lib')
 
 # Utilities are always required except when having both 64 and 32 bit versions
 # of libgamemode installed
