@@ -275,7 +275,7 @@ static int run_gamemoderun_and_reaper_tests(struct GameModeConfig *config)
 	}
 
 	/* Give the child a chance to reqeust gamemode */
-	usleep(10000);
+	usleep(100000);
 
 	/* Check that when we request gamemode, it replies that the other client is connected */
 	if (verify_other_client_connected() != 0)
