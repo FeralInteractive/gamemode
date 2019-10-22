@@ -31,6 +31,7 @@ POSSIBILITY OF SUCH DAMAGE.
 
 #pragma once
 
+#include <stdlib.h>
 #include <string.h>
 #include <sys/param.h>
 #include <unistd.h>
@@ -80,3 +81,23 @@ inline void cleanup_close(int *fd_ptr)
  * like "autoclose_fd int fd = -1;".
  */
 #define autoclose_fd __attribute__((cleanup(cleanup_close)))
+
+/**
+ * Helper function for auto-freeing dynamically allocated memory. Does nothing
+ * if *ptr is NULL (ptr must not be NULL).
+ */
+inline void cleanup_free(void *ptr)
+{
+	/* The function is defined to work with 'void *' because
+	 * that will make sure it compiles without warning also
+	 * for all types; what we are getting passed into is a
+	 * pointer to a pointer though, so we need to cast */
+	void *target = *(void **)ptr;
+	free(target); /* free can deal with NULL */
+}
+
+/**
+ * Helper macro for auto-freeing dynamically allocated memory: use by
+ * prefixing the variable, like "autofree char *data = NULL;".
+ */
+#define autofree __attribute__((cleanup(cleanup_free)))

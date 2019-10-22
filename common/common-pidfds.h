@@ -28,15 +28,26 @@ CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
 ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 POSSIBILITY OF SUCH DAMAGE.
 
- */
+*/
 
-#define _GNU_SOURCE
-#include "common-helpers.h"
+#include <sys/types.h>
 
-/* Starting with C99 we can use "inline" without "static" and thus avoid
- * having multiple (local) definitions of the same inline function. One
- * consequence of that is that if the compiler decides to *not* inline
- * a specific call to the function the linker will expect an definition.
- */
-extern inline void cleanup_close(int *fd);
-extern inline void cleanup_free(void *ptr);
+/* Open pidfds for up to count process ids specified in pids. The
+ * pointer fds needs to point to an array with at least count
+ * entries. Will stop when it encounters an error (and sets errno).
+ * Returns the number of successfully opened pidfds (or -1 in case
+ * of other errors. */
+int open_pidfds(pid_t *pids, int *fds, int count);
+
+/* Translate up to count process ids to the corresponding process ids.
+ * The pointer pids needs to point to an array with at least count
+ * entries. Will stop when it encounters an error (and sets errno).
+ * Returns the number of successfully translated pidfds (or -1 in
+ * case of other errors. */
+int pidfds_to_pids(int *fds, pid_t *pids, int count);
+
+/* Helper to open the fdinfo directory for the current process, i.e.
+ * does open("/proc/self/fdinfo", ...). Returns the file descriptor
+ * for the directory, ownership is transferred and caller needs to
+ * call close on it. */
+int open_fdinfo_dir(void);
