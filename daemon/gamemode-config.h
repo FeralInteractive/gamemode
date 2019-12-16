@@ -102,6 +102,8 @@ bool config_get_inhibit_screensaver(GameModeConfig *self);
 long config_get_script_timeout(GameModeConfig *self);
 void config_get_default_governor(GameModeConfig *self, char governor[CONFIG_VALUE_MAX]);
 void config_get_desired_governor(GameModeConfig *self, char governor[CONFIG_VALUE_MAX]);
+void config_get_igpu_desired_governor(GameModeConfig *self, char governor[CONFIG_VALUE_MAX]);
+float config_get_igpu_power_threshold(GameModeConfig *self);
 void config_get_soft_realtime(GameModeConfig *self, char softrealtime[CONFIG_VALUE_MAX]);
 long config_get_renice_value(GameModeConfig *self);
 long config_get_ioprio_value(GameModeConfig *self);
