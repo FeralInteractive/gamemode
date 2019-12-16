@@ -35,6 +35,7 @@ POSSIBILITY OF SUCH DAMAGE.
 #include "common-governors.h"
 #include "common-helpers.h"
 #include "common-logging.h"
+#include "common-power.h"
 
 #include "gamemode.h"
 #include "gamemode-config.h"
@@ -66,6 +67,7 @@ struct GameModeClient {
 enum GameModeGovernor {
 	GAME_MODE_GOVERNOR_DEFAULT,
 	GAME_MODE_GOVERNOR_DESIRED,
+	GAME_MODE_GOVERNOR_IGPU_DESIRED,
 };
 
 struct GameModeContext {
@@ -81,6 +83,10 @@ struct GameModeContext {
 
 	struct GameModeGPUInfo *stored_gpu; /**<Stored GPU info for the current GPU */
 	struct GameModeGPUInfo *target_gpu; /**<Target GPU info for the current GPU */
+
+	bool igpu_optimization_enabled;
+	uint32_t last_cpu_energy_uj;
+	uint32_t last_igpu_energy_uj;
 
 	/* Reaper control */
 	struct {
@@ -219,6 +225,11 @@ static int game_mode_set_governor(GameModeContext *self, enum GameModeGovernor g
 		gov_str = gov_config_str[0] != '\0' ? gov_config_str : "performance";
 		break;
 
+	case GAME_MODE_GOVERNOR_IGPU_DESIRED:
+		config_get_igpu_desired_governor(self->config, gov_config_str);
+		gov_str = gov_config_str[0] != '\0' ? gov_config_str : "powersave";
+		break;
+
 	default:
 		assert(!"Invalid governor requested");
 	}
@@ -240,6 +251,93 @@ static int game_mode_set_governor(GameModeContext *self, enum GameModeGovernor g
 	return 0;
 }
 
+static void game_mode_enable_igpu_optimization(GameModeContext *self)
+{
+	float threshold = config_get_igpu_power_threshold(self->config);
+
+	/* There's no way the GPU is using 10000x the power.  This lets us
+	 * short-circuit if the config file specifies an invalid threshold
+	 * and we want to disable the iGPU heuristic.
+	 */
+	if (threshold < 10000 && get_cpu_energy_uj(&self->last_cpu_energy_uj) &&
+	    get_igpu_energy_uj(&self->last_igpu_energy_uj)) {
+		LOG_MSG(
+		    "Successfully queried power data for the CPU and iGPU. "
+		    "Enabling the integrated GPU optimization");
+		self->igpu_optimization_enabled = true;
+	}
+}
+
+static void game_mode_disable_igpu_optimization(GameModeContext *self)
+{
+	self->igpu_optimization_enabled = false;
+}
+
+static void game_mode_check_igpu_energy(GameModeContext *self)
+{
+	pthread_rwlock_wrlock(&self->rwlock);
+
+	/* We only care if we're not in the default governor */
+	if (self->current_govenor == GAME_MODE_GOVERNOR_DEFAULT)
+		goto unlock;
+
+	if (!self->igpu_optimization_enabled)
+		goto unlock;
+
+	uint32_t cpu_energy_uj, igpu_energy_uj;
+	if (!get_cpu_energy_uj(&cpu_energy_uj) || !get_igpu_energy_uj(&igpu_energy_uj)) {
+		/* We've already succeeded at getting power information once so
+		 * failing here is possible but very unexpected. */
+		self->igpu_optimization_enabled = false;
+		LOG_ERROR("Failed to get CPU and iGPU power data\n");
+		goto unlock;
+	}
+
+	/* The values we query from RAPL are in units of microjoules of energy
+	 * used since boot or since the last time the counter rolled over.  You
+	 * can get average power over some time window T by sampling before and
+	 * after and doing the following calculation
+	 *
+	 *     power_uw = (energy_uj_after - energy_uj_before) / seconds
+	 *
+	 * To get the power in Watts (rather than microwatts), you can simply
+	 * divide by 1000000.
+	 *
+	 * Because we're only concerned with the ratio between the GPU and CPU
+	 * power, we never bother dividing by 1000000 the length of time of the
+	 * sampling window because that would just algebraically cancel out.
+	 * Instead, we divide the GPU energy used in the window (difference of
+	 * before and after) by the CPU energy used. It nicely provides the
+	 * ratio of the averages and there are no instantaneous sampling
+	 * problems.
+	 *
+	 * Overflow is possible here.  However, that would simply mean that
+	 * the HW counter has overflowed and us wrapping around is probably
+	 * the right thing to do.  Wrapping at 32 bits is exactly what the
+	 * Linux kernel's turbostat utility does so it's probably right.
+	 */
+	uint32_t cpu_energy_delta_uj = cpu_energy_uj - self->last_cpu_energy_uj;
+	uint32_t igpu_energy_delta_uj = igpu_energy_uj - self->last_igpu_energy_uj;
+	self->last_cpu_energy_uj = cpu_energy_uj;
+	self->last_igpu_energy_uj = igpu_energy_uj;
+
+	if (cpu_energy_delta_uj == 0) {
+		LOG_ERROR("CPU reported no energy used\n");
+		goto unlock;
+	}
+
+	float threshold = config_get_igpu_power_threshold(self->config);
+	double ratio = (double)igpu_energy_delta_uj / (double)cpu_energy_delta_uj;
+	if (ratio > threshold) {
+		game_mode_set_governor(self, GAME_MODE_GOVERNOR_IGPU_DESIRED);
+	} else {
+		game_mode_set_governor(self, GAME_MODE_GOVERNOR_DESIRED);
+	}
+
+unlock:
+	pthread_rwlock_unlock(&self->rwlock);
+}
+
 /**
  * Pivot into game mode.
  *
@@ -251,7 +349,12 @@ static void game_mode_context_enter(GameModeContext *self)
 	LOG_MSG("Entering Game Mode...\n");
 	sd_notifyf(0, "STATUS=%sGameMode is now active.%s\n", "\x1B[1;32m", "\x1B[0m");
 
-	game_mode_set_governor(self, GAME_MODE_GOVERNOR_DESIRED);
+	if (game_mode_set_governor(self, GAME_MODE_GOVERNOR_DESIRED) == 0) {
+		/* We just switched to a non-default governor.  Enable the iGPU
+		 * optimization.
+		 */
+		game_mode_enable_igpu_optimization(self);
+	}
 
 	/* Inhibit the screensaver */
 	if (config_get_inhibit_screensaver(self->config))
@@ -289,6 +392,8 @@ static void game_mode_context_leave(GameModeContext *self)
 		game_mode_inhibit_screensaver(false);
 
 	game_mode_set_governor(self, GAME_MODE_GOVERNOR_DEFAULT);
+
+	game_mode_disable_igpu_optimization(self);
 
 	char scripts[CONFIG_LIST_MAX][CONFIG_VALUE_MAX];
 	memset(scripts, 0, sizeof(scripts));
@@ -821,6 +926,9 @@ static void *game_mode_context_reaper(void *userdata)
 		if (!self->reaper.running) {
 			return NULL;
 		}
+
+		/* Check on the CPU/iGPU energy balance */
+		game_mode_check_igpu_energy(self);
 
 		/* Expire remaining entries */
 		game_mode_context_auto_expire(self);
