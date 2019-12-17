@@ -63,6 +63,11 @@ struct GameModeClient {
 	time_t timestamp;            /**<When was the client registered */
 };
 
+enum GameModeGovernor {
+	GAME_MODE_GOVERNOR_DEFAULT,
+	GAME_MODE_GOVERNOR_DESIRED,
+};
+
 struct GameModeContext {
 	pthread_rwlock_t rwlock; /**<Guard access to the client list */
 	_Atomic int refcount;    /**<Allow cycling the game mode */
@@ -71,6 +76,8 @@ struct GameModeContext {
 	GameModeConfig *config; /**<Pointer to config object */
 
 	char initial_cpu_mode[64]; /**<Only updates when we can */
+
+	enum GameModeGovernor current_govenor;
 
 	struct GameModeGPUInfo *stored_gpu; /**<Stored GPU info for the current GPU */
 	struct GameModeGPUInfo *target_gpu; /**<Target GPU info for the current GPU */
@@ -126,6 +133,8 @@ void game_mode_context_init(GameModeContext *self)
 	self->config = config_create();
 	config_init(self->config);
 
+	self->current_govenor = GAME_MODE_GOVERNOR_DEFAULT;
+
 	/* Initialise the current GPU info */
 	game_mode_initialise_gpu(self->config, &self->stored_gpu);
 	game_mode_initialise_gpu(self->config, &self->target_gpu);
@@ -178,6 +187,59 @@ void game_mode_context_destroy(GameModeContext *self)
 	pthread_rwlock_destroy(&self->rwlock);
 }
 
+static int game_mode_set_governor(GameModeContext *self, enum GameModeGovernor gov)
+{
+	if (self->current_govenor == gov) {
+		return 0;
+	}
+
+	if (self->current_govenor == GAME_MODE_GOVERNOR_DEFAULT) {
+		/* Read the initial governor state so we can revert it correctly */
+		const char *initial_state = get_gov_state();
+		if (initial_state == NULL) {
+			return 0;
+		}
+
+		/* store the initial cpu governor mode */
+		strncpy(self->initial_cpu_mode, initial_state, sizeof(self->initial_cpu_mode) - 1);
+		self->initial_cpu_mode[sizeof(self->initial_cpu_mode) - 1] = '\0';
+		LOG_MSG("governor was initially set to [%s]\n", initial_state);
+	}
+
+	char *gov_str = NULL;
+	char gov_config_str[CONFIG_VALUE_MAX] = { 0 };
+	switch (gov) {
+	case GAME_MODE_GOVERNOR_DEFAULT:
+		config_get_default_governor(self->config, gov_config_str);
+		gov_str = gov_config_str[0] != '\0' ? gov_config_str : self->initial_cpu_mode;
+		break;
+
+	case GAME_MODE_GOVERNOR_DESIRED:
+		config_get_desired_governor(self->config, gov_config_str);
+		gov_str = gov_config_str[0] != '\0' ? gov_config_str : "performance";
+		break;
+
+	default:
+		assert(!"Invalid governor requested");
+	}
+
+	const char *const exec_args[] = {
+		"/usr/bin/pkexec", LIBEXECDIR "/cpugovctl", "set", gov_str, NULL,
+	};
+
+	LOG_MSG("Requesting update of governor policy to %s\n", gov_str);
+	int ret = run_external_process(exec_args, NULL, -1);
+	if (ret != 0) {
+		LOG_ERROR("Failed to update cpu governor policy\n");
+		return ret;
+	}
+
+	/* Update the current govenor only if we succeed at setting govenors. */
+	self->current_govenor = gov;
+
+	return 0;
+}
+
 /**
  * Pivot into game mode.
  *
@@ -189,31 +251,7 @@ static void game_mode_context_enter(GameModeContext *self)
 	LOG_MSG("Entering Game Mode...\n");
 	sd_notifyf(0, "STATUS=%sGameMode is now active.%s\n", "\x1B[1;32m", "\x1B[0m");
 
-	/* Read the initial governor state so we can revert it correctly */
-	const char *initial_state = get_gov_state();
-	if (initial_state) {
-		/* store the initial cpu governor mode */
-		strncpy(self->initial_cpu_mode, initial_state, sizeof(self->initial_cpu_mode) - 1);
-		self->initial_cpu_mode[sizeof(self->initial_cpu_mode) - 1] = '\0';
-		LOG_MSG("governor was initially set to [%s]\n", initial_state);
-
-		/* Choose the desired governor */
-		char desired[CONFIG_VALUE_MAX] = { 0 };
-		config_get_desired_governor(self->config, desired);
-		const char *desiredGov = desired[0] != '\0' ? desired : "performance";
-
-		const char *const exec_args[] = {
-			"/usr/bin/pkexec", LIBEXECDIR "/cpugovctl", "set", desiredGov, NULL,
-		};
-
-		LOG_MSG("Requesting update of governor policy to %s\n", desiredGov);
-		if (run_external_process(exec_args, NULL, -1) != 0) {
-			LOG_ERROR("Failed to update cpu governor policy\n");
-			/* if the set fails, clear the initial mode so we don't try and reset it back and fail
-			 * again, presumably */
-			memset(self->initial_cpu_mode, 0, sizeof(self->initial_cpu_mode));
-		}
-	}
+	game_mode_set_governor(self, GAME_MODE_GOVERNOR_DESIRED);
 
 	/* Inhibit the screensaver */
 	if (config_get_inhibit_screensaver(self->config))
@@ -250,24 +288,7 @@ static void game_mode_context_leave(GameModeContext *self)
 	if (config_get_inhibit_screensaver(self->config))
 		game_mode_inhibit_screensaver(false);
 
-	/* Reset the governer state back to initial */
-	if (self->initial_cpu_mode[0] != '\0') {
-		/* Choose the governor to reset to, using the config to override */
-		char defaultgov[CONFIG_VALUE_MAX] = { 0 };
-		config_get_default_governor(self->config, defaultgov);
-		const char *gov_mode = defaultgov[0] != '\0' ? defaultgov : self->initial_cpu_mode;
-
-		const char *const exec_args[] = {
-			"/usr/bin/pkexec", LIBEXECDIR "/cpugovctl", "set", gov_mode, NULL,
-		};
-
-		LOG_MSG("Requesting update of governor policy to %s\n", gov_mode);
-		if (run_external_process(exec_args, NULL, -1) != 0) {
-			LOG_ERROR("Failed to update cpu governor policy\n");
-		}
-
-		memset(self->initial_cpu_mode, 0, sizeof(self->initial_cpu_mode));
-	}
+	game_mode_set_governor(self, GAME_MODE_GOVERNOR_DEFAULT);
 
 	char scripts[CONFIG_LIST_MAX][CONFIG_VALUE_MAX];
 	memset(scripts, 0, sizeof(scripts));
