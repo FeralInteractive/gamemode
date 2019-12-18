@@ -40,5 +40,10 @@ set -x
 
 sudo ninja install
 
+# Restart polkit so we don't get pop-ups whenever we pkexec
+if systemctl list-unit-files |grep -q polkit.service; then
+    sudo systemctl try-restart polkit
+fi
+
 # Reload systemd configuration so that it picks up the new service.
 systemctl --user daemon-reload
