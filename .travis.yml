@@ -18,7 +18,7 @@ addons:
 
 before_script:
   - pip3 install wheel
-  - pip3 install meson
+  - pip3 install --upgrade 'meson==0.52.0'
   - meson --version
 
 script:
