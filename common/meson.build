@@ -6,6 +6,7 @@ common_sources = [
     'common-helpers.c',
     'common-gpu.c',
     'common-pidfds.c',
+    'common-power.c',
 ]
 
 daemon_common = static_library(
