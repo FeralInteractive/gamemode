@@ -39,6 +39,7 @@ POSSIBILITY OF SUCH DAMAGE.
 #include "ini.h"
 
 #include <dirent.h>
+#include <math.h>
 #include <pthread.h>
 #include <pwd.h>
 #include <sys/inotify.h>
@@ -49,6 +50,8 @@ POSSIBILITY OF SUCH DAMAGE.
 
 /* Default value for the reaper frequency */
 #define DEFAULT_REAPER_FREQ 5
+
+#define DEFAULT_IGPU_POWER_THRESHOLD 0.3f
 
 /* Helper macro for defining the config variable getter */
 #define DEFINE_CONFIG_GET(name)                                                                    \
@@ -81,6 +84,9 @@ struct GameModeConfig {
 
 		char defaultgov[CONFIG_VALUE_MAX];
 		char desiredgov[CONFIG_VALUE_MAX];
+
+		char igpu_desiredgov[CONFIG_VALUE_MAX];
+		float igpu_power_threshold;
 
 		char softrealtime[CONFIG_VALUE_MAX];
 		long renice;
@@ -179,6 +185,27 @@ __attribute__((unused)) static bool get_long_value_hex(const char *value_name, c
 	return true;
 }
 
+/*
+ * Get a long value from a string
+ */
+static bool get_float_value(const char *value_name, const char *value, float *output)
+{
+	char *end = NULL;
+	float config_value = strtof(value, &end);
+
+	if (errno == ERANGE) {
+		LOG_ERROR("Config: %s overflowed, given [%s]\n", value_name, value);
+		return false;
+	} else if (!(*value != '\0' && end && *end == '\0')) {
+		LOG_ERROR("Config: %s was invalid, given [%s]\n", value_name, value);
+		return false;
+	} else {
+		*output = config_value;
+	}
+
+	return true;
+}
+
 /**
  * Simple strstr scheck
  * Could be expanded for wildcard or regex
@@ -230,6 +257,10 @@ static int inih_handler(void *user, const char *section, const char *name, const
 			valid = get_string_value(value, self->values.defaultgov);
 		} else if (strcmp(name, "desiredgov") == 0) {
 			valid = get_string_value(value, self->values.desiredgov);
+		} else if (strcmp(name, "igpu_desiredgov") == 0) {
+			valid = get_string_value(value, self->values.igpu_desiredgov);
+		} else if (strcmp(name, "igpu_power_threshold") == 0) {
+			valid = get_float_value(name, value, &self->values.igpu_power_threshold);
 		} else if (strcmp(name, "softrealtime") == 0) {
 			valid = get_string_value(value, self->values.softrealtime);
 		} else if (strcmp(name, "renice") == 0) {
@@ -329,6 +360,7 @@ static void load_config_files(GameModeConfig *self)
 	memset(&self->values, 0, sizeof(self->values));
 
 	/* Set some non-zero defaults */
+	self->values.igpu_power_threshold = DEFAULT_IGPU_POWER_THRESHOLD;
 	self->values.inhibit_screensaver = 1; /* Defaults to on */
 	self->values.reaper_frequency = DEFAULT_REAPER_FREQ;
 	self->values.gpu_device = -1; /* 0 is a valid device ID so use -1 to indicate no value */
@@ -639,6 +671,35 @@ void config_get_default_governor(GameModeConfig *self, char governor[CONFIG_VALU
 void config_get_desired_governor(GameModeConfig *self, char governor[CONFIG_VALUE_MAX])
 {
 	memcpy_locked_config(self, governor, self->values.desiredgov, sizeof(self->values.desiredgov));
+}
+
+/*
+ * Get the chosen iGPU desired governor
+ */
+void config_get_igpu_desired_governor(GameModeConfig *self, char governor[CONFIG_VALUE_MAX])
+{
+	memcpy_locked_config(self,
+	                     governor,
+	                     self->values.igpu_desiredgov,
+	                     sizeof(self->values.igpu_desiredgov));
+}
+
+/*
+ * Get the chosen iGPU power threshold
+ */
+float config_get_igpu_power_threshold(GameModeConfig *self)
+{
+	float value = 0;
+	memcpy_locked_config(self, &value, &self->values.igpu_power_threshold, sizeof(float));
+	/* Validate the threshold value */
+	if (isnan(value) || value < 0) {
+		LOG_ONCE(ERROR,
+		         "Configured iGPU power threshold value '%f' is invalid, ignoring iGPU default "
+		         "governor.\n",
+		         value);
+		value = FP_INFINITE;
+	}
+	return value;
 }
 
 /*
