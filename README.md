@@ -63,6 +63,7 @@ GameMode will not be injected to the wrapper.
 The following games are known to integrate GameMode support (meaning they don't require any additional configuration to activate GameMode while running):
 * DiRT 4
 * Rise of the Tomb Raider
+* Shadow of the Tomb Raider
 * Total War: Three Kingdoms
 * Total War: WARHAMMER II
 * Total War Saga: Thrones of Britannia
