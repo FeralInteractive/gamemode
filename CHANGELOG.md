@@ -1,3 +1,17 @@
+## 1.5
+
+### Changes
+
+* Introduce a new pidfd based set of D-Bus APIs (#173)
+* Dynamically change governor on integrated GPUs for improved performance (#179)
+* Various other fixes and improvements.
+
+### Contributors
+
+* Alex Smith @aejsmith
+* Christian Kellner @gicmo
+* Jason Ekstrand @jekstrand
+
 ## 1.4
 
 ### Changes
