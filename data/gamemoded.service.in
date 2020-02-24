@@ -5,7 +5,7 @@ Description=gamemoded
 Type=dbus
 BusName=com.feralinteractive.GameMode
 NotifyAccess=main
-ExecStart=@BINDIR@/gamemoded -l
+ExecStart=@BINDIR@/gamemoded
 
 [Install]
 WantedBy=default.target
