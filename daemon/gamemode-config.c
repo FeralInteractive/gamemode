@@ -36,7 +36,7 @@ POSSIBILITY OF SUCH DAMAGE.
 #include "common-logging.h"
 
 /* Ben Hoyt's inih library */
-#include "ini.h"
+#include <ini.h>
 
 #include <dirent.h>
 #include <math.h>
