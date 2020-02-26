@@ -4,11 +4,7 @@ set -e
 # Simple script to construct a redistributable and complete tarball of the
 # gamemode tree, including the git submodules, so that it can be trivially
 # packaged by distributions banning networking during build.
-#
-# Modified from Ikey Doherty's release scripts for use within
-# Feral Interactive's gamemode project.
 git submodule init
-git submodule update
 
 # Bump in tandem with meson.build, run script once new tag is up.
 VERSION="1.6-dev"
