@@ -157,8 +157,10 @@ endif
 # main library
 if with_daemon == true
     # inih currently only needed by the daemon
-    inih = subproject('inih')
-    inih_dependency = inih.get_variable('inih_dependency')
+    inih_dependency = dependency(
+        'inih',
+        fallback : ['inih', 'inih_dependency']
+    )
 
     subdir('daemon')
 
