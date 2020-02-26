@@ -159,7 +159,7 @@ if with_daemon == true
     # inih currently only needed by the daemon
     inih_dependency = dependency(
         'inih',
-        fallback : ['inih', 'inih_dependency']
+        fallback : ['inih', 'inih_dep']
     )
 
     subdir('daemon')
