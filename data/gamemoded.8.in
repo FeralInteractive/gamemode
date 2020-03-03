@@ -1,6 +1,6 @@
 .\" Manpage for gamemoded.
 .\" Contact linux-contact@feralinteractive.com to correct errors or typos.
-.TH gamemoded 8 "22 Jan 2020" "1.6-dev" "gamemoded man page"
+.TH gamemoded 8 "3 Mar 2020" "1.5.1" "gamemoded man page"
 .SH NAME
 gamemoded \- optimises system performance on demand
 .SH SYNOPSIS

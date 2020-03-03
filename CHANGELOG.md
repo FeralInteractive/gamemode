@@ -1,3 +1,16 @@
+## 1.5.1
+
+### Changes
+
+Minor changes for Debian and Ubuntu packaging:
+* Use the preferred logging system rather than defaulting to syslog.
+* Prefer the system installation of inih.
+
+### Contributors
+
+* Sebastien Bacher @seb128
+* Stephan Lachnit @stephanlachnit
+
 ## 1.5
 
 ### Changes
