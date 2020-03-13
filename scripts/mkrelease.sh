@@ -2,9 +2,9 @@
 set -e
 
 # Simple script to construct a redistributable and complete tarball of the
-# gamemode tree, including the git submodules, so that it can be trivially
+# gamemode tree, including the subprojects, so that it can be trivially
 # packaged by distributions banning networking during build.
-git submodule init
+meson subprojects download
 
 # Bump in tandem with meson.build, run script once new tag is up.
 VERSION="1.6-dev"
