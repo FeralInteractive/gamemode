@@ -11,7 +11,7 @@ Usage: gamemoded [-d] [-l] [-r] [-t] [-h] [-v]
                            When no PID given, queries the status globally
   -d, --daemonize          Daemonize self after launch
   -l, --log-to-syslog      Log to syslog
-  -r, --test               Run tests
+  -t, --test               Run tests
   -h, --help               Print this help
   -v, --version            Print version
 ```
