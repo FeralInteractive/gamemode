@@ -1,6 +1,6 @@
 # An example game
 executable(
-    'example',
+    'gamemode-simulate-game',
     sources: [
         'main.c',
     ],
