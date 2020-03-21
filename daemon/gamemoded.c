@@ -72,7 +72,7 @@ POSSIBILITY OF SUCH DAMAGE.
 	"                           When no PID given, queries the status globally\n"                  \
 	"  -d, --daemonize          Daemonize self after launch\n"                                     \
 	"  -l, --log-to-syslog      Log to syslog\n"                                                   \
-	"  -r, --test               Run tests\n"                                                       \
+	"  -t, --test               Run tests\n"                                                       \
 	"  -h, --help               Print this help\n"                                                 \
 	"  -v, --version            Print version\n"                                                   \
 	"\n"                                                                                           \
