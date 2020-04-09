@@ -64,9 +64,9 @@ The following games are known to integrate GameMode support (meaning they don't 
 * DiRT 4
 * Rise of the Tomb Raider
 * Shadow of the Tomb Raider
+* Total War Saga: Thrones of Britannia
 * Total War: Three Kingdoms
 * Total War: WARHAMMER II
-* Total War Saga: Thrones of Britannia
 
 ### Others
 Other apps which can integrate with GameMode include:
