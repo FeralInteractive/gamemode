@@ -70,6 +70,7 @@ The following games are known to integrate GameMode support (meaning they don't 
 
 ### Others
 Other apps which can integrate with GameMode include:
+* [ATLauncher](https://atlauncher.com/downloads) Minecraft launcher
 * GNOME Shell ([via extension](https://github.com/gicmo/gamemode-extension)) - indicates when GameMode is active in the top panel.
 * Lutris - Enables GameMode for all games by default if available (must have both 32- and 64-bit GameMode libraries installed), configurable in preferences.
 
