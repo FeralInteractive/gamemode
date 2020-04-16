@@ -19,6 +19,6 @@ addons:
 script:
   - ./scripts/format-check.sh
   - ./bootstrap.sh -Dwith-examples=true
-  - meson test -C build
+  - meson test -C builddir
   - dbus-run-session -- gamemode-simulate-game
   - ./scripts/static-analyser-check.sh 

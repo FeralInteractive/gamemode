@@ -26,9 +26,8 @@ fi
 
 # Echo the rest so it's obvious
 set -x
-meson --prefix=$prefix build --buildtype debugoptimized -Dwith-systemd-user-unit-dir=/etc/systemd/user "$@"
-cd build
-ninja
+meson builddir --prefix=$prefix --buildtype debugoptimized -Dwith-systemd-user-unit-dir=/etc/systemd/user "$@"
+ninja -C builddir
 
 # Verify user wants to install
 set +x
@@ -38,7 +37,7 @@ if [ "$TRAVIS" != "true" ]; then
 fi
 set -x
 
-sudo ninja install
+sudo ninja install -C builddir
 
 # Restart polkit so we don't get pop-ups whenever we pkexec
 if systemctl list-unit-files |grep -q polkit.service; then
