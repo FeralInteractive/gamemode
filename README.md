@@ -119,8 +119,7 @@ git checkout 1.5.1 # omit to build the master branch
 To uninstall:
 ```bash
 systemctl --user stop gamemoded.service
-cd build/
-ninja uninstall
+ninja uninstall -C builddir
 ```
 
 ### Pull Requests
