@@ -3,6 +3,14 @@ data_conf.set('BINDIR', path_bindir)
 data_conf.set('LIBEXECDIR', path_libexecdir)
 data_conf.set('GAMEMODE_PREFIX', path_prefix)
 
+# Set gamemoderun lib dir
+gamemoderun_lib_dir = get_option('with-gamemoderun-lib-dir')
+if gamemoderun_lib_dir == 'default'
+    data_conf.set('GAMEMODERUN_PREFIX', path_prefix + '/\$LIB/')
+else
+    data_conf.set('GAMEMODERUN_PREFIX', gamemoderun_lib_dir)
+endif
+
 # Pull in the example config
 config_example = run_command(
     'cat',
