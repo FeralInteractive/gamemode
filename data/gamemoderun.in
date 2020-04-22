@@ -3,7 +3,7 @@
 
 # Path to installed libgamemodeauto. ld.so will substitute "\$LIB" to get the
 # appropriate path depending on whether the app is 32- or 64-bit.
-GAMEMODEAUTO="@GAMEMODE_PREFIX@/\$LIB/libgamemodeauto.so.0"
+GAMEMODEAUTO="@GAMEMODERUN_PREFIX@libgamemodeauto.so.0"
 
 LD_PRELOAD="${GAMEMODEAUTO}${LD_PRELOAD:+:$LD_PRELOAD}"
 
