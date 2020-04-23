@@ -1006,7 +1006,7 @@ fail:
 static void game_mode_execute_scripts(char scripts[CONFIG_LIST_MAX][CONFIG_VALUE_MAX], int timeout)
 {
 	unsigned int i = 0;
-	while (*scripts[i] != '\0' && i < CONFIG_LIST_MAX) {
+	while (i < CONFIG_LIST_MAX && *scripts[i] != '\0') {
 		LOG_MSG("Executing script [%s]\n", scripts[i]);
 		int err;
 		const char *args[] = { "/bin/sh", "-c", scripts[i], NULL };
