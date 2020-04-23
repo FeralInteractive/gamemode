@@ -370,7 +370,7 @@ static int run_custom_scripts_tests(struct GameModeConfig *config)
 
 	if (startscripts[0][0] != '\0') {
 		int i = 0;
-		while (*startscripts[i] != '\0' && i < CONFIG_LIST_MAX) {
+		while (i < CONFIG_LIST_MAX && *startscripts[i] != '\0') {
 			LOG_MSG(":::: Running start script [%s]\n", startscripts[i]);
 
 			const char *args[] = { "/bin/sh", "-c", startscripts[i], NULL };
@@ -393,7 +393,7 @@ static int run_custom_scripts_tests(struct GameModeConfig *config)
 
 	if (endscripts[0][0] != '\0') {
 		int i = 0;
-		while (*endscripts[i] != '\0' && i < CONFIG_LIST_MAX) {
+		while (i < CONFIG_LIST_MAX && *endscripts[i] != '\0') {
 			LOG_MSG(":::: Running end script [%s]\n", endscripts[i]);
 
 			const char *args[] = { "/bin/sh", "-c", endscripts[i], NULL };
