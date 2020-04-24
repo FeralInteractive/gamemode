@@ -79,9 +79,22 @@ path_libdir = join_paths(path_prefix, get_option('libdir'))
 path_libexecdir = join_paths(path_prefix, get_option('libexecdir'))
 path_sysconfdir = join_paths(path_prefix, get_option('sysconfdir'))
 
-# Find systemd via pkgconfig
+# Find systemd / elogind via pkgconfig
 with_systemd = get_option('with-systemd')
-dep_systemd = dependency('libsystemd')
+with_elogind = get_option('with-elogind')
+elogind_args = []
+dep_systemd = []
+if with_systemd == true
+    if with_elogind == true
+        error('you can\'t use systemd and elogind at the same time')
+    endif
+    dep_systemd = dependency('libsystemd')
+elif with_elogind == true
+    elogind_args += ['-DUSE_ELOGIND']
+    dep_systemd = dependency('libelogind')
+else
+    error('you need to use either sd-bus.h from systemd or elogind')
+endif
 
 # For the client, libdbus is used
 dep_dbus = dependency('dbus-1')
