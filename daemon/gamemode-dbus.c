@@ -36,8 +36,13 @@ POSSIBILITY OF SUCH DAMAGE.
 #include "common-logging.h"
 #include "common-pidfds.h"
 
+#ifdef USE_ELOGIND
+#include <elogind/sd-bus.h>
+#include <elogind/sd-daemon.h>
+#else
 #include <systemd/sd-bus.h>
 #include <systemd/sd-daemon.h>
+#endif
 
 #include <assert.h>
 #include <errno.h>

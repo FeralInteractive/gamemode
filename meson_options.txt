@@ -1,12 +1,12 @@
-option('with-systemd', type: 'boolean', description: 'Use systemd support (unit, etc)', value: 'true')
-
 # limits.d
 option('with-pam-group', type: 'string', description: 'Install the limits.d configuration file to allow renicing as an unpriviledged user being part of the specified group')
 
 # systemd specific
+option('with-systemd', type: 'boolean', description: 'Use systemd support (unit, etc)', value: true)
 option('with-systemd-user-unit-dir', type: 'string', description: 'Explicitly set the systemd user unit directory')
 
 # Not using systemd
+option('with-elogind', type: 'boolean', description: 'Use elogind\'s Dbus library', value: false)
 option('with-dbus-service-dir', type: 'string', description: 'Explicitly set the D-BUS session directory')
 
 # lib dir in gamemoderun
