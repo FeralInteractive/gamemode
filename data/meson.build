@@ -18,7 +18,7 @@ config_example = run_command(
 ).stdout().strip()
 data_conf.set('GAMEMODE_EXAMPLE_CONFIG', config_example)
 
-if with_systemd == true
+if sd_bus_provider == 'systemd'
     # Install systemd user unit
     configure_file(
         input: 'gamemoded.service.in',
