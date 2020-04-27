@@ -80,20 +80,15 @@ path_libexecdir = join_paths(path_prefix, get_option('libexecdir'))
 path_sysconfdir = join_paths(path_prefix, get_option('sysconfdir'))
 
 # Find systemd / elogind via pkgconfig
-with_systemd = get_option('with-systemd')
-with_elogind = get_option('with-elogind')
-elogind_args = []
-dep_systemd = []
-if with_systemd == true
-    if with_elogind == true
-        error('you can\'t use systemd and elogind at the same time')
-    endif
-    dep_systemd = dependency('libsystemd')
-elif with_elogind == true
-    elogind_args += ['-DUSE_ELOGIND']
-    dep_systemd = dependency('libelogind')
-else
-    error('you need to use either sd-bus.h from systemd or elogind')
+sd_bus_provider = get_option('with-sd-bus-provider')
+
+sd_bus_args = []
+sd_bus_dep = []
+if sd_bus_provider == 'systemd'
+    sd_bus_dep = dependency('libsystemd')
+elif sd_bus_provider == 'elogind'
+    sd_bus_args += ['-DUSE_ELOGIND']
+    sd_bus_dep = dependency('libelogind')
 endif
 
 # For the client, libdbus is used
@@ -106,7 +101,7 @@ dep_threads = dependency('threads')
 libdl = cc.find_library('dl', required: false)
 
 # Determine the location for the systemd unit
-if with_systemd == true
+if sd_bus_provider == 'systemd'
     # If the path isn't explicitly set, ask systemd for the systemd user unit directory
     path_systemd_unit_dir = get_option('with-systemd-user-unit-dir')
     if path_systemd_unit_dir == ''
@@ -137,7 +132,6 @@ endif
 
 path_polkit_action_dir = join_paths(path_datadir, 'polkit-1', 'actions')
 
-with_daemon = get_option('with-daemon')
 with_examples = get_option('with-examples')
 with_util = get_option('with-util')
 
@@ -169,7 +163,7 @@ endif
 
 # The daemon can be disabled if necessary, allowing multilib builds of the
 # main library
-if with_daemon == true
+if sd_bus_provider != 'no-daemon'
     # inih currently only needed by the daemon
     inih_dependency = dependency(
         'inih',
@@ -200,7 +194,7 @@ report = [
     '    includedir:                             @0@'.format(path_includedir),
 ]
 
-if with_systemd == true
+if sd_bus_provider == 'systemd'
 report += [
     '    systemd user unit directory:            @0@'.format(path_systemd_unit_dir),
 ]
@@ -216,10 +210,9 @@ report += [
     '    Options:',
     '    ========',
     '',
-    '    daemon:                                 @0@'.format(with_daemon),
+    '    sd-bus provier:                         @0@'.format(sd_bus_provider),
     '    examples:                               @0@'.format(with_examples),
     '    util:                                   @0@'.format(with_util),
-    '    systemd:                                @0@'.format(with_systemd),
 ]
 
 # Output some stuff to validate the build config

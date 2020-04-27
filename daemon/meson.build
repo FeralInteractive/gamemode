@@ -17,11 +17,11 @@ gamemoded_includes += config_h_dir
 gamemoded = executable(
     'gamemoded',
     sources: daemon_sources,
-    c_args: elogind_args,
+    c_args: sd_bus_args,
     dependencies: [
         link_daemon_common,
         dep_threads,
-        dep_systemd,
+        sd_bus_dep,
         inih_dependency,
         libdl,
     ],
