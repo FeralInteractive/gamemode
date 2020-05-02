@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<component type="console-application">
+  <id>io.github.feralinteractive.gamemode</id>
+  
+  <name>gamemode</name>
+  <summary>daemon that allows games to request a set of optimizations be temporarily applied</summary>
+  <developer_name>Feral Interactive</developer_name>
+
+  <metadata_license>FSFAP</metadata_license>
+  <project_license>BSD-3-Clause</project_license>
+  
+  <description>
+    <p>
+      GameMode is a daemon/lib combo for Linux that allows games to request a set of optimisations be temporarily applied to the host OS and/or a game process.
+    </p>
+    <p>
+      It was designed primarily as a stop-gap solution to problems with the Intel and AMD CPU powersave or ondemand governors, but is now host to a range of optimisation features and configurations.
+    </p>
+    <p>Currently GameMode includes support for optimisations including:</p>
+    <ul>
+      <li>CPU governor</li>
+      <li>I/O priority</li>
+      <li>Process niceness</li>
+      <li>Kernel scheduler (SCHED_ISO)</li>
+      <li>Screensaver inhibiting</li>
+      <li>GPU performance mode (NVIDIA and AMD)</li>
+      <li>GPU overclocking (NVIDIA)</li>
+      <li>Custom scripts</li>
+    </ul>
+  </description>
+  
+  <categories>
+    <category>Utility</category>
+    <category>Game</category>
+  </categories>
+  
+  <provides>
+    <binary>gamemoderun</binary>
+  </provides>
+</component>
