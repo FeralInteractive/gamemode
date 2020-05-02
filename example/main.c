@@ -32,6 +32,7 @@ POSSIBILITY OF SUCH DAMAGE.
 #include "gamemode_client.h"
 
 #include <stdio.h>
+#include <stdlib.h>
 #include <unistd.h>
 
 int main(void)
@@ -39,6 +40,7 @@ int main(void)
 	/* Request we start game mode */
 	if (gamemode_request_start() != 0) {
 		fprintf(stderr, "Failed to request gamemode start: %s...\n", gamemode_error_string());
+		return  EXIT_FAILURE;
 	}
 
 	/* Simulate running a game */
@@ -47,5 +49,8 @@ int main(void)
 	/* Request we end game mode (optional) */
 	if (gamemode_request_end() != 0) {
 		fprintf(stderr, "Failed to request gamemode end: %s...\n", gamemode_error_string());
+		return  EXIT_FAILURE;
 	}
+
+	return EXIT_SUCCESS;
 }
