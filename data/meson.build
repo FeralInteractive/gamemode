@@ -53,3 +53,9 @@ manpage = configure_file(
     configuration: data_conf,
 )
 install_man(manpage)
+
+# Install metainfo
+install_data(
+    'io.github.feralinteractive.gamemode.metainfo.xml',
+    install_dir: join_paths(path_datadir, 'metainfo')
+)
