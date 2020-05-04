@@ -46,13 +46,24 @@ configure_file(
     install_mode: 'rwxr-xr-x',
 )
 
-# Configure and install the man page
-manpage = configure_file(
+# Configure and install man pages
+mandir = join_paths(prefix, get_option('mandir'))
+
+gamemoded_manpage = configure_file(
     input: files('gamemoded.8.in'),
     output: 'gamemoded.8',
     configuration: data_conf,
 )
-install_man(manpage)
+
+install_man(
+    gamemoded_manpage,
+    install_dir: mandir,
+)
+
+install_man(
+    files('gamemoderun.1'),
+    install_dir: mandir,
+)
 
 # Install metainfo
 install_data(
