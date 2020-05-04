@@ -1,8 +1,8 @@
 .\" Manpage for gamemoded.
 .\" Contact linux-contact@feralinteractive.com to correct errors or typos.
-.TH gamemoded 8 "3 Mar 2020" "1.6-dev" "gamemoded man page"
+.TH gamemoded 8 "4 May 2020" "1.6-dev" "gamemoded man page"
 .SH NAME
-gamemoded \- optimises system performance on demand
+gamemoded \- daemon that optimises system performance on demand
 .SH SYNOPSIS
 \fBgamemoded\fR [OPTIONS...]
 .SH DESCRIPTION
@@ -38,31 +38,7 @@ Run diagnostic tests on the current installation
 Print the version
 
 .SH USAGE
-\fBlibgamemodeauto.so.0\fR can be pre-loaded into any program to request \fBgamemoded\fR begin or end the mode, like so:
-
-.RS 4
-gamemoderun \./game
-.RE
-
-Or by setting the Steam launch options for a game:
-
-.RS 4
-gamemoderun %command%
-.RE
-
-The library can be manually preloaded if needed:
-
-.RS 4
-LD_PRELOAD=$LD_PRELOAD:/usr/\e$LIB/libgamemodeauto.so.0 ./game
-.RE
-
-It is possible to set additional start commands to gamemoderun by setting the environment variable:
-
-.RS 4
-GAMEMODERUNEXEC="command"
-.RE
-
-When this is set, gamemoderun will execute the command given by that environment variable, and the command line passed to gamemoderun will be passed as arguments to that command. GameMode will not be applied to the wrapper command, just the game itself.
+\fBlibgamemodeauto.so.0\fR can be pre-loaded into any program to request \fBgamemoded\fR begin or end the mode. See gamemoderun(1) for details.
 
 The \fBgamemode_client.h\fR header can be used by developers to build the requests into a program:
 
@@ -118,7 +94,7 @@ Behaviour of the config file can be explained by presenting a commented example:
 .RE
 
 .SH SEE ALSO
-systemd(1)
+gamemoderun(1), systemd(1)
 
 .SH ABOUT
 GameMode source can be found at \fIhttps://github.com/FeralInteractive/gamemode.git\fR

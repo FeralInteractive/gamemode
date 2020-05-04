@@ -1,0 +1,50 @@
+.\" Manpage for gamemoderun.
+.\" Contact linux-contact@feralinteractive.com to correct errors or typos.
+.TH gamemoded 1 "4 May 2020" "1.6-dev" "gamemoderun man page"
+.SH NAME
+gamemoderun \- invoke gamemode into any program
+.SH SYNOPSIS
+\fBgamemoderun\fR PROGRAM
+.SH DESCRIPTION
+\fBGameMode\fR is a daemon/lib combo for Linux that allows games to request a set of optimisations be temporarily applied to the host OS.
+
+The design has a clear cut abstraction between the host daemon and library (\fBgamemoded\fR and \fBlibgamemode\fR), and the client loaders (\fBlibgamemodeauto\fR and \fBgamemode_client.h\fR) that allows for safe usage without worrying about whether the daemon is installed or running. This design also means that while the host library currently relies on systemd for exchanging messages with the daemon, it's entirely possible to implement other internals that still work with the same clients.
+
+\fBGameMode\fR was designed primarily as a stop-gap solution to problems with the Intel and AMD CPU powersave or ondemand governors, but is intended to be expanded beyond just CPU governor states, as there are a wealth of automation tasks one might want to apply.
+
+.SH USAGE
+\fBlibgamemodeauto.so.0\fR can be pre-loaded into any program to request \fBgamemoded\fR begin or end the mode, like so:
+
+.RS 4
+gamemoderun \./game
+.RE
+
+Or by setting the Steam launch options for a game:
+
+.RS 4
+gamemoderun %command%
+.RE
+
+The library can be manually preloaded if needed:
+
+.RS 4
+LD_PRELOAD=$LD_PRELOAD:/usr/\e$LIB/libgamemodeauto.so.0 ./game
+.RE
+
+.SH CONFIG
+It is possible to set additional start commands to gamemoderun by setting the environment variable:
+
+.RS 4
+GAMEMODERUNEXEC="command"
+.RE
+
+When this is set, gamemoderun will execute the command given by that environment variable, and the command line passed to gamemoderun will be passed as arguments to that command. GameMode will not be applied to the wrapper command, just the game itself.
+
+.SH SEE ALSO
+gamemoded(8)
+
+.SH ABOUT
+GameMode source can be found at \fIhttps://github.com/FeralInteractive/gamemode.git\fR
+
+.SH AUTHOR
+Feral Interactive (linux-contact@feralinteractive.com)
