@@ -18,4 +18,5 @@ script:
   - ./scripts/format-check.sh
   - ./bootstrap.sh -Dwith-examples=true
   - gamemoded -v
+  - dbus-run-session -- gamemode-simulate-game
   - ./scripts/static-analyser-check.sh 
