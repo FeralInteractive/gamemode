@@ -47,7 +47,7 @@ configure_file(
 )
 
 # Configure and install man pages
-mandir = join_paths(prefix, get_option('mandir'))
+mandir = join_paths(path_prefix, get_option('mandir'))
 
 gamemoded_manpage = configure_file(
     input: files('gamemoded.8.in'),
