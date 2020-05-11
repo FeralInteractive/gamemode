@@ -1,5 +1,0 @@
-[Desktop Entry]
-Name=gamemoded
-Exec=systemctl --user restart gamemoded.service
-Type=Application
-Terminal=false
