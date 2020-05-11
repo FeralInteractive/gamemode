@@ -8,4 +8,6 @@ executable(
         libgamemode_dep,
         libdl,
     ],
+    install: true,
+    install_dir: path_bindir,
 )
