@@ -69,3 +69,10 @@ pkg.generate(
   ],
 )
 
+# Dependency objects for the libs
+libgamemode_dep = declare_dependency(
+  include_directories: libgamemode_includes,
+)
+libgamemodeauto_dep = declare_dependency(
+  link_with: gamemodeauto,
+)

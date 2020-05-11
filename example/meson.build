@@ -4,8 +4,8 @@ executable(
     sources: [
         'main.c',
     ],
-    include_directories: libgamemode_includes,
     dependencies: [
+        libgamemode_dep,
         libdl,
     ],
 )
