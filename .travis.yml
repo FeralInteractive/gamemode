@@ -7,8 +7,9 @@ addons:
     packages:
       - clang
       - clang-format
-      - libsystemd-dev
+      - libinih-dev
       - libdbus-1-dev
+      - libsystemd-dev
       - meson
   artifacts:
     paths:
