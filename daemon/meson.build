@@ -14,7 +14,7 @@ daemon_sources = [
 gamemoded_includes = libgamemode_includes
 gamemoded_includes += config_h_dir
 
-executable(
+gamemoded = executable(
     'gamemoded',
     sources: daemon_sources,
     dependencies: [
@@ -28,4 +28,11 @@ executable(
         gamemoded_includes,
     ],
     install: true,
+)
+
+# verify gamemoded compiled properly
+test(
+    'validate gamemoded compiled properly',
+    gamemoded,
+    args: ['-v'],
 )
