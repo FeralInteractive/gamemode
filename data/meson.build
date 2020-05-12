@@ -66,7 +66,22 @@ install_man(
 )
 
 # Install metainfo
+metainfo_file = files('io.github.feralinteractive.gamemode.metainfo.xml')
+
 install_data(
-    'io.github.feralinteractive.gamemode.metainfo.xml',
+    metainfo_file,
     install_dir: join_paths(path_datadir, 'metainfo')
 )
+
+# Validate metainfo
+appstreamcli = find_program(
+  'appstreamcli',
+  required: false
+)
+if appstreamcli.found()
+  test(
+    'validate metainfo file',
+    appstreamcli,
+    args: ['validate', '--no-net', '--pedantic', metainfo_file],
+  )
+endif
