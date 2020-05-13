@@ -5,6 +5,7 @@ set -e
 # gamemode tree, including the subprojects, so that it can be trivially
 # packaged by distributions banning networking during build.
 meson subprojects download
+meson subprojects update
 
 # Bump in tandem with meson.build, run script once new tag is up.
 VERSION="1.6-dev"
