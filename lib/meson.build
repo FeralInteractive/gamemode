@@ -43,7 +43,10 @@ gamemode_headers = [
     'gamemode_client.h',
 ]
 
-install_headers(gamemode_headers)
+install_headers(
+    gamemode_headers,
+    install_dir: path_includedir,
+)
 
 # Generate a pkg-config files
 pkg = import('pkgconfig')
