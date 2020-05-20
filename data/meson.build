@@ -2,6 +2,7 @@ data_conf = configuration_data()
 data_conf.set('BINDIR', path_bindir)
 data_conf.set('LIBEXECDIR', path_libexecdir)
 data_conf.set('GAMEMODE_PREFIX', path_prefix)
+data_conf.set('GAMEMODE_VERSION', meson.project_version())
 
 # Set gamemoderun lib dir
 gamemoderun_lib_dir = get_option('with-gamemoderun-lib-dir')
@@ -68,8 +69,14 @@ install_man(
     install_dir: mandir,
 )
 
+gamemoderun_manpage = configure_file(
+    input: files('gamemoderun.1.in'),
+    output: 'gamemoderun.1',
+    configuration: data_conf,
+)
+
 install_man(
-    files('gamemoderun.1'),
+    gamemoderun_manpage,
     install_dir: mandir,
 )
 
