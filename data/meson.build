@@ -56,8 +56,6 @@ configure_file(
 )
 
 # Configure and install man pages
-mandir = join_paths(path_prefix, get_option('mandir'))
-
 gamemoded_manpage = configure_file(
     input: files('gamemoded.8.in'),
     output: 'gamemoded.8',
@@ -66,7 +64,7 @@ gamemoded_manpage = configure_file(
 
 install_man(
     gamemoded_manpage,
-    install_dir: mandir,
+    install_dir: path_mandir,
 )
 
 gamemoderun_manpage = configure_file(
@@ -77,7 +75,7 @@ gamemoderun_manpage = configure_file(
 
 install_man(
     gamemoderun_manpage,
-    install_dir: mandir,
+    install_dir: path_mandir,
 )
 
 # Install metainfo
@@ -85,7 +83,7 @@ metainfo_file = files('io.github.feralinteractive.gamemode.metainfo.xml')
 
 install_data(
     metainfo_file,
-    install_dir: join_paths(path_datadir, 'metainfo')
+    install_dir: path_metainfo,
 )
 
 # Validate metainfo
