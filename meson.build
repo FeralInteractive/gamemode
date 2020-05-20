@@ -77,6 +77,8 @@ path_datadir = join_paths(path_prefix, get_option('datadir'))
 path_includedir = join_paths(path_prefix, get_option('includedir'))
 path_libdir = join_paths(path_prefix, get_option('libdir'))
 path_libexecdir = join_paths(path_prefix, get_option('libexecdir'))
+path_mandir = join_paths(path_prefix, get_option('mandir'))
+path_metainfo = join_paths(path_datadir, 'metainfo')
 path_sysconfdir = join_paths(path_prefix, get_option('sysconfdir'))
 
 # Find systemd / elogind via pkgconfig
