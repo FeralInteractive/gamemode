@@ -7,10 +7,9 @@ set -e
 meson subprojects download
 meson subprojects update
 
-# Bump in tandem with meson.build, run script once new tag is up.
-VERSION="1.6-dev"
-
 NAME="gamemode"
+VERSION=$(git describe --tags --dirty)
+
 ./scripts/git-archive-all.sh --format tar --prefix ${NAME}-${VERSION}/ --verbose -t HEAD ${NAME}-${VERSION}.tar
 xz -9 "${NAME}-${VERSION}.tar"
 
