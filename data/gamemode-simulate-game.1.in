@@ -1,0 +1,33 @@
+.\" Manpage for gamemode-simulate-game.
+.\" Contact linux-contact@feralinteractive.com to correct errors or typos.
+.TH gamemode-simulate-game 1 "26 May 2020" "@GAMEMODE_VERSION@" "gamemode-simulate-game man page"
+.SH NAME
+gamemode-simulate-game \- simulate a game using gamemode
+.SH SYNOPSIS
+\fBgamemode-simulate-game\fR
+.SH DESCRIPTION
+\fBGameMode\fR is a daemon/lib combo for Linux that allows games to request a set of optimisations be temporarily applied to the host OS.
+
+The design has a clear cut abstraction between the host daemon and library (\fBgamemoded\fR and \fBlibgamemode\fR), and the client loaders (\fBlibgamemodeauto\fR and \fBgamemode_client.h\fR) that allows for safe usage without worrying about whether the daemon is installed or running. This design also means that while the host library currently relies on systemd for exchanging messages with the daemon, it's entirely possible to implement other internals that still work with the same clients.
+
+\fBGameMode\fR was designed primarily as a stop-gap solution to problems with the Intel and AMD CPU powersave or ondemand governors, but is intended to be expanded beyond just CPU governor states, as there are a wealth of automation tasks one might want to apply.
+
+.SH USAGE
+The executable starts gamemode, sleeps for 10 seconds and stops it. It will exit with zero if everything works fine, else it will print an error and exit with one.
+
+To use this with a CI you might need to start a dbus session by hand. This can be done with:
+
+.RS 4
+dbus-run-session -- gamemode-simulate-game
+.RE
+
+Note that this might output to stderr, even if it exits with zero.
+
+.SH SEE ALSO
+gamemoded(8), gamemoderun(1), dbus-run-session(1)
+
+.SH ABOUT
+GameMode source can be found at \fIhttps://github.com/FeralInteractive/gamemode.git\fR
+
+.SH AUTHOR
+Feral Interactive (linux-contact@feralinteractive.com)
