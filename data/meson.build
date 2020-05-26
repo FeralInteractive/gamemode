@@ -78,6 +78,19 @@ install_man(
     install_dir: path_mandir,
 )
 
+if with_examples
+    example_manpage = configure_file(
+        input: files('gamemode-simulate-game.1.in'),
+        output: 'gamemode-simulate-game.1',
+        configuration: data_conf,
+    )
+
+    install_man(
+        example_manpage,
+        install_dir: path_mandir,
+    )
+endif
+
 # Install metainfo
 metainfo_file = files('io.github.feralinteractive.gamemode.metainfo.xml')
 
