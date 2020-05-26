@@ -5,9 +5,8 @@ set -e
 # gamemode tree, including the subprojects, so that it can be trivially
 # packaged by distributions banning networking during build.
 
-# Bump in tandem with meson.build, run script once new tag is up.
-VERSION="1.6-dev"
 NAME="gamemode"
+VERSION=$(git describe --tags --dirty)
 
 # get code in this repo
 git archive HEAD --format=tar --prefix=${NAME}-${VERSION}/ --output=${NAME}-${VERSION}.tar
