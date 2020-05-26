@@ -1,6 +1,6 @@
 .\" Manpage for gamemoderun.
 .\" Contact linux-contact@feralinteractive.com to correct errors or typos.
-.TH gamemoded 1 "4 May 2020" "@GAMEMODE_VERSION@" "gamemoderun man page"
+.TH gamemoderun 1 "4 May 2020" "@GAMEMODE_VERSION@" "gamemoderun man page"
 .SH NAME
 gamemoderun \- invoke gamemode into any program
 .SH SYNOPSIS
