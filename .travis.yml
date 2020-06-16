@@ -1,7 +1,8 @@
+os: linux
 dist: focal
 language: c
 compiler: gcc
-sudo: false
+
 addons:
   apt:
     packages:
