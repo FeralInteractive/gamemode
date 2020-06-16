@@ -21,4 +21,5 @@ script:
   - ./bootstrap.sh -Dwith-examples=true
   - meson test -C builddir
   - dbus-run-session -- gamemode-simulate-game
+  - dbus-run-session -- gamemoded --test
   - ./scripts/static-analyser-check.sh 

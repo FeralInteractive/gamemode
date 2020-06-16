@@ -268,8 +268,7 @@ static int run_gamemoderun_and_reaper_tests(struct GameModeConfig *config)
 		/* Close stdout, we don't care if sh prints anything */
 		fclose(stdout);
 		/* Preload into sh and then kill it */
-		if (execl("/usr/bin/gamemoderun", "/usr/bin/gamemoderun", "sleep", "5", (char *)NULL) ==
-		    -1) {
+		if (execl("/usr/bin/gamemoderun", "", "sleep", "5", (char *)NULL) == -1) {
 			LOG_ERROR("failed to launch gamemoderun with execl: %s\n", strerror(errno));
 			return -1;
 		}

@@ -30,10 +30,3 @@ gamemoded = executable(
     ],
     install: true,
 )
-
-# verify gamemoded compiled properly
-test(
-    'validate gamemoded compiled properly',
-    gamemoded,
-    args: ['-v'],
-)
