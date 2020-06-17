@@ -5,8 +5,7 @@ executable(
         'main.c',
     ],
     dependencies: [
-        libgamemode_dep,
-        libdl,
+        gamemode_dep,
     ],
     install: true,
     install_dir: path_bindir,

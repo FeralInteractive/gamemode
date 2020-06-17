@@ -11,7 +11,7 @@ daemon_sources = [
     'gamemode-config.c',
 ]
 
-gamemoded_includes = libgamemode_includes
+gamemoded_includes = gamemode_headers_includes
 gamemoded_includes += config_h_dir
 
 gamemoded = executable(
