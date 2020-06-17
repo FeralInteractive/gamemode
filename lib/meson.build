@@ -62,14 +62,11 @@ pkg.generate(
 )
 
 pkg.generate(
-  name: 'gamemode',
+  name: 'libgamemodeauto',
   description: desc,
-  filebase: 'gamemode-auto',
-  libraries: gamemodeauto,
+  filebase: 'libgamemodeauto',
+  libraries: libgamemodeauto,
   version: meson.project_version(),
-  libraries_private: [
-    libdl
-  ],
 )
 
 # Dependency objects
