@@ -6,7 +6,7 @@ lt_age = '0'
 lt_version = '@0@.@1@.@2@'.format(lt_current, lt_age, lt_revision)
 
 # Main client library to message the daemon
-gamemode = shared_library(
+libgamemode = shared_library(
     'gamemode',
     sources: [
         'client_impl.c',
@@ -20,12 +20,12 @@ gamemode = shared_library(
     version: lt_version,
 )
 
-libgamemode_includes = [
+gamemode_headers_includes = [
     include_directories('.'),
 ]
 
 # Small library to automatically use gamemode
-gamemodeauto = both_libraries(
+libgamemodeauto = both_libraries(
     'gamemodeauto',
     sources: [
         'client_loader.c',
@@ -72,10 +72,11 @@ pkg.generate(
   ],
 )
 
-# Dependency objects for the libs
-libgamemode_dep = declare_dependency(
-  include_directories: libgamemode_includes,
+# Dependency objects
+gamemode_dep = declare_dependency(
+  include_directories: gamemode_headers_includes,
+  dependencies: libdl,
 )
 libgamemodeauto_dep = declare_dependency(
-  link_with: gamemodeauto,
+  link_with: libgamemodeauto,
 )
