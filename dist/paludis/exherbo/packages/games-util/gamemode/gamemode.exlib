@@ -1,0 +1,45 @@
+# Created by Jacob Hrbek <kreyren@rixotstudio.cz> for FeralInteractive in 05.07.2020 03:54:58 CEST under GPLv3 license <https://3g2upl4pq6kufc4m.onion/html?q=GPLv3>
+
+# shellcheck shell=sh # Written to be POSIX-compatible
+
+# Reference to best practices: https://www.exherbo.org/docs/eapi/exheres-for-smarties.html
+
+require github [ user=FeralInteractive release="$PV" suffix=tar.xz ]
+
+# Metadata
+# shellcheck disable=SC2034 # Metadata for paludis
+# FIXME-QA(Krey): Grab the summary from repository
+SUMMARY="Optimise Linux system performance on demand"
+# shellcheck disable=SC2034 # Metadata for paludis
+DESCRIPTION="GameMode is a daemon/lib combo for Linux that allows games to request a set of optimisations be temporarily applied to the host OS and/or a game process."
+# shellcheck disable=SC2034 # Metadata for paludis
+HOMEPAGE="https://github.com/FeralInteractive/gamemode"
+# shellcheck disable=SC2034 # Metadata for paludis
+LICENCES="BSD-3 [[ last-checked = 1.5.1 ]]"
+
+# Technical variables
+# shellcheck disable=SC2034 # Metadata for paludis
+# DEPENDENCIES="
+# 	build:
+# 		option [[ description = [ description ] ]]
+# "
+# shellcheck disable=SC2034 # Metadata for paludis
+SLOT="0"
+# shellcheck disable=SC2034 # Metadata for paludis
+MYOPTIONS="
+	systemd [[ description = [ Compile with systemd support ] ]]
+	openrc [[ description = [ Compile with openrc support ] ]]
+	( targets:
+			x86_64-pc-linux-gnu
+			i686-pc-linux-gnu
+			x86_64-pc-linux-musl
+			i686-pc-linux-musl
+	) [[ number-selected = at-least-one ]]
+	platform:
+		amd64
+		x86
+"
+
+src_compile() {
+	true
+}

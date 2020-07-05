@@ -1,0 +1,20 @@
+name: Exherbo
+
+# Relevant to events - https://help.github.com/en/actions/automating-your-workflow-with-github-actions/events-that-trigger-workflows
+on:
+  pull_request:
+    types: [synchronize, opened, reopened, ready_for_review]
+    paths:
+    - 'dist/paludis/exherbo'
+
+jobs:
+  # Linting
+  lint:
+    runs-on: ubuntu-latest
+    container: exherbo:exherbo-x86_64-pc-linux-gnu-base
+    steps:
+      - name: FIXME
+        # Make sure that bash is used
+        shell: bash
+        run: |
+          printf '%s\n' "FIXME"
