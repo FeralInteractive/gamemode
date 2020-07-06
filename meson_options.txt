@@ -10,9 +10,6 @@ option('with-systemd-user-unit-dir', type: 'string', description: 'Explicitly se
 # Not using systemd
 option('with-dbus-service-dir', type: 'string', description: 'Explicitly set the D-BUS session directory')
 
-# lib dir in gamemoderun
-option('with-gamemoderun-lib-dir', type: 'string', value: 'default', description: 'Explicitly set lib dir in gamemoderun')
-
 # General options
 option('with-examples', type: 'boolean', description: 'Build sample programs', value: 'true')
 option('with-util', type: 'boolean', description: 'Build the utilities', value: 'true')

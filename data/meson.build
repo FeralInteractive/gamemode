@@ -4,14 +4,6 @@ data_conf.set('LIBEXECDIR', path_libexecdir)
 data_conf.set('GAMEMODE_PREFIX', path_prefix)
 data_conf.set('GAMEMODE_VERSION', meson.project_version())
 
-# Set gamemoderun lib dir
-gamemoderun_lib_dir = get_option('with-gamemoderun-lib-dir')
-if gamemoderun_lib_dir == 'default'
-    data_conf.set('GAMEMODERUN_PREFIX', path_prefix + '/\$LIB/')
-else
-    data_conf.set('GAMEMODERUN_PREFIX', gamemoderun_lib_dir)
-endif
-
 # Pull in the example config
 config_example = run_command(
     'cat',
@@ -47,10 +39,8 @@ configure_file(
 )
 
 # Install the helper run script
-configure_file(
-    input: 'gamemoderun.in',
-    output: 'gamemoderun',
-    configuration: data_conf,
+install_data(
+    files('gamemoderun'),
     install_dir: path_bindir,
     install_mode: 'rwxr-xr-x',
 )
