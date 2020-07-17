@@ -122,22 +122,29 @@ const char *get_gov_state(void)
 		long length = ftell(f);
 		fseek(f, 0, SEEK_SET);
 
-		char contents[length];
+		if (length == -1)
+		{
+			LOG_ERROR("Failed to seek file %s\n", gov);
+		}
+		else
+		{
+			char contents[length];
 
-		if (fread(contents, 1, (size_t)length, f) > 0) {
-			/* Files have a newline */
-			strtok(contents, "\n");
-			if (strlen(governor) > 0 && strncmp(governor, contents, 64) != 0) {
-				/* Don't handle the mixed case, this shouldn't ever happen
-				 * But it is a clear sign we shouldn't carry on */
-				LOG_ERROR("Governors malformed: got \"%s\", expected \"%s\"", contents, governor);
-				fclose(f);
-				return "malformed";
+			if (fread(contents, 1, (size_t)length, f) > 0) {
+				/* Files have a newline */
+				strtok(contents, "\n");
+				if (strlen(governor) > 0 && strncmp(governor, contents, 64) != 0) {
+					/* Don't handle the mixed case, this shouldn't ever happen
+					* But it is a clear sign we shouldn't carry on */
+					LOG_ERROR("Governors malformed: got \"%s\", expected \"%s\"", contents, governor);
+					fclose(f);
+					return "malformed";
+				}
+
+				strncpy(governor, contents, sizeof(governor) - 1);
+			} else {
+				LOG_ERROR("Failed to read contents of %s\n", gov);
 			}
-
-			strncpy(governor, contents, sizeof(governor) - 1);
-		} else {
-			LOG_ERROR("Failed to read contents of %s\n", gov);
 		}
 
 		fclose(f);

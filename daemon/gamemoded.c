@@ -132,11 +132,19 @@ static void daemonize(const char *name)
 	/* replace standard file descriptors by /dev/null */
 	int devnull_r = open("/dev/null", O_RDONLY);
 	int devnull_w = open("/dev/null", O_WRONLY);
-	dup2(devnull_r, STDIN_FILENO);
-	dup2(devnull_w, STDOUT_FILENO);
-	dup2(devnull_w, STDERR_FILENO);
-	close(devnull_r);
-	close(devnull_w);
+
+	if (devnull_r == -1 || devnull_w == -1)
+	{
+		LOG_ERROR("Failed to redirect standard input and output to /dev/null\n");
+	}
+	else
+	{
+		dup2(devnull_r, STDIN_FILENO);
+		dup2(devnull_w, STDOUT_FILENO);
+		dup2(devnull_w, STDERR_FILENO);
+		close(devnull_r);
+		close(devnull_w);
+	}
 }
 
 /**

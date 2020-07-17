@@ -224,7 +224,8 @@ char *game_mode_resolve_wine_preloader(const char *exe, const pid_t pid)
 		goto fail;
 
 error_cleanup:
-	game_mode_close_proc(proc_fd);
+	if (proc_fd != INVALID_PROCFD)
+		game_mode_close_proc(proc_fd);
 	free(wineprefix);
 	return wine_exe;
 
