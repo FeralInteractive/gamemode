@@ -196,12 +196,5 @@ int pidfds_to_pids(int *fds, pid_t *pids, int count)
 /* misc directory helpers */
 int open_fdinfo_dir(void)
 {
-	int fd;
-
-	fd = open("/proc/self/fdinfo", O_RDONLY | O_NONBLOCK | O_DIRECTORY | O_CLOEXEC | O_NOCTTY);
-
-	if (fd == -1)
-		return errno;
-
-	return fd;
+	return open("/proc/self/fdinfo", O_RDONLY | O_NONBLOCK | O_DIRECTORY | O_CLOEXEC | O_NOCTTY);
 }
