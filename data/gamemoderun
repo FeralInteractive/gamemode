@@ -6,4 +6,4 @@ GAMEMODEAUTO_NAME="libgamemodeauto.so.0"
 # ld will find the right path to load the library, including for 32-bit apps.
 LD_PRELOAD="${GAMEMODEAUTO_NAME}${LD_PRELOAD:+:$LD_PRELOAD}"
 
-exec $GAMEMODERUNEXEC env LD_PRELOAD="${LD_PRELOAD}" "$@"
+exec env LD_PRELOAD="${LD_PRELOAD}" $GAMEMODERUNEXEC "$@"
