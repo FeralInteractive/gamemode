@@ -54,7 +54,7 @@ gamemoded_manpage = configure_file(
 
 install_man(
     gamemoded_manpage,
-    install_dir: path_mandir,
+    install_dir: join_paths(path_mandir, 'man8')
 )
 
 gamemoderun_manpage = configure_file(
@@ -65,7 +65,7 @@ gamemoderun_manpage = configure_file(
 
 install_man(
     gamemoderun_manpage,
-    install_dir: path_mandir,
+    install_dir: join_paths(path_mandir, 'man1')
 )
 
 if with_examples
@@ -77,7 +77,7 @@ if with_examples
 
     install_man(
         example_manpage,
-        install_dir: path_mandir,
+        install_dir: join_paths(path_mandir, 'man1')
     )
 endif
 
