@@ -1,3 +1,21 @@
+## 1.6
+
+### Changes
+* Created new manpages for `gamemoderun` and the example, now called `gamemode-simulate-game`
+* Add ability to change lib directory of `gamemoderun`
+* Add option to use `elogind`
+* Copy default config file to the correct location
+* Allow `LD_PRELOAD` to be overridden in `$GAMEMODERUNEXEC`
+* Various minor bugfixes
+* Improvements to dependency management
+
+### Contributors
+
+* Stephan Lachnit @stephanlachnit
+* Rafał Mikrut @qarmin
+* Niels Thykier @nthykier
+* Stéphane Gleizes @sgleizes
+
 ## 1.5.1
 
 ### Changes
