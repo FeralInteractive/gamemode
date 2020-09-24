@@ -168,12 +168,26 @@ GameModeConfig *game_mode_config_from_context(const GameModeContext *context);
  */
 int game_mode_reload_config(GameModeContext *context);
 
+/** gamemode-env.c
+ * Provides internal API functions specific to working environment
+ * variables.
+ */
+char *game_mode_lookup_proc_env(const procfd_t proc_fd, const char *var);
+char *game_mode_lookup_user_home(void);
+
 /** gamemode-ioprio.c
  * Provides internal API functions specific to adjusting process
  * IO priorities.
  */
 int game_mode_get_ioprio(const pid_t client);
 void game_mode_apply_ioprio(const GameModeContext *self, const pid_t client, int expected);
+
+/** gamemode-proc.c
+ * Provides internal API functions specific to working with process
+ * environments.
+ */
+procfd_t game_mode_open_proc(const pid_t pid);
+int game_mode_close_proc(const procfd_t procfd);
 
 /** gamemode-sched.c
  * Provides internal API functions specific to adjusting process
