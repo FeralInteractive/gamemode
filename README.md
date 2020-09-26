@@ -90,7 +90,7 @@ apt install meson libsystemd-dev pkg-config ninja-build git libdbus-1-dev libini
 ```
 #### Arch
 ```bash
-pacman -S meson systemd git dbus
+pacman -S meson systemd git dbus libinih
 ```
 #### Fedora
 ```bash
