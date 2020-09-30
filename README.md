@@ -116,7 +116,7 @@ git checkout 1.6 # omit to build the master branch
 ./bootstrap.sh
 ```
 
-To uninstall:
+To Uninstall:
 ```bash
 systemctl --user stop gamemoded.service
 ninja uninstall -C builddir
