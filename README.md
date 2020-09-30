@@ -12,7 +12,7 @@ Currently GameMode includes support for optimisations including:
 * GPU performance mode (NVIDIA and AMD), GPU overclocking (NVIDIA)
 * Custom scripts
 
-GameMode packages are available for Ubuntu, Debian, Solus, the AUR, Gentoo, Fedora, OpenSUSE, Mageia and possibly more.
+GameMode packages are available for Ubuntu, Debian, Solus, Arch, Gentoo, Fedora, OpenSUSE, Mageia and possibly more.
 
 Issues with GameMode should be reported here in the issues section, and not reported to Feral directly.
 
