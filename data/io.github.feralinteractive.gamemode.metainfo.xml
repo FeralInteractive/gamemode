@@ -1,10 +1,12 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<component type="console-application">
+<component>
   <id>io.github.feralinteractive.gamemode</id>
   
   <name>gamemode</name>
   <summary>daemon that allows games to request a set of optimizations be temporarily applied</summary>
   <developer_name>Feral Interactive</developer_name>
+
+  <!-- <icon type="stock">io.github.feralinteractive.gamemode</icon> -->
 
   <metadata_license>FSFAP</metadata_license>
   <project_license>BSD-3-Clause</project_license>
@@ -29,12 +31,9 @@
     </ul>
   </description>
   
+  <content_rating type="oars-1.1" />
   <categories>
     <category>Utility</category>
     <category>Game</category>
   </categories>
-  
-  <provides>
-    <binary>gamemoderun</binary>
-  </provides>
 </component>
