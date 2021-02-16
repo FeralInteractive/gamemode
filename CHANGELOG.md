@@ -1,3 +1,15 @@
+## 1.6.1
+
+### Changes
+* Use inih r52
+* Packaging changes for Arch
+* Minor metainfo improvements
+
+### Contributors
+
+* Stephan Lachnit @stephanlachnit
+* Alberto Oporto Ames @otreblan
+
 ## 1.6
 
 ### Changes
