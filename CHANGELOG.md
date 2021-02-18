@@ -1,7 +1,7 @@
 ## 1.6.1
 
 ### Changes
-* Use inih r52
+* Use inih r53
 * Packaging changes for Arch
 * Minor metainfo improvements
 
