@@ -13,7 +13,7 @@ git archive HEAD --format=tar --prefix=${NAME}-${VERSION}/ --output=${NAME}-${VE
 # get code from subprojects
 meson subprojects download
 meson subprojects update
-tar -rf ${NAME}-${VERSION}.tar --exclude-vcs --transform="s,^subprojects,${NAME}-$VERSION/subprojects," subprojects/inih/
+tar -rf ${NAME}-${VERSION}.tar --exclude-vcs --transform="s,^subprojects,${NAME}-$VERSION/subprojects," subprojects/inih-r53/
 # compress archive
 xz -9 "${NAME}-${VERSION}.tar"
 
