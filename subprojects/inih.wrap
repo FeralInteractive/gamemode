@@ -1,8 +1,13 @@
 [wrap-file]
-directory = inih-r52
-source_url = https://github.com/benhoyt/inih/archive/r52.tar.gz
-source_filename = r52.tar.gz
-source_hash = 439cff9ce9a8afc52d08772ac3e93b3cecd79c7707f871fb4534fb3a48201880
-patch_url = https://wrapdb.mesonbuild.com/v1/projects/inih/r52/1/get_zip
-patch_filename = inih-r52-1-wrap.zip
-patch_hash = b37abc23f1b558d1d28d47fc0c81295950e4fa2f236de35c41c505dccc422f7a
+directory = inih-r53
+source_url = https://github.com/benhoyt/inih/archive/r53.tar.gz
+source_filename = inih-r53.tar.gz
+source_hash = 01b0366fdfdf6363efc070c2f856f1afa33e7a6546548bada5456ad94a516241
+patch_url = https://wrapdb.mesonbuild.com/v1/projects/inih/r53/1/get_zip
+patch_filename = inih-r53-1-wrap.zip
+patch_hash = 9a53348e4ed9180a52aafc092fda080ddc70102c9fc55686990e461b22e6e1e7
+
+[provide]
+inih = inih_dep
+inireader = inireader_dep
+
