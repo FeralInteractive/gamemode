@@ -86,7 +86,7 @@ GameMode depends on `meson` for building and `systemd` for internal communicatio
 
 #### Ubuntu/Debian (you may also need `dbus-user-session`)
 ```bash
-apt install meson libsystemd-dev pkg-config ninja-build git libdbus-1-dev libinih-dev
+apt install meson libsystemd-dev pkg-config ninja-build git libdbus-1-dev libinih-dev build-essential
 ```
 #### Arch
 ```bash
