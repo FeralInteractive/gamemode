@@ -235,7 +235,7 @@ static int game_mode_set_governor(GameModeContext *self, enum GameModeGovernor g
 	}
 
 	const char *const exec_args[] = {
-		"/usr/bin/pkexec", LIBEXECDIR "/cpugovctl", "set", gov_str, NULL,
+		"pkexec", LIBEXECDIR "/cpugovctl", "set", gov_str, NULL,
 	};
 
 	LOG_MSG("Requesting update of governor policy to %s\n", gov_str);
