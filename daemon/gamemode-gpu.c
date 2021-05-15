@@ -167,7 +167,7 @@ int game_mode_apply_gpu(const GameModeGPUInfo *info)
 
 	// Set up our command line to pass to gpuclockctl
 	const char *const exec_args[] = {
-		"/usr/bin/pkexec",
+		"pkexec",
 		LIBEXECDIR "/gpuclockctl",
 		device,
 		"set",

@@ -70,7 +70,7 @@ static void print_usage_and_exit(void)
 static const char *get_nv_attr(const char *attr)
 {
 	static char out[EXTERNAL_BUFFER_MAX];
-	const char *exec_args[] = { "/usr/bin/nvidia-settings", "-q", attr, "-t", NULL };
+	const char *exec_args[] = { "nvidia-settings", "-q", attr, "-t", NULL };
 	if (run_external_process(exec_args, out, -1) != 0) {
 		LOG_ERROR("Failed to get %s!\n", attr);
 		out[0] = 0;
@@ -82,7 +82,7 @@ static const char *get_nv_attr(const char *attr)
 
 static int set_nv_attr(const char *attr)
 {
-	const char *exec_args_core[] = { "/usr/bin/nvidia-settings", "-a", attr, NULL };
+	const char *exec_args_core[] = { "nvidia-settings", "-a", attr, NULL };
 	if (run_external_process(exec_args_core, NULL, -1) != 0) {
 		LOG_ERROR("Failed to set %s!\n", attr);
 		return -1;

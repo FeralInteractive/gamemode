@@ -140,7 +140,7 @@ int run_external_process(const char *const *exec_args, char buffer[EXTERNAL_BUFF
 		 *   bindings that these objects are completely constant.
 		 * http://pubs.opengroup.org/onlinepubs/9699919799/functions/exec.html
 		 */
-		if (execv(exec_args[0], (char *const *)exec_args) != 0) {
+		if (execvp(exec_args[0], (char *const *)exec_args) != 0) {
 			LOG_ERROR("Failed to execute external process: %s %s\n", exec_args[0], strerror(errno));
 			exit(EXIT_FAILURE);
 		}
