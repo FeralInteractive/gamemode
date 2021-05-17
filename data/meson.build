@@ -1,6 +1,7 @@
 data_conf = configuration_data()
 data_conf.set('BINDIR', path_bindir)
 data_conf.set('LIBEXECDIR', path_libexecdir)
+data_conf.set('SYSCONFDIR', path_sysconfdir)
 data_conf.set('GAMEMODE_PREFIX', path_prefix)
 data_conf.set('GAMEMODE_VERSION', meson.project_version())
 

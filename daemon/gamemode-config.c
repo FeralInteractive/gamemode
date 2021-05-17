@@ -35,6 +35,8 @@ POSSIBILITY OF SUCH DAMAGE.
 #include "common-helpers.h"
 #include "common-logging.h"
 
+#include "build-config.h"
+
 /* Ben Hoyt's inih library */
 #include <ini.h>
 
@@ -277,9 +279,7 @@ static int inih_handler(void *user, const char *section, const char *name, const
 			    "The [gpu] config section is not configurable from unsafe config files! Option %s "
 			    "will be ignored!\n",
 			    name);
-			LOG_ERROR(
-			    "Consider moving this option to /etc/gamemode.ini or "
-			    "/usr/share/gamemode/gamemode.ini\n");
+			LOG_ERROR("Consider moving this option to /etc/gamemode.ini\n");
 		}
 
 		/* GPU subsection */
@@ -378,7 +378,7 @@ static void load_config_files(GameModeConfig *self)
 		bool protected;
 	};
 	struct ConfigLocation locations[CONFIG_NUM_LOCATIONS] = {
-		{ "/usr/share/gamemode", true }, /* shipped default config */
+		{ SYSCONFDIR, true },            /* shipped default config */
 		{ "/etc", true },                /* administrator config */
 		{ config_location_home, false }, /* $XDG_CONFIG_HOME or $HOME/.config/ */
 		{ config_location_local, false } /* local data eg. $PWD */

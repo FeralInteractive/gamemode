@@ -73,7 +73,7 @@ Or, distribute \fBlibgamemodeauto.so.0\fR and either link with \fB\-lgamemodeaut
 \fBgamemoded\fR will load and merge \fBgamemode.ini\fR config files from these directories in the following order:
 
 .RS 4
-/usr/share/gamemode/
+@SYSCONFDIR@/
 .RE
 .RS 4
 /etc/
