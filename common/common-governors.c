@@ -122,12 +122,9 @@ const char *get_gov_state(void)
 		long length = ftell(f);
 		fseek(f, 0, SEEK_SET);
 
-		if (length == -1)
-		{
+		if (length == -1) {
 			LOG_ERROR("Failed to seek file %s\n", gov);
-		}
-		else
-		{
+		} else {
 			char contents[length];
 
 			if (fread(contents, 1, (size_t)length, f) > 0) {
@@ -135,8 +132,10 @@ const char *get_gov_state(void)
 				strtok(contents, "\n");
 				if (strlen(governor) > 0 && strncmp(governor, contents, 64) != 0) {
 					/* Don't handle the mixed case, this shouldn't ever happen
-					* But it is a clear sign we shouldn't carry on */
-					LOG_ERROR("Governors malformed: got \"%s\", expected \"%s\"", contents, governor);
+					 * But it is a clear sign we shouldn't carry on */
+					LOG_ERROR("Governors malformed: got \"%s\", expected \"%s\"",
+					          contents,
+					          governor);
 					fclose(f);
 					return "malformed";
 				}
