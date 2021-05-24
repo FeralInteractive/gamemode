@@ -1,0 +1,38 @@
+name: Build and test
+on: [push, pull_request]
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-20.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+      - name: Install dependencies
+        run: |
+          sudo apt install build-essential meson appstream clang clang-format clang-tools libdbus-1-dev libinih-dev libsystemd-dev
+      - name: Check format
+        env:
+          CI: "true"
+        run: |
+          ./scripts/format-check.sh
+      - name: Build and install
+        env:
+          CI: "true"
+        run: |
+          ./bootstrap.sh -Dwith-examples=true
+      - name: Tests
+        run: |
+          meson test -C builddir
+      - name: Simulate game
+        run: |
+          dbus-run-session -- gamemode-simulate-game
+      - name: Static analyser check
+        run: |
+          ./scripts/static-analyser-check.sh
+      - name: Upload logs
+        if: ${{ always() }}
+        uses: actions/upload-artifact@v2
+        with:
+          name: logs
+          path: |
+            builddir/meson-logs/

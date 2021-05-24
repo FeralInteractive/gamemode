@@ -75,7 +75,7 @@ Other apps which can integrate with GameMode include:
 * Lutris - Enables GameMode for all games by default if available (must have both 32- and 64-bit GameMode libraries installed), configurable in preferences.
 
 ---
-## Development [![Build Status](https://travis-ci.org/FeralInteractive/gamemode.svg?branch=master)](https://travis-ci.org/FeralInteractive/gamemode)
+## Development [![Build and test](https://github.com/FeralInteractive/gamemode/actions/workflows/build-and-test.yml/badge.svg)](https://github.com/FeralInteractive/gamemode/actions/workflows/build-and-test.yml)
 
 The design of GameMode has a clear-cut abstraction between the host daemon and library (`gamemoded` and `libgamemode`), and the client loaders (`libgamemodeauto` and `gamemode_client.h`) that allows for safe use without worrying about whether the daemon is installed or running. This design also means that while the host library currently relies on `systemd` for exchanging messages with the daemon, it's entirely possible to implement other internals that still work with the same clients.
 
