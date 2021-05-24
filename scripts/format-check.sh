@@ -10,6 +10,21 @@ if [[ "$1" == "--pre-commit" ]]; then
   git-clang-format
   exit
 fi
+
+if [[ "$CI" == "true" ]]; then
+  # used in ci, assumes clean repo
+  clang-format -i $(find . -name '*.[ch]' -not -path "*subprojects/*")
+  GIT_DIFF_OUTPUT=$(git diff)
+  if [[ ! -z ${GIT_DIFF_OUTPUT} ]]; then
+    echo "Failed clang format check:"
+    echo "${GIT_DIFF_OUTPUT}"
+    exit 1
+  else
+    echo "Passed clang format check"
+    exit 0
+  fi
+fi
+
 CLANG_FORMAT_OUTPUT=$(git-clang-format HEAD^ HEAD --diff)
 if [[ ! ${CLANG_FORMAT_OUTPUT} == "no modified files to format" ]] && [[ ! -z ${CLANG_FORMAT_OUTPUT} ]]; then
   echo "Failed clang format check:"
@@ -17,4 +32,5 @@ if [[ ! ${CLANG_FORMAT_OUTPUT} == "no modified files to format" ]] && [[ ! -z ${
   exit 1
 else
   echo "Passed clang format check"
+  exit 0
 fi
