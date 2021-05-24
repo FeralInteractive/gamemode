@@ -133,12 +133,9 @@ static void daemonize(const char *name)
 	int devnull_r = open("/dev/null", O_RDONLY);
 	int devnull_w = open("/dev/null", O_WRONLY);
 
-	if (devnull_r == -1 || devnull_w == -1)
-	{
+	if (devnull_r == -1 || devnull_w == -1) {
 		LOG_ERROR("Failed to redirect standard input and output to /dev/null\n");
-	}
-	else
-	{
+	} else {
 		dup2(devnull_r, STDIN_FILENO);
 		dup2(devnull_w, STDOUT_FILENO);
 		dup2(devnull_w, STDERR_FILENO);
