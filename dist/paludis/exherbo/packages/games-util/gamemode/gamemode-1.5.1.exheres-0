@@ -1,0 +1,9 @@
+# Created by Jacob Hrbek <kreyren@rixotstudio.cz> for FeralInteractive in 05.07.2020 03:54:58 CEST under GPLv3 license <https://3g2upl4pq6kufc4m.onion/html?q=GPLv3>
+
+# shellcheck shell=sh # Written to be POSIX-compatible
+
+require gamemode
+
+# shellcheck disable=SC2034 # Metadata for paludis
+# FIXME(Krey): Test in docker
+PLATFORMS="~amd64 ~x86"
