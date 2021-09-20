@@ -111,6 +111,8 @@ if sd_bus_provider == 'systemd'
         pkgconfig_systemd = dependency('systemd')
         path_systemd_unit_dir = pkgconfig_systemd.get_pkgconfig_variable('systemduserunitdir')
     endif
+    pkgconfig_systemd = dependency('systemd')
+    path_systemd_sysusers_dir = pkgconfig_systemd.get_pkgconfig_variable('sysusersdir')
 endif
 
 with_limits_conf = get_option('with-pam-group')
