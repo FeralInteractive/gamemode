@@ -20,6 +20,11 @@ if sd_bus_provider == 'systemd'
         configuration: data_conf,
         install_dir: path_systemd_unit_dir,
     )
+    # Install the sysusers.d file
+    install_data(
+        files('gamemode.conf'),
+        install_dir: path_systemd_sysusers_dir,
+    )
 endif
 
 # Install the D-BUS service file
