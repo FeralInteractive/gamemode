@@ -51,6 +51,13 @@ install_data(
     install_mode: 'rwxr-xr-x',
 )
 
+# Install script to find processes with gamemode lib in runtime
+install_data(
+    files('gamemodelist'),
+    install_dir: path_bindir,
+    install_mode: 'rwxr-xr-x',
+)
+
 # Configure and install man pages
 gamemoded_manpage = configure_file(
     input: files('gamemoded.8.in'),
@@ -71,6 +78,17 @@ gamemoderun_manpage = configure_file(
 
 install_man(
     gamemoderun_manpage,
+    install_dir: join_paths(path_mandir, 'man1')
+)
+
+gamemodelist_manpage = configure_file(
+    input: files('gamemodelist.1.in'),
+    output: 'gamemodelist.1',
+    configuration: data_conf,
+)
+
+install_man(
+    gamemodelist_manpage,
     install_dir: join_paths(path_mandir, 'man1')
 )
 

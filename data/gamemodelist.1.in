@@ -1,0 +1,68 @@
+.\" Manpage for gamemoderun.
+.\" Contact linux-contact@feralinteractive.com to correct errors or typos.
+.TH gamemodelist 1 "4 May 2020" "@GAMEMODE_VERSION@" "gamemodelist man page"
+.SH NAME
+gamemodelist \- search for processes running with gamemode
+.SH SYNOPSIS
+\fBgamemodelist\fR
+.SH DESCRIPTION
+\fBgamemodelist\fR will search the runtime of all processes running with \fBGameMode\fR enabled and print them with
+.BR ps (1)
+command output.  This helper script makes it easy to find which processes are utilizing \fBGameMode\fR when troubleshooting potential game issues.
+
+.SH USAGE
+\fBlibgamemodeauto.so.0\fR will be found in the shared object maps of running processes utilizing \fBGameMode\fR.  Run the following command to print processes loaded with \fBlibgamemodeauto.so.0\fR.
+
+.RS 4
+gamemodelist
+.RE
+
+.SH OUTPUT
+The output is a process table from
+.BR ps (1)
+command.
+
+.RS 4
+PID PPID USER NI PSR COMMAND
+.RE
+
+Where each of these fields are defined in
+.BR ps (1)
+manual.  For your convenience here's a definition for each field.
+
+.RS 4
+.TS
+l lw(3i).
+\fBCOLUMN	DESCRIPTION\fR
+PID	Process ID
+PPID	Parent process ID
+USER	User name owning the process.
+NI	T{
+Nice value. This ranges from 19 (nicest) to \-20 (not nice to others),
+See
+.IR nice (1).
+T}
+PSR	T{
+Processor that process is currently assigned to.  Useful when setting process affinity using
+.IR taskset (1)
+utility.
+T}
+COMMAND	Command name (only the executable name).
+.TE
+.RE
+
+.SH SEE ALSO
+.BR gamemodrun (1),
+.BR nice (1),
+.BR ps (1),
+.BR taskset (1).
+
+.SH ABOUT
+GameMode source can be found at \fIhttps://github.com/FeralInteractive/gamemode.git\fR
+
+.SH AUTHOR
+.BR gamemodelist
+was authored by Sam Gleske (https://github.com/samrocketman/)
+
+.BR GameMode
+was authored by Feral Interactive (linux-contact@feralinteractive.com)
