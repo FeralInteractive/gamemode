@@ -4,7 +4,9 @@
 # MIT License - https://github.com/samrocketman/home
 
 # DESCRIPTION
-#     Find all running processes which have Feral Interactive gamemode enabled.
+#     Find all running processes which have loaded Feral Interactive gamemode
+#     via libgamemodeauto.so.  This script will not detect processes which load
+#     gamemode without libgamemodeauto.so.
 
 # DEVELOPMENT ENVIRONMENT
 #     Ubuntu 18.04.6 LTS

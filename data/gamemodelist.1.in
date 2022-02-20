@@ -6,12 +6,12 @@ gamemodelist \- search for processes running with gamemode
 .SH SYNOPSIS
 \fBgamemodelist\fR
 .SH DESCRIPTION
-\fBgamemodelist\fR will search the runtime of all processes running with \fBGameMode\fR enabled and print them with
+\fBgamemodelist\fR will search the runtime of all processes running which started \fBGameMode\fR via \fBlibgamemodeauto.so\fR and print them with
 .BR ps (1)
-command output.  This helper script makes it easy to find which processes are utilizing \fBGameMode\fR when troubleshooting potential game issues.
+command output.  This helper script makes it easy to find which processes are utilizing \fBGameMode\fR via \fBlibgamemodeauto.so\fR when troubleshooting potential game issues.
 
 .SH USAGE
-\fBlibgamemodeauto.so.0\fR will be found in the shared object maps of running processes utilizing \fBGameMode\fR.  Run the following command to print processes loaded with \fBlibgamemodeauto.so.0\fR.
+\fBlibgamemodeauto.so.0\fR will be found in the shared object maps of running processes utilizing \fBGameMode\fR.  Run the following command to print processes loaded with \fBlibgamemodeauto.so.0\fR.  \fBGameMode\fR can be started other ways but this script will only detect processes utilizing \fBGameMode\fR via \fBlibgamemodeauto.so\fR.
 
 .RS 4
 gamemodelist
