@@ -1,0 +1,32 @@
+#!/bin/bash
+# Created by Sam Gleske
+# Created Sat Jan  1 16:56:54 EST 2022
+# MIT License - https://github.com/samrocketman/home
+
+# DESCRIPTION
+#     Find all running processes which have loaded Feral Interactive gamemode
+#     via libgamemodeauto.so.  This script will not detect processes which load
+#     gamemode without libgamemodeauto.so.
+
+# DEVELOPMENT ENVIRONMENT
+#     Ubuntu 18.04.6 LTS
+#     Linux 5.4.0-91-generic x86_64
+#     GNU bash, version 4.4.20(1)-release (x86_64-pc-linux-gnu)
+#     find (GNU findutils) 4.7.0-git
+#     GNU Awk 4.1.4, API: 1.1 (GNU MPFR 4.0.1, GNU MP 6.1.2)
+#     xargs (GNU findutils) 4.7.0-git
+#     ps from procps-ng 3.3.12
+
+if [ -z "${USER:-}" ]; then
+  echo '$USER variable not defined.' >&2
+  exit 1
+fi
+
+if [ ! -d /proc ]; then
+  echo 'ERROR: /proc filesystem missing.  We do not appear to be running on Linux.' >&2
+  exit 1
+fi
+
+find /proc -maxdepth 2 -type f -user "${USER}" -readable -name maps -exec \
+  awk -- '$0 ~ /libgamemodeauto\.so\.0/ {pid=FILENAME; gsub("[^0-9]", "", pid); print pid;nextfile}' {} + \
+  | xargs | xargs -I{} -- ps -o pid,ppid,user,ni,psr,comm --pid '{}'

@@ -85,9 +85,26 @@ See repository subdirectories for information on each component.
 GameMode depends on `meson` for building and `systemd` for internal communication. This repo contains a `bootstrap.sh` script to allow for quick install to the user bus, but check `meson_options.txt` for custom settings.
 
 #### Ubuntu/Debian (you may also need `dbus-user-session`)
+
 ```bash
 apt install meson libsystemd-dev pkg-config ninja-build git libdbus-1-dev libinih-dev build-essential
 ```
+
+On Ubuntu 18.04, you'll need to install `python3` package and install the latest meson version from `pip`.
+
+```bash
+python3 -m venv .venv
+source .venv/bin/activate
+pip install meson
+```
+
+Later you can deactivate the virtual environment and remove it.
+
+```bash
+deactivate
+rm -rf .venv
+```
+
 #### Arch
 ```bash
 pacman -S meson systemd git dbus libinih
