@@ -133,6 +133,10 @@ cd gamemode
 git checkout 1.6.1 # omit to build the master branch
 ./bootstrap.sh
 ```
+To test it installed correctly:
+```bash
+gamemoded -t
+```
 
 To uninstall:
 ```bash
