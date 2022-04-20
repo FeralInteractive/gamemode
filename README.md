@@ -52,7 +52,7 @@ Config files are loaded and merged from the following directories, in order:
 
 It's not possible to integrate commands like optirun automatically inside GameMode, since the GameMode request is made once the game has already started. However it is possible to use a hybrid GPU wrapper like optirun by starting the game with `gamemoderun`.
 
-You can do this by setting the environment variable `GAMEMODERUNEXEC` to your wrapper's launch command, so for example `GAMEMODERUNEXEC=optirun`, `GAMEMODERUNEXEC="env DRI_PRIME=1"`, or `GAMEMODERUNEXEC="env __NV_PRIME_RENDER_OFFLOAD=1 env __GLX_VENDOR_LIBRARY_NAME=nvidia env __VK_LAYER_NV_optimus=NVIDIA_only"`. This environment variable can be set globally (e.g. in /etc/environment), so that the same prefix command does not have to be duplicated everywhere you want to use `gamemoderun`.
+You can do this by setting the environment variable `GAMEMODERUNEXEC` to your wrapper's launch command, so for example `GAMEMODERUNEXEC=optirun`, `GAMEMODERUNEXEC="env DRI_PRIME=1"`, or `GAMEMODERUNEXEC="env __NV_PRIME_RENDER_OFFLOAD=1 __GLX_VENDOR_LIBRARY_NAME=nvidia __VK_LAYER_NV_optimus=NVIDIA_only"`. This environment variable can be set globally (e.g. in /etc/environment), so that the same prefix command does not have to be duplicated everywhere you want to use `gamemoderun`.
 
 GameMode will not be injected to the wrapper.
 
