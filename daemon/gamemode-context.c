@@ -45,6 +45,7 @@ POSSIBILITY OF SUCH DAMAGE.
 #include <assert.h>
 #include <fcntl.h>
 #include <pthread.h>
+#include <signal.h>
 #include <stdatomic.h>
 #include <stdlib.h>
 #include <sys/time.h>
