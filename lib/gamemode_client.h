@@ -80,6 +80,8 @@ POSSIBILITY OF SUCH DAMAGE.
 #include <dlfcn.h>
 #include <string.h>
 
+#include <assert.h>
+
 #include <sys/types.h>
 
 static char internal_gamemode_client_error_string[512] = { 0 };
@@ -231,6 +233,9 @@ __attribute__((always_inline)) static inline const char *gamemode_error_string(v
 		return internal_gamemode_client_error_string;
 	}
 
+	/* Assert for static analyser that the function is not NULL */
+	assert(REAL_internal_gamemode_error_string != NULL);
+
 	return REAL_internal_gamemode_error_string();
 }
 
@@ -253,6 +258,9 @@ int gamemode_request_start(void)
 #endif
 		return -1;
 	}
+
+	/* Assert for static analyser that the function is not NULL */
+	assert(REAL_internal_gamemode_request_start != NULL);
 
 	if (REAL_internal_gamemode_request_start() < 0) {
 #ifdef GAMEMODE_AUTO
@@ -279,6 +287,9 @@ int gamemode_request_end(void)
 #endif
 		return -1;
 	}
+
+	/* Assert for static analyser that the function is not NULL */
+	assert(REAL_internal_gamemode_request_end != NULL);
 
 	if (REAL_internal_gamemode_request_end() < 0) {
 #ifdef GAMEMODE_AUTO
