@@ -158,7 +158,7 @@ See the [contributors](https://github.com/FeralInteractive/gamemode/graphs/contr
 ---
 ## License
 
-Copyright © 2017-2021 Feral Interactive
+Copyright © 2017-2022 Feral Interactive
 
 GameMode is available under the terms of the BSD 3-Clause License (Revised)
 
