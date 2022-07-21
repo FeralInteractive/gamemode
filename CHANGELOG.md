@@ -1,3 +1,20 @@
+## 1.7
+
+### Changes
+* Added new utility: `gamemodelist` (#346)
+* Run executables from `PATH` instead of `/usr/bin` (#323)
+* Add a trivial `gamemode.conf` file, which creates the gamemode group (#339)
+* Various minor bugfixes and updates to documentation
+
+### Contributors
+
+* Sam Gleske @samrocketman
+* Kira Bruneau @kira-bruneau
+* Stephan Lachnit @stephanlachnit
+* Emil Velikov @evelikov-work
+
+[View the full list of contributors](https://github.com/FeralInteractive/gamemode/graphs/contributors?from=2021-02-19&to=2022-07-21&type=c)
+
 ## 1.6.1
 
 ### Changes
