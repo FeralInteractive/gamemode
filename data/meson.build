@@ -24,7 +24,7 @@ if sd_bus_provider == 'systemd'
     # Install the sysusers.d file
     install_data(
         files('gamemode.conf'),
-        install_dir: path_systemd_sysusers_dir,
+        install_dir: path_systemd_group_dir,
     )
 endif
 

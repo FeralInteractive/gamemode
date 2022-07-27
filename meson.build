@@ -104,15 +104,18 @@ libdl = cc.find_library('dl', required: false)
 
 # Determine the location for the systemd unit
 if sd_bus_provider == 'systemd'
-    # If the path isn't explicitly set, ask systemd for the systemd user unit directory
     path_systemd_unit_dir = get_option('with-systemd-user-unit-dir')
     if path_systemd_unit_dir == ''
-        message('Asking pkg-config for systemd\'s directories')
+        message('Asking pkg-config for systemd\'s \'systemduserunitdir\' directory')
         pkgconfig_systemd = dependency('systemd')
         path_systemd_unit_dir = pkgconfig_systemd.get_pkgconfig_variable('systemduserunitdir')
     endif
-    pkgconfig_systemd = dependency('systemd')
-    path_systemd_sysusers_dir = pkgconfig_systemd.get_pkgconfig_variable('sysusersdir')
+    path_systemd_group_dir = get_option('with-systemd-group-dir')
+    if path_systemd_group_dir == ''
+        message('Asking pkg-config for systemd\'s \'sysusersdir\' directory')
+        pkgconfig_systemd = dependency('systemd')
+        path_systemd_group_dir = pkgconfig_systemd.get_pkgconfig_variable('sysusersdir')
+    endif
 endif
 
 with_limits_conf = get_option('with-pam-group')
@@ -202,6 +205,9 @@ report = [
 if sd_bus_provider == 'systemd'
 report += [
     '    systemd user unit directory:            @0@'.format(path_systemd_unit_dir),
+]
+report += [
+    '    systemd group directory:                @0@'.format(path_systemd_group_dir),
 ]
 endif
 report += [
