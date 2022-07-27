@@ -104,17 +104,23 @@ libdl = cc.find_library('dl', required: false)
 
 # Determine the location for the systemd unit
 if sd_bus_provider == 'systemd'
-    path_systemd_unit_dir = get_option('with-systemd-user-unit-dir')
-    if path_systemd_unit_dir == ''
-        message('Asking pkg-config for systemd\'s \'systemduserunitdir\' directory')
-        pkgconfig_systemd = dependency('systemd')
-        path_systemd_unit_dir = pkgconfig_systemd.get_pkgconfig_variable('systemduserunitdir')
+    with_systemd_unit = get_option('with-systemd-user-unit')
+    if with_systemd_unit
+        path_systemd_unit_dir = get_option('with-systemd-user-unit-dir')
+        if path_systemd_unit_dir == ''
+            message('Asking pkg-config for systemd\'s \'systemduserunitdir\' directory')
+            pkgconfig_systemd = dependency('systemd')
+            path_systemd_unit_dir = pkgconfig_systemd.get_pkgconfig_variable('systemduserunitdir')
+        endif
     endif
-    path_systemd_group_dir = get_option('with-systemd-group-dir')
-    if path_systemd_group_dir == ''
-        message('Asking pkg-config for systemd\'s \'sysusersdir\' directory')
-        pkgconfig_systemd = dependency('systemd')
-        path_systemd_group_dir = pkgconfig_systemd.get_pkgconfig_variable('sysusersdir')
+    with_systemd_group = get_option('with-systemd-group')
+    if with_systemd_group
+        path_systemd_group_dir = get_option('with-systemd-group-dir')
+        if path_systemd_group_dir == ''
+            message('Asking pkg-config for systemd\'s \'sysusersdir\' directory')
+            pkgconfig_systemd = dependency('systemd')
+            path_systemd_group_dir = pkgconfig_systemd.get_pkgconfig_variable('sysusersdir')
+        endif
     endif
 endif
 
@@ -203,12 +209,16 @@ report = [
 ]
 
 if sd_bus_provider == 'systemd'
+if with_systemd_unit
 report += [
     '    systemd user unit directory:            @0@'.format(path_systemd_unit_dir),
 ]
+endif
+if with_systemd_group
 report += [
     '    systemd group directory:                @0@'.format(path_systemd_group_dir),
 ]
+endif
 endif
 report += [
     '    D-BUS service directory:                @0@'.format(path_dbus_service_dir),

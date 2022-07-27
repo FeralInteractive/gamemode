@@ -14,18 +14,22 @@ config_example = run_command(
 data_conf.set('GAMEMODE_EXAMPLE_CONFIG', config_example)
 
 if sd_bus_provider == 'systemd'
-    # Install systemd user unit
-    configure_file(
-        input: 'gamemoded.service.in',
-        output: 'gamemoded.service',
-        configuration: data_conf,
-        install_dir: path_systemd_unit_dir,
-    )
-    # Install the sysusers.d file
-    install_data(
-        files('gamemode.conf'),
-        install_dir: path_systemd_group_dir,
-    )
+    if with_systemd_unit
+        # Install systemd user unit
+        configure_file(
+            input: 'gamemoded.service.in',
+            output: 'gamemoded.service',
+            configuration: data_conf,
+            install_dir: path_systemd_unit_dir,
+        )
+    endif
+    if with_systemd_group
+        # Install the sysusers.d file
+        install_data(
+            files('gamemode.conf'),
+            install_dir: path_systemd_group_dir,
+        )
+    endif
 endif
 
 # Install the D-BUS service file
