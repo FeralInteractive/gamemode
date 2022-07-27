@@ -54,13 +54,21 @@ configure_file(
 )
 
 
-# Install the Polkit action file in all cases
-configure_file(
-    input: 'polkit/actions/com.feralinteractive.GameMode.policy.in',
-    output: 'com.feralinteractive.GameMode.policy',
-    configuration: data_conf,
-    install_dir: path_polkit_action_dir,
-)
+# Install the Polkit action & rule files for the privileged gamemode group
+if with_privileged_group != ''
+    configure_file(
+        input: 'polkit/actions/com.feralinteractive.GameMode.policy.in',
+        output: 'com.feralinteractive.GameMode.policy',
+        configuration: data_conf,
+        install_dir: path_polkit_action_dir,
+    )
+    configure_file(
+        input: 'polkit/rules.d/gamemode.rules.in',
+        output: 'gamemode.rules',
+        configuration: data_conf,
+        install_dir: path_polkit_rule_dir,
+    )
+endif
 
 # Install the helper run script
 install_data(

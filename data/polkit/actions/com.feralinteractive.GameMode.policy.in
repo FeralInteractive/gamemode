@@ -18,7 +18,7 @@
     <defaults>
       <allow_any>no</allow_any>
       <allow_inactive>no</allow_inactive>
-      <allow_active>yes</allow_active>
+      <allow_active>no</allow_active>
     </defaults>
     <annotate key="org.freedesktop.policykit.exec.path">@LIBEXECDIR@/cpugovctl</annotate>
   </action>
@@ -29,7 +29,7 @@
     <defaults>
       <allow_any>no</allow_any>
       <allow_inactive>no</allow_inactive>
-      <allow_active>yes</allow_active>
+      <allow_active>no</allow_active>
     </defaults>
     <annotate key="org.freedesktop.policykit.exec.path">@LIBEXECDIR@/gpuclockctl</annotate>
     <annotate key="org.freedesktop.policykit.exec.allow_gui">true</annotate>

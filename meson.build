@@ -142,7 +142,9 @@ if path_dbus_service_dir == ''
   path_dbus_service_dir = join_paths(path_datadir, 'dbus-1', 'services')
 endif
 
-path_polkit_action_dir = join_paths(path_datadir, 'polkit-1', 'actions')
+path_polkit_dir = join_paths(path_datadir, 'polkit-1')
+path_polkit_action_dir = join_paths(path_polkit_dir, 'actions')
+path_polkit_rule_dir = join_paths(path_polkit_dir, 'rules.d')
 
 with_examples = get_option('with-examples')
 with_util = get_option('with-util')
