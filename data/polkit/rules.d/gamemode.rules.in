@@ -1,0 +1,12 @@
+/*
+ * Allow users in privileged gamemode group to run cpugovctl &
+ * gpuclockctl without authentication
+ */
+polkit.addRule(function (action, subject) {
+    if ((action.id == "com.feralinteractive.GameMode.governor-helper" ||
+         action.id == "com.feralinteractive.GameMode.gpu-helper") &&
+        subject.isInGroup("@GAMEMODE_PRIVILEGED_GROUP@"))
+    {
+        return polkit.Result.YES;
+    }
+});
