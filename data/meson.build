@@ -4,6 +4,7 @@ data_conf.set('LIBEXECDIR', path_libexecdir)
 data_conf.set('SYSCONFDIR', path_sysconfdir)
 data_conf.set('GAMEMODE_PREFIX', path_prefix)
 data_conf.set('GAMEMODE_VERSION', meson.project_version())
+data_conf.set('GAMEMODE_PRIVILEGED_GROUP', with_privileged_group)
 
 # Pull in the example config
 config_example = run_command(
@@ -25,11 +26,23 @@ if sd_bus_provider == 'systemd'
     endif
     if with_systemd_group
         # Install the sysusers.d file
-        install_data(
-            files('gamemode.conf'),
-            install_dir: path_systemd_group_dir,
+        configure_file(
+          input: 'gamemode.conf.in',
+          output: 'gamemode.conf',
+          configuration: data_conf,
+          install_dir: path_systemd_group_dir,
         )
     endif
+endif
+
+if with_pam_renicing
+  # Install the limits.d configuration file
+  configure_file(
+      input: '10-gamemode.conf.in',
+      output: '10-gamemode.conf',
+      configuration: data_conf,
+      install_dir: '/etc/security/limits.d',
+  )
 endif
 
 # Install the D-BUS service file
