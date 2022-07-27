@@ -5,7 +5,9 @@ option('with-pam-group', type: 'string', description: 'Install the limits.d conf
 option('with-sd-bus-provider', type: 'combo', choices: ['systemd', 'elogind', 'no-daemon'], value: 'systemd')
 
 # systemd specific
+option('with-systemd-user-unit', type: 'boolean', description: 'Install systemd user unit', value: 'true')
 option('with-systemd-user-unit-dir', type: 'string', description: 'Explicitly set the systemd user unit directory')
+option('with-systemd-group', type: 'boolean', description: 'Install systemd group', value: 'true')
 option('with-systemd-group-dir', type: 'string', description: 'Explicitly set the systemd group directory')
 
 # Not using systemd
