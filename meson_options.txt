@@ -6,6 +6,7 @@ option('with-sd-bus-provider', type: 'combo', choices: ['systemd', 'elogind', 'n
 
 # systemd specific
 option('with-systemd-user-unit-dir', type: 'string', description: 'Explicitly set the systemd user unit directory')
+option('with-systemd-group-dir', type: 'string', description: 'Explicitly set the systemd group directory')
 
 # Not using systemd
 option('with-dbus-service-dir', type: 'string', description: 'Explicitly set the D-BUS session directory')
