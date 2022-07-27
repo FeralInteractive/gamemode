@@ -18,7 +18,7 @@ if sd_bus_provider == 'systemd'
     if with_systemd_unit
         # Install systemd user unit
         configure_file(
-            input: 'gamemoded.service.in',
+            input: 'systemd/user/gamemoded.service.in',
             output: 'gamemoded.service',
             configuration: data_conf,
             install_dir: path_systemd_unit_dir,
@@ -27,7 +27,7 @@ if sd_bus_provider == 'systemd'
     if with_systemd_group
         # Install the sysusers.d file
         configure_file(
-          input: 'gamemode.conf.in',
+          input: 'systemd/sysusers.d/gamemode.conf.in',
           output: 'gamemode.conf',
           configuration: data_conf,
           install_dir: path_systemd_group_dir,
@@ -38,7 +38,7 @@ endif
 if with_pam_renicing
   # Install the limits.d configuration file
   configure_file(
-      input: '10-gamemode.conf.in',
+      input: 'pam_limits/10-gamemode.conf.in',
       output: '10-gamemode.conf',
       configuration: data_conf,
       install_dir: '/etc/security/limits.d',
@@ -47,7 +47,7 @@ endif
 
 # Install the D-BUS service file
 configure_file(
-  input: 'com.feralinteractive.GameMode.service.in',
+  input: 'dbus/com.feralinteractive.GameMode.service.in',
   output: 'com.feralinteractive.GameMode.service',
   configuration: data_conf,
   install_dir: path_dbus_service_dir,
@@ -56,7 +56,7 @@ configure_file(
 
 # Install the Polkit action file in all cases
 configure_file(
-    input: 'com.feralinteractive.GameMode.policy.in',
+    input: 'polkit/actions/com.feralinteractive.GameMode.policy.in',
     output: 'com.feralinteractive.GameMode.policy',
     configuration: data_conf,
     install_dir: path_polkit_action_dir,
