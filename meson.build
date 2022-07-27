@@ -102,6 +102,8 @@ dep_threads = dependency('threads')
 # On non glibc systems this might be a stub, i.e. for musl
 libdl = cc.find_library('dl', required: false)
 
+with_privileged_group = get_option('with-privileged-group')
+
 # Determine the location for the systemd unit
 if sd_bus_provider == 'systemd'
     with_systemd_unit = get_option('with-systemd-user-unit')
@@ -113,28 +115,25 @@ if sd_bus_provider == 'systemd'
             path_systemd_unit_dir = pkgconfig_systemd.get_pkgconfig_variable('systemduserunitdir')
         endif
     endif
-    with_systemd_group = get_option('with-systemd-group')
-    if with_systemd_group
-        path_systemd_group_dir = get_option('with-systemd-group-dir')
-        if path_systemd_group_dir == ''
-            message('Asking pkg-config for systemd\'s \'sysusersdir\' directory')
-            pkgconfig_systemd = dependency('systemd')
-            path_systemd_group_dir = pkgconfig_systemd.get_pkgconfig_variable('sysusersdir')
-        endif
+    if with_privileged_group != ''
+      with_systemd_group = get_option('with-systemd-group')
+      if with_systemd_group
+          path_systemd_group_dir = get_option('with-systemd-group-dir')
+          if path_systemd_group_dir == ''
+              message('Asking pkg-config for systemd\'s \'sysusersdir\' directory')
+              pkgconfig_systemd = dependency('systemd')
+              path_systemd_group_dir = pkgconfig_systemd.get_pkgconfig_variable('sysusersdir')
+          endif
+      endif
+    else
+      with_systemd_group = false
     endif
 endif
 
-with_limits_conf = get_option('with-pam-group')
-if with_limits_conf != ''
-  ldata = configuration_data()
-  ldata.set('LIMITSGROUP', with_limits_conf)
-  # Install the limits.d configuration file
-  configure_file(
-      input: 'data/10-gamemode.conf.in',
-      output: '10-gamemode.conf',
-      configuration: ldata,
-      install_dir: '/etc/security/limits.d',
-  )
+if with_privileged_group != ''
+  with_pam_renicing = get_option('with-pam-renicing')
+else
+  with_pam_renicing = false
 endif
 
 # Set the dbus path as appropriate.

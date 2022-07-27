@@ -1,5 +1,5 @@
 # limits.d
-option('with-pam-group', type: 'string', description: 'Install the limits.d configuration file to allow renicing as an unpriviledged user being part of the specified group')
+option('with-pam-renicing', type: 'boolean', description: 'Install the limits.d configuration file to allow renicing as a user being part of the privileged gamemode group', value: 'true')
 
 # sd-bus provider
 option('with-sd-bus-provider', type: 'combo', choices: ['systemd', 'elogind', 'no-daemon'], value: 'systemd')
@@ -7,7 +7,7 @@ option('with-sd-bus-provider', type: 'combo', choices: ['systemd', 'elogind', 'n
 # systemd specific
 option('with-systemd-user-unit', type: 'boolean', description: 'Install systemd user unit', value: 'true')
 option('with-systemd-user-unit-dir', type: 'string', description: 'Explicitly set the systemd user unit directory')
-option('with-systemd-group', type: 'boolean', description: 'Install systemd group', value: 'true')
+option('with-systemd-group', type: 'boolean', description: 'Install privileged gamemode group with systemd', value: 'true')
 option('with-systemd-group-dir', type: 'string', description: 'Explicitly set the systemd group directory')
 
 # Not using systemd
@@ -16,3 +16,4 @@ option('with-dbus-service-dir', type: 'string', description: 'Explicitly set the
 # General options
 option('with-examples', type: 'boolean', description: 'Build sample programs', value: 'true')
 option('with-util', type: 'boolean', description: 'Build the utilities', value: 'true')
+option('with-privileged-group', type: 'string', description: 'Group that has access to privileged gamemode features', value: 'gamemode')
