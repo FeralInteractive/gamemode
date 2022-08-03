@@ -132,6 +132,9 @@ endif
 
 if with_privileged_group != ''
   with_pam_renicing = get_option('with-pam-renicing')
+  if with_pam_renicing
+    path_pam_limits_dir = get_option('with-pam-limits-dir')
+  endif
 else
   with_pam_renicing = false
 endif
@@ -209,6 +212,11 @@ report = [
     '    includedir:                             @0@'.format(path_includedir),
 ]
 
+if with_pam_renicing
+report += [
+    '    PAM limits.d directory:                 @0@'.format(path_pam_limits_dir),
+]
+endif
 if sd_bus_provider == 'systemd'
 if with_systemd_unit
 report += [
