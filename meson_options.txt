@@ -1,5 +1,6 @@
 # limits.d
 option('with-pam-renicing', type: 'boolean', description: 'Install the limits.d configuration file to allow renicing as a user being part of the privileged gamemode group', value: 'true')
+option('with-pam-limits-dir', type: 'string', description: 'Explicitly set the PAM limits.d directory', value: '/etc/security/limits.d')
 
 # sd-bus provider
 option('with-sd-bus-provider', type: 'combo', choices: ['systemd', 'elogind', 'no-daemon'], value: 'systemd')

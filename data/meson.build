@@ -41,7 +41,7 @@ if with_pam_renicing
       input: 'pam_limits/10-gamemode.conf.in',
       output: '10-gamemode.conf',
       configuration: data_conf,
-      install_dir: '/etc/security/limits.d',
+      install_dir: path_pam_limits_dir,
   )
 endif
 
