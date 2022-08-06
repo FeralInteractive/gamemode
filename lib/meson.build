@@ -25,7 +25,7 @@ gamemode_headers_includes = [
 ]
 
 # Small library to automatically use gamemode
-libgamemodeauto = both_libraries(
+libgamemodeauto = library(
     'gamemodeauto',
     sources: [
         'client_loader.c',
