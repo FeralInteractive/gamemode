@@ -58,6 +58,8 @@ static int pidfd_open(pid_t pid, unsigned int flags)
 {
 	return (int)syscall(__NR_pidfd_open, pid, flags);
 }
+#else
+#include <sys/pidfd.h>
 #endif
 
 /* pidfd functions */
