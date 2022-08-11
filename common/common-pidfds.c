@@ -47,7 +47,11 @@ POSSIBILITY OF SUCH DAMAGE.
 #include <sys/types.h>
 #include <unistd.h>
 
-#if !HAVE_FN_PIDFD_OPEN
+#if HAVE_FN_PIDFD_OPEN
+#if HAVE_SYS_PIDFD_H
+#include <sys/pidfd.h>
+#endif
+#else
 #include <sys/syscall.h>
 
 #ifndef __NR_pidfd_open

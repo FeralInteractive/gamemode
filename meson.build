@@ -154,12 +154,14 @@ with_util = get_option('with-util')
 
 # Provide a config.h
 pidfd_open = cc.has_function('pidfd_open', args: '-D_GNU_SOURCE')
+sys_pidfd_h = cc.has_header('sys/pidfd.h')
 
 cdata = configuration_data()
 cdata.set_quoted('LIBEXECDIR', path_libexecdir)
 cdata.set_quoted('SYSCONFDIR', path_sysconfdir)
 cdata.set_quoted('GAMEMODE_VERSION', meson.project_version())
 cdata.set10('HAVE_FN_PIDFD_OPEN', pidfd_open)
+cdata.set10('HAVE_SYS_PIDFD_H', sys_pidfd_h)
 
 config_h = configure_file(
     configuration: cdata,
