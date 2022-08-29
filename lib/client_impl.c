@@ -109,8 +109,8 @@ static inline int *alloc_fd_array(int n)
 	return fds;
 }
 
-// Helper to check if we are running inside a flatpak
-static int in_flatpak(void)
+// Helper to check if we are running inside a containerized framework like Flatpak or Snap
+static int in_containerized(void)
 {
 	static int status = -1;
 
@@ -119,7 +119,7 @@ static int in_flatpak(void)
 		int r;
 
 		r = lstat("/.flatpak-info", &sb);
-		status = r == 0 && sb.st_size > 0;
+		status = (r == 0 && sb.st_size > 0) || getenv("SNAP");
 	}
 
 	return status;
@@ -228,7 +228,7 @@ static int make_request(DBusConnection *bus, int native, int use_pidfds, const c
 	      native,
 	      use_pidfds);
 
-	// If we are inside a flatpak we need to talk to the portal instead
+	// If we are inside a Flatpak or Snap we need to talk to the portal instead
 	const char *dest = native ? DAEMON_DBUS_NAME : PORTAL_DBUS_NAME;
 	const char *path = native ? DAEMON_DBUS_PATH : PORTAL_DBUS_PATH;
 	const char *iface = native ? DAEMON_DBUS_IFACE : PORTAL_DBUS_IFACE;
@@ -302,7 +302,7 @@ static int gamemode_request(const char *method, pid_t for_pid)
 	int native;
 	int res = -1;
 
-	native = !in_flatpak();
+	native = !in_containerized();
 
 	/* pid[0] is the client, i.e. the game
 	 * pid[1] is the requestor, i.e. this process
