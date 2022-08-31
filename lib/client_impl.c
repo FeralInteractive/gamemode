@@ -109,8 +109,8 @@ static inline int *alloc_fd_array(int n)
 	return fds;
 }
 
-// Helper to check if we are running inside a containerized framework like Flatpak or Snap
-static int in_containerized(void)
+// Helper to check if we are running inside a sandboxed framework like Flatpak or Snap
+static int in_sandbox(void)
 {
 	static int status = -1;
 
@@ -119,7 +119,11 @@ static int in_containerized(void)
 		int r;
 
 		r = lstat("/.flatpak-info", &sb);
-		status = (r == 0 && sb.st_size > 0) || getenv("SNAP");
+		status = r == 0 && sb.st_size > 0;
+
+		if (getenv("SNAP")) {
+			status = 1;
+		}
 	}
 
 	return status;
@@ -302,7 +306,8 @@ static int gamemode_request(const char *method, pid_t for_pid)
 	int native;
 	int res = -1;
 
-	native = !in_containerized();
+
+	native = !in_sandbox();
 
 	/* pid[0] is the client, i.e. the game
 	 * pid[1] is the requestor, i.e. this process
