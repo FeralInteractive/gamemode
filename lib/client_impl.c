@@ -121,7 +121,7 @@ static int in_sandbox(void)
 		r = lstat("/.flatpak-info", &sb);
 		status = r == 0 && sb.st_size > 0;
 
-		if (getenv("SNAP")) {
+		if (getenv("SNAP") != NULL) {
 			status = 1;
 		}
 	}
