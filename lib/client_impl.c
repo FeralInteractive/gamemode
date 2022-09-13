@@ -306,7 +306,6 @@ static int gamemode_request(const char *method, pid_t for_pid)
 	int native;
 	int res = -1;
 
-
 	native = !in_sandbox();
 
 	/* pid[0] is the client, i.e. the game
