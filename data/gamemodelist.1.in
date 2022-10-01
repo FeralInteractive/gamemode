@@ -1,4 +1,4 @@
-.\" Manpage for gamemoderun.
+.\" Manpage for gamemodelist.
 .\" Contact linux-contact@feralinteractive.com to correct errors or typos.
 .TH gamemodelist 1 "4 May 2020" "@GAMEMODE_VERSION@" "gamemodelist man page"
 .SH NAME
