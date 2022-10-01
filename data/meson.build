@@ -70,12 +70,27 @@ if with_privileged_group != ''
     )
 endif
 
-# Install the helper run script
-install_data(
-    files('gamemoderun'),
-    install_dir: path_bindir,
-    install_mode: 'rwxr-xr-x',
-)
+# Install the helper run script and man page
+if get_option('default_library') == 'static'
+    warning('gamemoderun will not be installed as a shared libgamemodeauto library is required')
+else
+    install_data(
+        files('gamemoderun'),
+        install_dir: path_bindir,
+        install_mode: 'rwxr-xr-x',
+    )
+
+    gamemoderun_manpage = configure_file(
+        input: files('gamemoderun.1.in'),
+        output: 'gamemoderun.1',
+        configuration: data_conf,
+    )
+
+    install_man(
+        gamemoderun_manpage,
+        install_dir: join_paths(path_mandir, 'man1')
+    )
+endif
 
 # Install script to find processes with gamemode lib in runtime
 install_data(
@@ -94,17 +109,6 @@ gamemoded_manpage = configure_file(
 install_man(
     gamemoded_manpage,
     install_dir: join_paths(path_mandir, 'man8')
-)
-
-gamemoderun_manpage = configure_file(
-    input: files('gamemoderun.1.in'),
-    output: 'gamemoderun.1',
-    configuration: data_conf,
-)
-
-install_man(
-    gamemoderun_manpage,
-    install_dir: join_paths(path_mandir, 'man1')
 )
 
 gamemodelist_manpage = configure_file(
