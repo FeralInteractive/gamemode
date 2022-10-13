@@ -372,7 +372,7 @@ static void load_config_files(GameModeConfig *self)
 	self->values.igpu_power_threshold = DEFAULT_IGPU_POWER_THRESHOLD;
 	self->values.inhibit_screensaver = 1; /* Defaults to on */
 	self->values.reaper_frequency = DEFAULT_REAPER_FREQ;
-	self->values.gpu_device = -1; /* 0 is a valid device ID so use -1 to indicate no value */
+	self->values.gpu_device = 0;
 	self->values.nv_powermizer_mode = -1;
 	self->values.nv_core_clock_mhz_offset = -1;
 	self->values.nv_mem_clock_mhz_offset = -1;
