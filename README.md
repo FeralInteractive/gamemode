@@ -41,11 +41,12 @@ LD_PRELOAD="$LD_PRELOAD:/usr/\$LIB/libgamemodeauto.so.0"
 
 The daemon is configured with a `gamemode.ini` file. [example/gamemode.ini](https://github.com/FeralInteractive/gamemode/blob/master/example/gamemode.ini) is an example of what this file would look like, with explanations for all the variables.
 
-Config files are loaded and merged from the following directories, in order:
-1. `/usr/share/gamemode/`
-2. `/etc/`
-3. `$XDG_CONFIG_HOME` or `$HOME/.config/`
-4. `$PWD`
+Configuration files are loaded and merged from the following directories, from highest to lowest priority:
+
+1. `$PWD` ("unsafe" - **`[gpu]` settings take no effect in this file**)
+2. `$XDG_CONFIG_HOME` or `$HOME/.config/` ("unsafe" - **`[gpu]` settings take no effect in this file**)
+3. `/etc/`
+4. `/usr/share/gamemode/`
 
 ---
 ## Note for Hybrid GPU users
