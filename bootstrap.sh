@@ -26,7 +26,7 @@ fi
 
 # Echo the rest so it's obvious
 set -x
-meson builddir --prefix=$prefix --buildtype debugoptimized -Dwith-systemd-user-unit-dir=/etc/systemd/user "$@"
+meson setup builddir --prefix=$prefix --buildtype debugoptimized -Dwith-systemd-user-unit-dir=/etc/systemd/user "$@"
 ninja -C builddir
 
 # Verify user wants to install
