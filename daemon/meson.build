@@ -7,6 +7,7 @@ daemon_sources = [
     'gamemode-wine.c',
     'gamemode-tests.c',
     'gamemode-gpu.c',
+    'gamemode-cpu.c',
     'gamemode-dbus.c',
     'gamemode-config.c',
 ]
