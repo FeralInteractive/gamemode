@@ -40,5 +40,5 @@ struct GameModeCPUInfo {
 };
 
 /* parses a list of cpu cores in the format "a,b-c,d-e,f" */
-char *parse_cpulist (char *cpulist, long *from, long *to);
+char *parse_cpulist(char *cpulist, long *from, long *to);
 
