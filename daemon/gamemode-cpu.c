@@ -45,7 +45,7 @@ POSSIBILITY OF SUCH DAMAGE.
 
 #include "build-config.h"
 
-static int read_small_file (char *path, char **buf, size_t *buflen)
+static int read_small_file(char *path, char **buf, size_t *buflen)
 {
 	FILE *f = fopen(path, "r");
 
@@ -72,7 +72,7 @@ static int read_small_file (char *path, char **buf, size_t *buflen)
 	return 1;
 }
 
-static int walk_sysfs (char *cpulist, char **buf, size_t *buflen, GameModeCPUInfo *info)
+static int walk_sysfs(char *cpulist, char **buf, size_t *buflen, GameModeCPUInfo *info)
 {
 	char path[PATH_MAX];
 	unsigned long long max_cache = 0, max_freq = 0;
@@ -151,7 +151,7 @@ static int walk_sysfs (char *cpulist, char **buf, size_t *buflen, GameModeCPUInf
 	return 1;
 }
 
-static int walk_string (char *cpulist, char *config_cpulist, GameModeCPUInfo *info)
+static int walk_string(char *cpulist, char *config_cpulist, GameModeCPUInfo *info)
 {
 	long from, to;
 
@@ -289,7 +289,7 @@ error_exit:
 	return -1;
 }
 
-static int log_state (char *cpulist, int *pos, const long first, const long last)
+static int log_state(char *cpulist, int *pos, const long first, const long last)
 {
 	int ret;
 	if (*pos != 0) {
