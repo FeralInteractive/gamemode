@@ -433,7 +433,7 @@ void game_mode_apply_core_pinning(const GameModeCPUInfo *info, const pid_t clien
 
 void game_mode_free_cpu(GameModeCPUInfo **info)
 {
-	if (!(*info)) {
+	if ((*info)) {
 		CPU_FREE((*info)->online);
 		(*info)->online = NULL;
 
