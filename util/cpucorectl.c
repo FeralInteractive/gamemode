@@ -38,7 +38,7 @@ POSSIBILITY OF SUCH DAMAGE.
 #include "common-cpu.h"
 #include "common-logging.h"
 
-static int write_state (char *path, int state)
+static int write_state(char *path, int state)
 {
 	FILE *f = fopen(path, "w");
 
@@ -57,7 +57,7 @@ static int write_state (char *path, int state)
 	return 1;
 }
 
-static void log_state (const int state, const long first, const long last)
+static void log_state(const int state, const long first, const long last)
 {
 	if (state == '0') {
 		if (first == last)
@@ -72,7 +72,7 @@ static void log_state (const int state, const long first, const long last)
 	}
 }
 
-static int set_state (char *cpulist, int state)
+static int set_state(char *cpulist, int state)
 {
 	char path[PATH_MAX];
 	long from, to;
