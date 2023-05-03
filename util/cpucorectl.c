@@ -91,7 +91,8 @@ static int set_state(char *cpulist, int state)
 				/* on some systems one cannot park core #0 */
 				if (cpu != 0) {
 					if (state == '0') {
-						LOG_ERROR("unable to park core #%ld, will not apply cpu core parking!\n", cpu);
+						LOG_ERROR("unable to park core #%ld, will not apply cpu core parking!\n", 
+							  cpu);
 						return -1;
 					}
 
@@ -104,7 +105,7 @@ static int set_state(char *cpulist, int state)
 				} else if (last + 1 == cpu) {
 					last = cpu;
 				} else {
-					log_state (state, first, last);
+					log_state(state, first, last);
 					first = cpu;
 					last = cpu;
 				}
