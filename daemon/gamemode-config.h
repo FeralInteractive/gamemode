@@ -118,6 +118,13 @@ long config_get_nv_mem_clock_mhz_offset(GameModeConfig *self);
 long config_get_nv_powermizer_mode(GameModeConfig *self);
 void config_get_amd_performance_level(GameModeConfig *self, char value[CONFIG_VALUE_MAX]);
 
+/*
+ * Get various config info for cpu optimisations
+ */
+void config_get_cpu_park_cores(GameModeConfig *self, char value[CONFIG_VALUE_MAX]);
+void config_get_cpu_pin_cores(GameModeConfig *self, char value[CONFIG_VALUE_MAX]);
+
+
 /**
  * Functions to get supervisor config permissions
  */
