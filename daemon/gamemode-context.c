@@ -85,6 +85,8 @@ struct GameModeContext {
 	struct GameModeGPUInfo *stored_gpu; /**<Stored GPU info for the current GPU */
 	struct GameModeGPUInfo *target_gpu; /**<Target GPU info for the current GPU */
 
+	struct GameModeCPUInfo *cpu; /**<Stored CPU info for the current CPU */
+
 	bool igpu_optimization_enabled;
 	uint32_t last_cpu_energy_uj;
 	uint32_t last_igpu_energy_uj;
@@ -146,6 +148,9 @@ void game_mode_context_init(GameModeContext *self)
 	game_mode_initialise_gpu(self->config, &self->stored_gpu);
 	game_mode_initialise_gpu(self->config, &self->target_gpu);
 
+	/* Initialise the current CPU info */
+	game_mode_initialise_cpu(self->config, &self->cpu);
+
 	pthread_rwlock_init(&self->rwlock, NULL);
 
 	/* Get the reaper thread going */
@@ -187,6 +192,9 @@ void game_mode_context_destroy(GameModeContext *self)
 	/* Destroy the gpu object */
 	game_mode_free_gpu(&self->stored_gpu);
 	game_mode_free_gpu(&self->target_gpu);
+
+	/* Destroy the cpu object */
+	game_mode_free_cpu(&self->cpu);
 
 	/* Destroy the config object */
 	config_destroy(self->config);
@@ -365,6 +373,8 @@ static void game_mode_context_enter(GameModeContext *self)
 	game_mode_get_gpu(self->stored_gpu);
 	game_mode_apply_gpu(self->target_gpu);
 
+	game_mode_park_cpu(self->cpu);
+
 	/* Run custom scripts last - ensures the above are applied first and these scripts can react to
 	 * them if needed */
 	char scripts[CONFIG_LIST_MAX][CONFIG_VALUE_MAX];
@@ -387,6 +397,8 @@ static void game_mode_context_leave(GameModeContext *self)
 
 	/* Remove GPU optimisations */
 	game_mode_apply_gpu(self->stored_gpu);
+
+	game_mode_unpark_cpu(self->cpu);
 
 	/* UnInhibit the screensaver */
 	if (config_get_inhibit_screensaver(self->config))
@@ -521,6 +533,9 @@ static int game_mode_apply_client_optimisations(GameModeContext *self, pid_t cli
 
 	/* Apply scheduler policies */
 	game_mode_apply_scheduling(self, client);
+
+	/* Apply core pinning */
+	game_mode_apply_core_pinning(self->cpu, client);
 
 	return 0;
 }
