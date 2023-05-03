@@ -5,6 +5,7 @@ common_sources = [
     'common-external.c',
     'common-helpers.c',
     'common-gpu.c',
+    'common-cpu.c',
     'common-pidfds.c',
     'common-power.c',
 ]
