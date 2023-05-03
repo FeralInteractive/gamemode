@@ -31,10 +31,13 @@ POSSIBILITY OF SUCH DAMAGE.
 
 #pragma once
 
+#define IS_CPU_PARK 0
+#define IS_CPU_PIN  1
+
 /* Storage for CPU info*/
 struct GameModeCPUInfo {
 	size_t num_cpu;
-	int park_or_pin; /* 0 to park 1 to pin */
+	int park_or_pin;
 	cpu_set_t *online;
 	cpu_set_t *to_keep;
 };
