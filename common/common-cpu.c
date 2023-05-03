@@ -34,7 +34,7 @@ POSSIBILITY OF SUCH DAMAGE.
 #include "common-cpu.h"
 #include "common-logging.h"
 
-char *parse_cpulist (char *cpulist, long *from, long *to)
+char *parse_cpulist(char *cpulist, long *from, long *to)
 {
 	if (!cpulist || *cpulist == '\0')
 		return NULL;
@@ -71,43 +71,3 @@ char *parse_cpulist (char *cpulist, long *from, long *to)
 
 	return endp + 1;
 }
-
-/* Get the vendor for a device */
-/*enum GPUVendor gamemode_get_gpu_vendor(long device)
-{
-	enum GPUVendor vendor = Vendor_Invalid;
-
-	char path[64] = { 0 };
-	if (snprintf(path, 64, "/sys/class/drm/card%ld/device/vendor", device) < 0) {
-		LOG_ERROR("snprintf failed, will not apply gpu optimisations!\n");
-		return Vendor_Invalid;
-	}
-	FILE *file = fopen(path, "r");
-	if (!file) {
-		LOG_ERROR("Couldn't open vendor file at %s, will not apply gpu optimisations!\n", path);
-		return Vendor_Invalid;
-	}
-	char buff[64];
-	bool got_line = fgets(buff, 64, file) != NULL;
-	fclose(file);
-
-	if (got_line) {
-		vendor = strtol(buff, NULL, 0);
-	} else {
-		LOG_ERROR("Couldn't read contents of file %s, will not apply optimisations!\n", path);
-		return Vendor_Invalid;
-	}
-
-	if (!GPUVendorValid(vendor)) {
-		LOG_ERROR("Unknown vendor value (0x%04x) found, cannot apply optimisations!\n",
-		          (unsigned int)vendor);
-		LOG_ERROR("Known values are: 0x%04x (NVIDIA) 0x%04x (AMD) 0x%04x (Intel)\n",
-		          (unsigned int)Vendor_NVIDIA,
-		          (unsigned int)Vendor_AMD,
-		          (unsigned int)Vendor_Intel);
-		return Vendor_Invalid;
-	}
-
-	return vendor;
-}
-*/
