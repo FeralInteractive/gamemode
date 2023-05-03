@@ -10,6 +10,7 @@ Currently GameMode includes support for optimisations including:
 * Kernel scheduler (`SCHED_ISO`)
 * Screensaver inhibiting
 * GPU performance mode (NVIDIA and AMD), GPU overclocking (NVIDIA)
+* CPU core pinning or parking
 * Custom scripts
 
 GameMode packages are available for Ubuntu, Debian, Solus, Arch, Gentoo, Fedora, OpenSUSE, Mageia and possibly more.
