@@ -47,13 +47,13 @@ static int write_state(char *path, int state)
 		return 0;
 	}
 
-	if (putc (state, f) == EOF) {
+	if (putc(state, f) == EOF) {
 		LOG_ERROR("Couldn't write to file at %s (%s)\n", path, strerror(errno));
-		fclose (f);
+		fclose(f);
 		return 0;
 	}
 
-	fclose (f);
+	fclose(f);
 	return 1;
 }
 
@@ -87,7 +87,7 @@ static int set_state(char *cpulist, int state)
 				return 0;
 			}
 
-			if (!write_state (path, state)) {
+			if (!write_state(path, state)) {
 				/* on some systems one cannot park core #0 */
 				if (cpu != 0) {
 					if (state == '0') {
@@ -113,7 +113,7 @@ static int set_state(char *cpulist, int state)
 	}
 
 	if (first != -1)
-		log_state (state, first, last);
+		log_state(state, first, last);
 
 	return 1;
 }
@@ -126,10 +126,10 @@ int main(int argc, char *argv[])
 	}
 
 	if (argc == 3 && strncmp(argv[1], "online", 6) == 0) {
-		if (!set_state (argv[2], '1'))
+		if (!set_state(argv[2], '1'))
 			return EXIT_FAILURE;
 	} else if (argc == 3 && strncmp(argv[1], "offline", 7) == 0) {
-		if (!set_state (argv[2], '0'))
+		if (!set_state(argv[2], '0'))
 			return EXIT_FAILURE;
 	} else {
 		fprintf(stderr, "usage: cpucorectl [online]|[offline] VALUE]\n");
