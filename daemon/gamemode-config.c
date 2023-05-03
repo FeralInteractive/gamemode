@@ -106,6 +106,9 @@ struct GameModeConfig {
 		long nv_powermizer_mode;
 		char amd_performance_level[CONFIG_VALUE_MAX];
 
+		char cpu_park_cores[CONFIG_VALUE_MAX];
+		char cpu_pin_cores[CONFIG_VALUE_MAX];
+
 		long require_supervisor;
 		char supervisor_whitelist[CONFIG_LIST_MAX][CONFIG_VALUE_MAX];
 		char supervisor_blacklist[CONFIG_LIST_MAX][CONFIG_VALUE_MAX];
@@ -295,6 +298,12 @@ static int inih_handler(void *user, const char *section, const char *name, const
 			valid = get_long_value(name, value, &self->values.nv_powermizer_mode);
 		} else if (strcmp(name, "amd_performance_level") == 0) {
 			valid = get_string_value(value, self->values.amd_performance_level);
+		}
+	} else if (strcmp(section, "cpu") == 0) {
+		if (strcmp(name, "park_cores") == 0) {
+			valid = get_string_value(value, self->values.cpu_park_cores);
+		} else if (strcmp(name, "pin_cores") == 0) {
+			valid = get_string_value(value, self->values.cpu_pin_cores);
 		}
 	} else if (strcmp(section, "supervisor") == 0) {
 		/* Supervisor subsection */
@@ -793,6 +802,25 @@ void config_get_amd_performance_level(GameModeConfig *self, char value[CONFIG_VA
         char supervisor_blacklist[CONFIG_LIST_MAX][CONFIG_VALUE_MAX];
 */
 DEFINE_CONFIG_GET(require_supervisor)
+
+/*
+ * Get various config info for cpu optimisations
+ */
+void config_get_cpu_park_cores(GameModeConfig *self, char value[CONFIG_VALUE_MAX])
+{
+	memcpy_locked_config(self,
+	                     value,
+	                     &self->values.cpu_park_cores,
+	                     sizeof(self->values.cpu_park_cores));
+}
+
+void config_get_cpu_pin_cores(GameModeConfig *self, char value[CONFIG_VALUE_MAX])
+{
+	memcpy_locked_config(self,
+	                     value,
+	                     &self->values.cpu_pin_cores,
+	                     sizeof(self->values.cpu_pin_cores));
+}
 
 /*
  * Checks if the supervisor is whitelisted
