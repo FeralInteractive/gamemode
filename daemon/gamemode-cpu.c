@@ -50,14 +50,14 @@ static int read_small_file (char *path, char **buf, size_t *buflen)
 	FILE *f = fopen(path, "r");
 
 	if (!f) {
-		LOG_ERROR("Couldn't open file at %s (%s), will not apply cpu core parking!\n", path, strerror(errno));
+		LOG_ERROR("Couldn't open file at %s : %s\n", path, strerror(errno));
 		return 0;
 	}
 
 	ssize_t nread = getline(buf, buflen, f);
 
 	if (nread == -1) {
-		LOG_ERROR("Couldn't read file at %s (%s), will not apply cpu core parking!\n", path, strerror(errno));
+		LOG_ERROR("Couldn't read file at %s : %s\n", path, strerror(errno));
 		fclose(f);
 		return 0;
 	}
@@ -75,45 +75,77 @@ static int read_small_file (char *path, char **buf, size_t *buflen)
 static int walk_sysfs (char *cpulist, char **buf, size_t *buflen, GameModeCPUInfo *info)
 {
 	char path[PATH_MAX];
-	unsigned long long max_cache = 0;
+	unsigned long long max_cache = 0, max_freq = 0;
 	long from, to;
+
+	cpu_set_t *freq_cores = CPU_ALLOC(info->num_cpu);
 
 	char *list = cpulist;
 	while ((list = parse_cpulist(list, &from, &to))) {
 		for (long cpu = from; cpu < to + 1; cpu++) {
-			int ret = snprintf(path, PATH_MAX, "/sys/devices/system/cpu/cpu%ld/cache/index3/size", cpu);
-			if (ret < 0 || ret >= PATH_MAX) {
-				LOG_ERROR("snprintf failed, will not apply cpu core parking!\n");
-				return 0;
-			}
-
-			if (!read_small_file(path, buf, buflen))
-				return 0;
-
-			char *endp;
-			unsigned long long cache_size = strtoull (*buf, &endp, 10);
-
-			if (*endp == 'K') {
-				cache_size *= 1024;
-			} else if (*endp == 'M') {
-				cache_size *= 1024 * 1024;
-			} else if (*endp == 'G') {
-				cache_size *= 1024 * 1024 * 1024;
-			} else if (*endp != '\0') {
-				LOG_ERROR("cpu L3 cache size (%s) is silly, will not apply cpu core parking!\n", *buf);
-				return 0;
-			}
-
-			if (cache_size > max_cache) {
-				max_cache = cache_size;
-				CPU_ZERO_S(CPU_ALLOC_SIZE(info->num_cpu), info->to_keep);
-			}
-
-			if (cache_size == max_cache)
-				CPU_SET_S((size_t)cpu, CPU_ALLOC_SIZE(info->num_cpu), info->to_keep);
-
 			CPU_SET_S((size_t)cpu, CPU_ALLOC_SIZE(info->num_cpu), info->online);
+
+			/* check for L3 cache non-uniformity among the cores */
+			int ret = snprintf(path, PATH_MAX, "/sys/devices/system/cpu/cpu%ld/cache/index3/size", cpu);
+
+			if (ret > 0 && ret < PATH_MAX) {
+				if (read_small_file(path, buf, buflen)) {
+					char *endp;
+					unsigned long long cache_size = strtoull (*buf, &endp, 10);
+
+					if (*endp == 'K') {
+						cache_size *= 1024;
+					} else if (*endp == 'M') {
+						cache_size *= 1024 * 1024;
+					} else if (*endp == 'G') {
+						cache_size *= 1024 * 1024 * 1024;
+					} else if (*endp != '\0') {
+						LOG_MSG("cpu L3 cache size (%s) on core #%ld is silly\n", *buf, cpu);
+						cache_size = 0;
+					}
+
+					if (cache_size > max_cache) {
+						max_cache = cache_size;
+						CPU_ZERO_S(CPU_ALLOC_SIZE(info->num_cpu), info->to_keep);
+					}
+
+					if (cache_size == max_cache)
+						CPU_SET_S((size_t)cpu, CPU_ALLOC_SIZE(info->num_cpu), info->to_keep);
+				}
+			}
+
+			/* check for frequency non-uniformity among the cores */
+			ret = snprintf(path, PATH_MAX, "/sys/devices/system/cpu/cpu%ld/cpufreq/cpuinfo_max_freq", cpu);
+
+			if (ret > 0 && ret < PATH_MAX) {
+				if (read_small_file(path, buf, buflen)) {
+					unsigned long long freq = strtoull (*buf, NULL, 10);
+					unsigned long long cutoff = (freq * 5) / 100;
+
+					if (freq > max_freq) {
+						if (max_freq < freq - cutoff)
+							CPU_ZERO_S(CPU_ALLOC_SIZE(info->num_cpu), freq_cores);
+
+						max_freq = freq;
+					}
+
+					if (freq - cutoff >= max_freq)
+						CPU_SET_S((size_t)cpu, CPU_ALLOC_SIZE(info->num_cpu), freq_cores);
+				}
+			}
 		}
+	}
+
+	if (CPU_EQUAL_S(CPU_ALLOC_SIZE(info->num_cpu), info->online, info->to_keep) || CPU_COUNT_S(CPU_ALLOC_SIZE(info->num_cpu), info->to_keep) == 0) {
+		LOG_MSG("cpu L3 cache was uniform, this is not a x3D with multiple chiplets\n");
+
+		CPU_FREE(info->to_keep);
+		info->to_keep = freq_cores;
+
+		if (CPU_EQUAL_S(CPU_ALLOC_SIZE(info->num_cpu), info->online, info->to_keep) || CPU_COUNT_S(CPU_ALLOC_SIZE(info->num_cpu), info->to_keep) == 0)
+			LOG_MSG("cpu frequency was uniform, this is not a big.LITTLE type of system\n");
+	} else {
+		CPU_FREE(freq_cores);
 	}
 
 	return 1;
@@ -148,9 +180,6 @@ static int walk_string (char *cpulist, char *config_cpulist, GameModeCPUInfo *in
 	return 1;
 }
 
-/**
- * Attempts to identify the current in use CPU information
- */
 int game_mode_initialise_cpu(GameModeConfig *config, GameModeCPUInfo **info)
 {
 	/* Verify input, this is programmer error */
@@ -237,17 +266,16 @@ int game_mode_initialise_cpu(GameModeConfig *config, GameModeCPUInfo **info)
 
 	if (park_or_pin == 0 && CPU_EQUAL_S(CPU_ALLOC_SIZE(new_info->num_cpu), new_info->online, new_info->to_keep)) {
 		game_mode_free_cpu(&new_info);
-		LOG_MSG("cpu L3 cache is uniform, will not apply cpu core parking!\n");
+		LOG_MSG("I can find no reason to perform core parking on this system!\n");
 		goto error_exit;
 	}
 
-	if (CPU_COUNT_S(CPU_ALLOC_SIZE(new_info->num_cpu), new_info->to_keep) == 0) {
+	if (CPU_COUNT_S(CPU_ALLOC_SIZE(new_info->num_cpu), new_info->to_keep) < 4) {
 		game_mode_free_cpu(&new_info);
-		LOG_MSG("logic or config wanted to park/unpin every single cpu core, will not apply cpu core parking/pinning!\n");
+		LOG_MSG("logic or config would result in less than 4 active cores, will not apply cpu core parking/pinning!\n");
 		goto error_exit;
 	}
 
-	/* Give back the new cpu info */
 	*info = new_info;
 
 early_exit:
@@ -289,9 +317,6 @@ static int log_state (char *cpulist, int *pos, const long first, const long last
 	return 1;
 }
 
-/**
- * Park the unwanted cpu cores when gamemode is active
- */
 int game_mode_park_cpu(const GameModeCPUInfo *info)
 {
 	if (!info || info->park_or_pin == 1)
@@ -336,9 +361,6 @@ int game_mode_park_cpu(const GameModeCPUInfo *info)
 	return 0;
 }
 
-/**
- * Restore the parked cpu cores when gamemode is disabled
- */
 int game_mode_unpark_cpu(const GameModeCPUInfo *info)
 {
 	if (!info || info->park_or_pin == 1)
@@ -388,11 +410,12 @@ void game_mode_apply_core_pinning(const GameModeCPUInfo *info, const pid_t clien
 	if (!info || info->park_or_pin == 0)
 		return;
 
+	LOG_MSG("Pinning process...\n");
+
 	if (sched_setaffinity(client, CPU_ALLOC_SIZE(info->num_cpu), info->to_keep) != 0)
 		LOG_ERROR("Failed to pin process: %s\n", strerror(errno));
 }
 
-/* Simply used to free the CPU info object */
 void game_mode_free_cpu(GameModeCPUInfo **info)
 {
 	if (!(*info)) {
@@ -406,4 +429,3 @@ void game_mode_free_cpu(GameModeCPUInfo **info)
 		*info = NULL;
 	}
 }
-
