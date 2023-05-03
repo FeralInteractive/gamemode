@@ -203,6 +203,16 @@ void game_mode_free_gpu(GameModeGPUInfo **info);
 int game_mode_apply_gpu(const GameModeGPUInfo *info);
 int game_mode_get_gpu(GameModeGPUInfo *info);
 
+/** gamemode-cpu.c
+ * Provides internal functions to apply optimisations to cpus
+ */
+typedef struct GameModeCPUInfo GameModeCPUInfo;
+int game_mode_initialise_cpu(GameModeConfig *config, GameModeCPUInfo **info);
+void game_mode_free_cpu(GameModeCPUInfo **info);
+int game_mode_park_cpu(const GameModeCPUInfo *info);
+int game_mode_unpark_cpu(const GameModeCPUInfo *info);
+void game_mode_apply_core_pinning(const GameModeCPUInfo *info, const pid_t client);
+
 /** gamemode-dbus.c
  * Provides an API interface for using dbus
  */
