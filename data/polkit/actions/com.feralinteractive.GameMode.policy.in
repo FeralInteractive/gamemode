@@ -35,4 +35,16 @@
     <annotate key="org.freedesktop.policykit.exec.allow_gui">true</annotate>
   </action>
 
+  <action id="com.feralinteractive.GameMode.cpu-helper">
+    <description>Modify the CPU core states</description>
+    <message>Authentication is required to modify the CPU core states</message>
+    <defaults>
+      <allow_any>no</allow_any>
+      <allow_inactive>no</allow_inactive>
+      <allow_active>no</allow_active>
+    </defaults>
+    <annotate key="org.freedesktop.policykit.exec.path">@LIBEXECDIR@/cpucorectl</annotate>
+    <annotate key="org.freedesktop.policykit.exec.allow_gui">true</annotate>
+  </action>
+
 </policyconfig>
