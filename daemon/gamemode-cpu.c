@@ -62,7 +62,7 @@ static int read_small_file(char *path, char **buf, size_t *buflen)
 		return 0;
 	}
 
-	fclose (f);
+	fclose(f);
 
 	while (nread > 0 && ((*buf)[nread - 1] == '\n' || (*buf)[nread - 1] == '\r'))
 		nread--;
@@ -195,9 +195,9 @@ int game_mode_initialise_cpu(GameModeConfig *config, GameModeCPUInfo **info)
 	int park_or_pin = -1;
 
 	if (pin_cores[0] != '\0') {
-		if (strcasecmp (pin_cores, "no") == 0 || strcasecmp (pin_cores, "false") == 0 || strcmp (pin_cores, "0") == 0) {
+		if (strcasecmp(pin_cores, "no") == 0 || strcasecmp(pin_cores, "false") == 0 || strcmp(pin_cores, "0") == 0) {
 			park_or_pin = -2;
-		} else if (strcasecmp (pin_cores, "yes") == 0 || strcasecmp (pin_cores, "true") == 0 || strcmp (pin_cores, "1") == 0) {
+		} else if (strcasecmp(pin_cores, "yes") == 0 || strcasecmp(pin_cores, "true") == 0 || strcmp(pin_cores, "1") == 0) {
 			pin_cores[0] = '\0';
 			park_or_pin = 1;
 		} else {
@@ -206,12 +206,12 @@ int game_mode_initialise_cpu(GameModeConfig *config, GameModeCPUInfo **info)
 	}
 
 	if (park_or_pin < 1 && park_cores[0] != '\0') {
-		if (strcasecmp (park_cores, "no") == 0 || strcasecmp (park_cores, "false") == 0 || strcmp (park_cores, "0") == 0) {
+		if (strcasecmp(park_cores, "no") == 0 || strcasecmp(park_cores, "false") == 0 || strcmp(park_cores, "0") == 0) {
 			if (park_or_pin == -2)
 				return 0;
 
 			park_or_pin = -1;
-		} else if (strcasecmp (park_cores, "yes") == 0 || strcasecmp (park_cores, "true") == 0 || strcmp (park_cores, "1") == 0) {
+		} else if (strcasecmp(park_cores, "yes") == 0 || strcasecmp(park_cores, "true") == 0 || strcmp(park_cores, "1") == 0) {
 			park_cores[0] = '\0';
 			park_or_pin = 0;
 		} else {
@@ -255,12 +255,12 @@ int game_mode_initialise_cpu(GameModeConfig *config, GameModeCPUInfo **info)
 	CPU_ZERO_S(CPU_ALLOC_SIZE(new_info->num_cpu), new_info->to_keep);
 
 	if (park_or_pin == 0 && park_cores[0] != '\0') {
-		if (!walk_string (buf, park_cores, new_info))
+		if (!walk_string(buf, park_cores, new_info))
 			goto error_exit;
 	} else if (park_or_pin == 1 && pin_cores[0] != '\0') {
-		if (!walk_string (buf, pin_cores, new_info))
+		if (!walk_string(buf, pin_cores, new_info))
 			goto error_exit;
-	} else if (!walk_sysfs (buf, &buf2, &buf2len, new_info)) {
+	} else if (!walk_sysfs(buf, &buf2, &buf2len, new_info)) {
 		goto error_exit;
 	}
 
@@ -293,7 +293,7 @@ static int log_state(char *cpulist, int *pos, const long first, const long last)
 {
 	int ret;
 	if (*pos != 0) {
-		ret = snprintf(cpulist+*pos, ARG_MAX - (size_t)*pos, ",");
+		ret = snprintf(cpulist + *pos, ARG_MAX - (size_t)*pos, ",");
 
 		if (ret < 0 || (size_t)ret >= (ARG_MAX - (size_t)*pos)) {
 			LOG_ERROR("snprintf failed, will not apply cpu core parking!\n");
@@ -304,9 +304,9 @@ static int log_state(char *cpulist, int *pos, const long first, const long last)
 	}
 
 	if (first == last)
-		ret = snprintf(cpulist+*pos, ARG_MAX - (size_t)*pos, "%ld", first);
+		ret = snprintf(cpulist + *pos, ARG_MAX - (size_t)*pos, "%ld", first);
 	else
-		ret = snprintf(cpulist+*pos, ARG_MAX - (size_t)*pos, "%ld-%ld", first,last);
+		ret = snprintf(cpulist + *pos, ARG_MAX - (size_t)*pos, "%ld-%ld", first,last);
 
 	if (ret < 0 || (size_t)ret >= (ARG_MAX - (size_t)*pos)) {
 		LOG_ERROR("snprintf failed, will not apply cpu core parking!\n");
@@ -335,7 +335,7 @@ int game_mode_park_cpu(const GameModeCPUInfo *info)
 			} else if (last + 1 == cpu) {
 				last = cpu;
 			} else {
-				if (!log_state (cpulist, &pos, first, last))
+				if (!log_state(cpulist, &pos, first, last))
 					return 0;
 
 				first = cpu;
@@ -345,7 +345,7 @@ int game_mode_park_cpu(const GameModeCPUInfo *info)
 	}
 
 	if (first != -1)
-		log_state (cpulist, &pos, first, last);
+		log_state(cpulist, &pos, first, last);
 
 	const char *const exec_args[] = {
 		"pkexec", LIBEXECDIR "/cpucorectl", "offline", cpulist, NULL,
@@ -379,7 +379,7 @@ int game_mode_unpark_cpu(const GameModeCPUInfo *info)
 			} else if (last + 1 == cpu) {
 				last = cpu;
 			} else {
-				if (!log_state (cpulist, &pos, first, last))
+				if (!log_state(cpulist, &pos, first, last))
 					return 0;
 
 				first = cpu;
@@ -389,7 +389,7 @@ int game_mode_unpark_cpu(const GameModeCPUInfo *info)
 	}
 
 	if (first != -1)
-		log_state (cpulist, &pos, first, last);
+		log_state(cpulist, &pos, first, last);
 
 	const char *const exec_args[] = {
 		"pkexec", LIBEXECDIR "/cpucorectl", "online", cpulist, NULL,
