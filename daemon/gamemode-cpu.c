@@ -166,7 +166,7 @@ static int walk_string(char *cpulist, char *config_cpulist, GameModeCPUInfo *inf
 		for (long cpu = from; cpu < to + 1; cpu++) {
 			CPU_SET_S((size_t)cpu, CPU_ALLOC_SIZE(info->num_cpu), info->online);
 
-			if (info->park_or_pin == 0)
+			if (info->park_or_pin == IS_CPU_PARK)
 				CPU_SET_S((size_t)cpu, CPU_ALLOC_SIZE(info->num_cpu), info->to_keep);
 		}
 	}
@@ -175,7 +175,7 @@ static int walk_string(char *cpulist, char *config_cpulist, GameModeCPUInfo *inf
 	while ((list = parse_cpulist(list, &from, &to))) {
 		for (long cpu = from; cpu < to + 1; cpu++) {
 			if (CPU_ISSET_S((size_t)cpu, CPU_ALLOC_SIZE(info->num_cpu), info->online)) {
-				if (info->park_or_pin == 0)
+				if (info->park_or_pin == IS_CPU_PARK)
 					CPU_CLR_S((size_t)cpu, CPU_ALLOC_SIZE(info->num_cpu), info->to_keep);
 				else
 					CPU_SET_S((size_t)cpu, CPU_ALLOC_SIZE(info->num_cpu), info->to_keep);
@@ -207,13 +207,13 @@ int game_mode_initialise_cpu(GameModeConfig *config, GameModeCPUInfo **info)
 		} else if (strcasecmp(pin_cores, "yes") == 0 || strcasecmp(pin_cores, "true") == 0 || 
 			   strcmp(pin_cores, "1") == 0) {
 			pin_cores[0] = '\0';
-			park_or_pin = 1;
+			park_or_pin = IS_CPU_PIN;
 		} else {
-			park_or_pin = 1;
+			park_or_pin = IS_CPU_PIN;
 		}
 	}
 
-	if (park_or_pin < 1 && park_cores[0] != '\0') {
+	if (park_or_pin != IS_CPU_PIN && park_cores[0] != '\0') {
 		if (strcasecmp(park_cores, "no") == 0 || strcasecmp(park_cores, "false") == 0 || 
 		    strcmp(park_cores, "0") == 0) {
 			if (park_or_pin == -2)
@@ -223,15 +223,15 @@ int game_mode_initialise_cpu(GameModeConfig *config, GameModeCPUInfo **info)
 		} else if (strcasecmp(park_cores, "yes") == 0 || strcasecmp(park_cores, "true") == 0 || 
 			   strcmp(park_cores, "1") == 0) {
 			park_cores[0] = '\0';
-			park_or_pin = 0;
+			park_or_pin = IS_CPU_PARK;
 		} else {
-			park_or_pin = 0;
+			park_or_pin = IS_CPU_PARK;
 		}
 	}
 
 	/* always default to pin */
-	if (park_or_pin < 0)
-		park_or_pin = 1;
+	if (park_or_pin != IS_CPU_PARK)
+		park_or_pin = IS_CPU_PIN;
 
 	char *buf = NULL, *buf2 = NULL;
 	size_t buflen = 0, buf2len = 0;
@@ -264,17 +264,17 @@ int game_mode_initialise_cpu(GameModeConfig *config, GameModeCPUInfo **info)
 	CPU_ZERO_S(CPU_ALLOC_SIZE(new_info->num_cpu), new_info->online);
 	CPU_ZERO_S(CPU_ALLOC_SIZE(new_info->num_cpu), new_info->to_keep);
 
-	if (park_or_pin == 0 && park_cores[0] != '\0') {
+	if (park_or_pin == IS_CPU_PARK && park_cores[0] != '\0') {
 		if (!walk_string(buf, park_cores, new_info))
 			goto error_exit;
-	} else if (park_or_pin == 1 && pin_cores[0] != '\0') {
+	} else if (park_or_pin == IS_CPU_PIN && pin_cores[0] != '\0') {
 		if (!walk_string(buf, pin_cores, new_info))
 			goto error_exit;
 	} else if (!walk_sysfs(buf, &buf2, &buf2len, new_info)) {
 		goto error_exit;
 	}
 
-	if (park_or_pin == 0 && 
+	if (park_or_pin == IS_CPU_PARK && 
 	    CPU_EQUAL_S(CPU_ALLOC_SIZE(new_info->num_cpu), new_info->online, new_info->to_keep)) {
 		game_mode_free_cpu(&new_info);
 		LOG_MSG("I can find no reason to perform core parking on this system!\n");
@@ -332,7 +332,7 @@ static int log_state(char *cpulist, int *pos, const long first, const long last)
 
 int game_mode_park_cpu(const GameModeCPUInfo *info)
 {
-	if (!info || info->park_or_pin == 1)
+	if (!info || info->park_or_pin == IS_CPU_PIN)
 		return 0;
 
 	long first = -1, last = -1;
@@ -377,7 +377,7 @@ int game_mode_park_cpu(const GameModeCPUInfo *info)
 
 int game_mode_unpark_cpu(const GameModeCPUInfo *info)
 {
-	if (!info || info->park_or_pin == 1)
+	if (!info || info->park_or_pin == IS_CPU_PIN)
 		return 0;
 
 	long first = -1, last = -1;
@@ -422,7 +422,7 @@ int game_mode_unpark_cpu(const GameModeCPUInfo *info)
 
 void game_mode_apply_core_pinning(const GameModeCPUInfo *info, const pid_t client)
 {
-	if (!info || info->park_or_pin == 0)
+	if (!info || info->park_or_pin == IS_CPU_PARK)
 		return;
 
 	LOG_MSG("Pinning process...\n");
