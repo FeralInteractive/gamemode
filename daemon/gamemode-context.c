@@ -649,6 +649,8 @@ static int game_mode_remove_client_optimisations(GameModeContext *self, pid_t cl
 	/* Restore the renice value for the process, expecting it to be our config value */
 	game_mode_apply_renice(self, client, (int)config_get_renice_value(self->config));
 
+	/* Restore the process affinity to all online cores */
+	game_mode_undo_core_pinning(self->cpu, client);
 	return 0;
 }
 
@@ -904,6 +906,7 @@ static void game_mode_reload_config_internal(GameModeContext *self)
 
 	/* Reload the config */
 	config_reload(self->config);
+	game_mode_reconfig_cpu(self->config, &self->cpu);
 
 	/* Re-apply all current optimisations */
 	if (game_mode_context_num_clients(self)) {
