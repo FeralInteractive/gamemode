@@ -209,9 +209,11 @@ int game_mode_get_gpu(GameModeGPUInfo *info);
 typedef struct GameModeCPUInfo GameModeCPUInfo;
 int game_mode_initialise_cpu(GameModeConfig *config, GameModeCPUInfo **info);
 void game_mode_free_cpu(GameModeCPUInfo **info);
+void game_mode_reconfig_cpu(GameModeConfig *config, GameModeCPUInfo **info);
 int game_mode_park_cpu(const GameModeCPUInfo *info);
 int game_mode_unpark_cpu(const GameModeCPUInfo *info);
 void game_mode_apply_core_pinning(const GameModeCPUInfo *info, const pid_t client);
+void game_mode_undo_core_pinning(const GameModeCPUInfo *info, const pid_t client);
 
 /** gamemode-dbus.c
  * Provides an API interface for using dbus
