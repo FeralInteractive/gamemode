@@ -186,6 +186,13 @@ static int walk_string(char *cpulist, char *config_cpulist, GameModeCPUInfo *inf
 	return 1;
 }
 
+void game_mode_reconfig_cpu(GameModeConfig *config, GameModeCPUInfo **info)
+{
+	game_mode_unpark_cpu(*info);
+	game_mode_free_cpu(info);
+	game_mode_initialise_cpu(config, info);
+}
+
 int game_mode_initialise_cpu(GameModeConfig *config, GameModeCPUInfo **info)
 {
 	/* Verify input, this is programmer error */
@@ -278,6 +285,12 @@ int game_mode_initialise_cpu(GameModeConfig *config, GameModeCPUInfo **info)
 	    CPU_EQUAL_S(CPU_ALLOC_SIZE(new_info->num_cpu), new_info->online, new_info->to_keep)) {
 		game_mode_free_cpu(&new_info);
 		LOG_MSG("I can find no reason to perform core parking on this system!\n");
+		goto error_exit;
+	}
+
+	if (CPU_COUNT_S(CPU_ALLOC_SIZE(new_info->num_cpu), new_info->to_keep) == 0) {
+		game_mode_free_cpu(&new_info);
+		LOG_MSG("I can find no reason to perform core pinning on this system!\n");
 		goto error_exit;
 	}
 
@@ -428,6 +441,17 @@ void game_mode_apply_core_pinning(const GameModeCPUInfo *info, const pid_t clien
 	LOG_MSG("Pinning process...\n");
 
 	if (sched_setaffinity(client, CPU_ALLOC_SIZE(info->num_cpu), info->to_keep) != 0)
+		LOG_ERROR("Failed to pin process: %s\n", strerror(errno));
+}
+
+void game_mode_undo_core_pinning(const GameModeCPUInfo *info, const pid_t client)
+{
+	if (!info || info->park_or_pin == IS_CPU_PARK)
+		return;
+
+	LOG_MSG("Pinning process back to all online cores...\n");
+
+	if (sched_setaffinity(client, CPU_ALLOC_SIZE(info->num_cpu), info->online) != 0)
 		LOG_ERROR("Failed to pin process: %s\n", strerror(errno));
 }
 
