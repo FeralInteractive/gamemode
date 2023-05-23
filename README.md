@@ -74,7 +74,7 @@ The following games are known to integrate GameMode support (meaning they don't 
 ### Others
 Other apps which can integrate with GameMode include:
 * [ATLauncher](https://atlauncher.com/downloads) Minecraft launcher
-* [PolyMC](https://polymc.org/) Minecraft launcher
+* [Prism Launcher](https://prismlauncher.org/) Minecraft launcher
 * GNOME Shell ([via extension](https://github.com/gicmo/gamemode-extension)) - indicates when GameMode is active in the top panel.
 * Lutris - Enables GameMode for all games by default if available (must have both 32- and 64-bit GameMode libraries installed), configurable in preferences.
 * [RetroArch](https://www.retroarch.com) - is a frontend for emulators, game engines and media players.
@@ -162,7 +162,7 @@ See the [contributors](https://github.com/FeralInteractive/gamemode/graphs/contr
 ---
 ## License
 
-Copyright © 2017-2022 Feral Interactive
+Copyright © 2017-2023 Feral Interactive
 
 GameMode is available under the terms of the BSD 3-Clause License (Revised)
 
