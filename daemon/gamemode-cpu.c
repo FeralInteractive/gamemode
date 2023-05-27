@@ -34,6 +34,7 @@ POSSIBILITY OF SUCH DAMAGE.
 
 #include <sched.h>
 #include <linux/limits.h>
+#include <dirent.h>
 
 #include "common-cpu.h"
 #include "common-external.h"
@@ -433,15 +434,55 @@ int game_mode_unpark_cpu(const GameModeCPUInfo *info)
 	return 0;
 }
 
-void game_mode_apply_core_pinning(const GameModeCPUInfo *info, const pid_t client)
+static void apply_affinity_mask (pid_t pid, size_t cpusetsize, const cpu_set_t *mask, const bool be_silent)
+{
+	char buffer[PATH_MAX];
+	char *proc_path = NULL;
+	DIR *proc_dir = NULL;
+
+	if (!(proc_path = buffered_snprintf(buffer, "/proc/%d/task", pid))) {
+		if (!be_silent) {
+			LOG_ERROR(
+			    "Unable to find executable for PID %d: %s\n",
+			    pid,
+			    strerror(errno));
+		}
+		return;
+	}
+
+	if (!(proc_dir = opendir(proc_path))) {
+		if (!be_silent) {
+			LOG_ERROR(
+			    "Unable to find executable for PID %d: %s\n",
+			    pid,
+			    strerror(errno));
+		}
+		return;
+	}
+
+	struct dirent *entry;
+	while((entry = readdir(proc_dir))) {
+		if (entry->d_name[0] == '.')
+			continue;
+
+		int tid = atoi(entry->d_name);
+
+		if (sched_setaffinity(tid, cpusetsize, mask) != 0 && !be_silent)
+			LOG_ERROR("Failed to pin thread %d: %s\n", tid, strerror(errno));
+	}
+
+	closedir(proc_dir);
+}
+
+void game_mode_apply_core_pinning(const GameModeCPUInfo *info, const pid_t client, const bool be_silent)
 {
 	if (!info || info->park_or_pin == IS_CPU_PARK)
 		return;
 
-	LOG_MSG("Pinning process...\n");
+	if (!be_silent)
+		LOG_MSG("Pinning process...\n");
 
-	if (sched_setaffinity(client, CPU_ALLOC_SIZE(info->num_cpu), info->to_keep) != 0)
-		LOG_ERROR("Failed to pin process: %s\n", strerror(errno));
+	apply_affinity_mask(client, CPU_ALLOC_SIZE(info->num_cpu), info->to_keep, be_silent);
 }
 
 void game_mode_undo_core_pinning(const GameModeCPUInfo *info, const pid_t client)
@@ -450,9 +491,7 @@ void game_mode_undo_core_pinning(const GameModeCPUInfo *info, const pid_t client
 		return;
 
 	LOG_MSG("Pinning process back to all online cores...\n");
-
-	if (sched_setaffinity(client, CPU_ALLOC_SIZE(info->num_cpu), info->online) != 0)
-		LOG_ERROR("Failed to pin process: %s\n", strerror(errno));
+	apply_affinity_mask(client, CPU_ALLOC_SIZE(info->num_cpu), info->online, false);
 }
 
 void game_mode_free_cpu(GameModeCPUInfo **info)
