@@ -535,7 +535,7 @@ static int game_mode_apply_client_optimisations(GameModeContext *self, pid_t cli
 	game_mode_apply_scheduling(self, client);
 
 	/* Apply core pinning */
-	game_mode_apply_core_pinning(self->cpu, client);
+	game_mode_apply_core_pinning(self->cpu, client, false);
 
 	return 0;
 }
@@ -888,6 +888,16 @@ uint64_t game_mode_client_get_timestamp(GameModeClient *client)
 	return (uint64_t)client->timestamp;
 }
 
+static void game_mode_reapply_core_pinning_internal(GameModeContext *self)
+{
+	pthread_rwlock_wrlock(&self->rwlock);
+	if (game_mode_context_num_clients(self)) {
+		for (GameModeClient *cl = self->client; cl; cl = cl->next)
+			game_mode_apply_core_pinning(self->cpu, cl->pid, true);
+	}
+	pthread_rwlock_unlock(&self->rwlock);
+}
+
 /* Internal refresh config function (assumes no contention with reaper thread) */
 static void game_mode_reload_config_internal(GameModeContext *self)
 {
@@ -951,6 +961,9 @@ static void *game_mode_context_reaper(void *userdata)
 
 		/* Expire remaining entries */
 		game_mode_context_auto_expire(self);
+
+		/* Re apply the thread affinity mask (aka core pinning) */
+		game_mode_reapply_core_pinning_internal(self);
 
 		/* Check if we should be reloading the config, and do so if needed */
 		if (config_needs_reload(self->config)) {
