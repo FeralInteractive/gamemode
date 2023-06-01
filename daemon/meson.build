@@ -1,14 +1,16 @@
 # Main daemon
 daemon_sources = [
     'gamemoded.c',
-    'gamemode-context.c',
-    'gamemode-ioprio.c',
-    'gamemode-sched.c',
-    'gamemode-wine.c',
-    'gamemode-tests.c',
-    'gamemode-gpu.c',
-    'gamemode-dbus.c',
     'gamemode-config.c',
+    'gamemode-context.c',
+    'gamemode-dbus.c',
+    'gamemode-env.c',
+    'gamemode-gpu.c',
+    'gamemode-ioprio.c',
+    'gamemode-proc.c',
+    'gamemode-sched.c',
+    'gamemode-tests.c',
+    'gamemode-wine.c',
 ]
 
 gamemoded_includes = gamemode_headers_includes

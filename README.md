@@ -71,6 +71,14 @@ The following games are known to integrate GameMode support (meaning they don't 
 * Total War: WARHAMMER II
 * Total War: WARHAMMER III
 
+### Running the Steam client itself or Wine in GameMode
+The Linux Steam client and Wine can be run in GameMode. GameMode will automatically disable handling key processes of Steam or Wine which may negatively affect your gaming experience. Just prepend `gamemoderun` to your Steam or Wine launching command line:
+```bash
+gamemoderun steam           # for Steam
+gamemoderun wine ./game.exe # for Wine
+```
+Running the whole Steam client itself in GameMode removes the need for individually adjusting the start option of each game. The automatic handling of Wine games is important for the new SteamPlay feature to run Wine games natively from the Linux Steam client.
+
 ### Others
 Other apps which can integrate with GameMode include:
 * [ATLauncher](https://atlauncher.com/downloads) Minecraft launcher

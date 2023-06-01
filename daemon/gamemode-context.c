@@ -581,6 +581,22 @@ int game_mode_context_register(GameModeContext *self, pid_t client, pid_t reques
 	if (!executable)
 		goto error_cleanup;
 
+	/* Check for forced exceptions */
+	char *exe = NULL;
+	if (strstr(executable, "/wineserver") != NULL) {
+		/* wineserver from wine-staging has its own means of setting priorities */
+		LOG_MSG("Client [%s] was rejected (forced to ignore wineserver)\n", executable);
+		goto error_cleanup;
+	} else if (((exe = strstr(executable, "/steam")) != NULL) && (strlen(exe) == 6)) {
+		/* we don't want to touch steam if the whole steam client runs in gamemode */
+		LOG_MSG("Client [%s] was rejected (forced to ignore steam)\n", executable);
+		goto error_cleanup;
+	} else if (strstr(executable, "/steamwebhelper") != NULL) {
+		/* we don't want to touch steamwebhelper if the whole steam client runs in gamemode */
+		LOG_MSG("Client [%s] was rejected (forced to ignore steamwebhelper)\n", executable);
+		goto error_cleanup;
+	}
+
 	/* Check our blacklist and whitelist */
 	if (!config_get_client_whitelisted(self->config, executable)) {
 		LOG_MSG("Client [%s] was rejected (not in whitelist)\n", executable);
