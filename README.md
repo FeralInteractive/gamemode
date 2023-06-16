@@ -78,6 +78,7 @@ Other apps which can integrate with GameMode include:
 * GNOME Shell ([via extension](https://github.com/gicmo/gamemode-extension)) - indicates when GameMode is active in the top panel.
 * Lutris - Enables GameMode for all games by default if available (must have both 32- and 64-bit GameMode libraries installed), configurable in preferences.
 * [RetroArch](https://www.retroarch.com) - is a frontend for emulators, game engines and media players.
+* [Cemu](https://cemu.info/) Wii U emulator.
 
 ---
 ## Development [![Build and test](https://github.com/FeralInteractive/gamemode/actions/workflows/build-and-test.yml/badge.svg)](https://github.com/FeralInteractive/gamemode/actions/workflows/build-and-test.yml)
