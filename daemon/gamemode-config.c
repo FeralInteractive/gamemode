@@ -97,6 +97,8 @@ struct GameModeConfig {
 
 		long inhibit_screensaver;
 
+		long disable_splitlock;
+
 		long reaper_frequency;
 
 		char apply_gpu_optimisations[CONFIG_VALUE_MAX];
@@ -274,6 +276,8 @@ static int inih_handler(void *user, const char *section, const char *name, const
 			valid = get_string_value(value, self->values.ioprio);
 		} else if (strcmp(name, "inhibit_screensaver") == 0) {
 			valid = get_long_value(name, value, &self->values.inhibit_screensaver);
+		} else if (strcmp(name, "disable_splitlock") == 0) {
+			valid = get_long_value(name, value, &self->values.disable_splitlock);
 		}
 	} else if (strcmp(section, "gpu") == 0) {
 		/* Protect the user - don't allow these config options from unsafe config locations */
@@ -371,6 +375,7 @@ static void load_config_files(GameModeConfig *self)
 	/* Set some non-zero defaults */
 	self->values.igpu_power_threshold = DEFAULT_IGPU_POWER_THRESHOLD;
 	self->values.inhibit_screensaver = 1; /* Defaults to on */
+	self->values.disable_splitlock = 1; /* Defaults to on */
 	self->values.reaper_frequency = DEFAULT_REAPER_FREQ;
 	self->values.gpu_device = 0;
 	self->values.nv_powermizer_mode = -1;
@@ -637,6 +642,16 @@ bool config_get_inhibit_screensaver(GameModeConfig *self)
 {
 	long val;
 	memcpy_locked_config(self, &val, &self->values.inhibit_screensaver, sizeof(long));
+	return val == 1;
+}
+
+/*
+ * Gets the disable splitlock setting
+ */
+bool config_get_disable_splitlock(GameModeConfig *self)
+{
+	long val;
+	memcpy_locked_config(self, &val, &self->values.disable_splitlock, sizeof(long));
 	return val == 1;
 }
 
