@@ -226,12 +226,13 @@ static int game_mode_disable_splitlock(GameModeContext *self, bool disable)
 		}
 
 		if (fgets(value_str, sizeof value_str, f) == NULL) {
-			LOG_ERROR("Couldn't read from /proc/sys/kernel/split_lock_mitigate : %s\n", strerror(errno));
+			LOG_ERROR("Couldn't read from /proc/sys/kernel/split_lock_mitigate : %s\n",
+				  strerror(errno));
 			fclose(f);
 			return 1;
 		}
 
-		self->initial_split_lock_mitigate = strtol (value_str, NULL, 10);
+		self->initial_split_lock_mitigate = strtol(value_str, NULL, 10);
 		fclose(f);
 
 		value_num = 0;
@@ -426,7 +427,7 @@ static void game_mode_context_enter(GameModeContext *self)
 		game_mode_inhibit_screensaver(true);
 
 	game_mode_disable_splitlock(self, true);
-	
+
 	/* Apply GPU optimisations by first getting the current values, and then setting the target */
 	game_mode_get_gpu(self->stored_gpu);
 	game_mode_apply_gpu(self->target_gpu);
@@ -463,7 +464,7 @@ static void game_mode_context_leave(GameModeContext *self)
 		game_mode_inhibit_screensaver(false);
 
 	game_mode_disable_splitlock(self, false);
-	
+
 	game_mode_set_governor(self, GAME_MODE_GOVERNOR_DEFAULT);
 
 	game_mode_disable_igpu_optimization(self);
