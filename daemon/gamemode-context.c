@@ -227,7 +227,7 @@ static int game_mode_disable_splitlock(GameModeContext *self, bool disable)
 
 		if (fgets(value_str, sizeof value_str, f) == NULL) {
 			LOG_ERROR("Couldn't read from /proc/sys/kernel/split_lock_mitigate : %s\n",
-				  strerror(errno));
+		                  strerror(errno));
 			fclose(f);
 			return 1;
 		}
