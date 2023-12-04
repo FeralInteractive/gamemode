@@ -31,6 +31,9 @@ POSSIBILITY OF SUCH DAMAGE.
 
 #pragma once
 
+#include <sched.h>
+#include <stdlib.h>
+
 #define IS_CPU_PARK 0
 #define IS_CPU_PIN 1
 
