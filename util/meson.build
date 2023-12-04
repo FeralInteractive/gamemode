@@ -43,3 +43,18 @@ cpucorectl = executable(
     install: true,
     install_dir: path_libexecdir,
 )
+
+# Small target util to set values in /proc/sys/
+procsysctl_sources = [
+    'procsysctl.c',
+]
+
+procsysctl = executable(
+    'procsysctl',
+    sources: procsysctl_sources,
+    dependencies: [
+        link_daemon_common,
+    ],
+    install: true,
+    install_dir: path_libexecdir,
+)
