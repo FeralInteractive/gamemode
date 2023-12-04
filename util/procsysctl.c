@@ -69,6 +69,6 @@ int main(int argc, char *argv[])
 	}
 
 	fprintf(stderr, "usage: procsysctl KEY VALUE\n");
-	fprintf (stderr, "where KEY can by any of 'split_lock_mitigate'\n");
+	fprintf(stderr, "where KEY can by any of 'split_lock_mitigate'\n");
 	return EXIT_FAILURE;
 }
