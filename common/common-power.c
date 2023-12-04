@@ -35,10 +35,10 @@ POSSIBILITY OF SUCH DAMAGE.
 #include "common-power.h"
 #include "common-logging.h"
 
+#include <linux/limits.h>
 #include <assert.h>
 #include <ctype.h>
 #include <glob.h>
-#include <linux/limits.h>
 #include <stdio.h>
 #include <string.h>
 

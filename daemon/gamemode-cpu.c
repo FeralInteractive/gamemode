@@ -32,8 +32,8 @@ POSSIBILITY OF SUCH DAMAGE.
 
 #define _GNU_SOURCE
 
-#include <dirent.h>
 #include <linux/limits.h>
+#include <dirent.h>
 #include <sched.h>
 
 #include "common-cpu.h"
