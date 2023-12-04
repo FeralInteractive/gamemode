@@ -212,7 +212,8 @@ void game_mode_free_cpu(GameModeCPUInfo **info);
 void game_mode_reconfig_cpu(GameModeConfig *config, GameModeCPUInfo **info);
 int game_mode_park_cpu(const GameModeCPUInfo *info);
 int game_mode_unpark_cpu(const GameModeCPUInfo *info);
-void game_mode_apply_core_pinning(const GameModeCPUInfo *info, const pid_t client, const bool be_silent);
+void game_mode_apply_core_pinning(const GameModeCPUInfo *info, const pid_t client,
+                                  const bool be_silent);
 void game_mode_undo_core_pinning(const GameModeCPUInfo *info, const pid_t client);
 
 /** gamemode-dbus.c

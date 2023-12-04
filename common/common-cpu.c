@@ -29,10 +29,10 @@ POSSIBILITY OF SUCH DAMAGE.
 
  */
 
-#include <stdlib.h>
-#include <sched.h>
 #include "common-cpu.h"
 #include "common-logging.h"
+#include <sched.h>
+#include <stdlib.h>
 
 char *parse_cpulist(char *cpulist, long *from, long *to)
 {

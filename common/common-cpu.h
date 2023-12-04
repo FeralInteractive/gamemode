@@ -32,7 +32,7 @@ POSSIBILITY OF SUCH DAMAGE.
 #pragma once
 
 #define IS_CPU_PARK 0
-#define IS_CPU_PIN  1
+#define IS_CPU_PIN 1
 
 /* Storage for CPU info*/
 struct GameModeCPUInfo {
@@ -44,4 +44,3 @@ struct GameModeCPUInfo {
 
 /* parses a list of cpu cores in the format "a,b-c,d-e,f" */
 char *parse_cpulist(char *cpulist, long *from, long *to);
-

@@ -31,9 +31,9 @@ POSSIBILITY OF SUCH DAMAGE.
 
 #define _GNU_SOURCE
 
+#include <linux/limits.h>
 #include <sched.h>
 #include <unistd.h>
-#include <linux/limits.h>
 
 #include "common-cpu.h"
 #include "common-logging.h"
@@ -91,8 +91,8 @@ static int set_state(char *cpulist, int state)
 				/* on some systems one cannot park core #0 */
 				if (cpu != 0) {
 					if (state == '0') {
-						LOG_ERROR("unable to park core #%ld, will not apply cpu core parking!\n", 
-							  cpu);
+						LOG_ERROR("unable to park core #%ld, will not apply cpu core parking!\n",
+						          cpu);
 						return -1;
 					}
 

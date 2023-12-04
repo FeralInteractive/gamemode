@@ -32,9 +32,9 @@ POSSIBILITY OF SUCH DAMAGE.
 
 #define _GNU_SOURCE
 
-#include <sched.h>
-#include <linux/limits.h>
 #include <dirent.h>
+#include <linux/limits.h>
+#include <sched.h>
 
 #include "common-cpu.h"
 #include "common-external.h"
@@ -87,7 +87,7 @@ static int walk_sysfs(char *cpulist, char **buf, size_t *buflen, GameModeCPUInfo
 			CPU_SET_S((size_t)cpu, CPU_ALLOC_SIZE(info->num_cpu), info->online);
 
 			/* check for L3 cache non-uniformity among the cores */
-			int ret = 
+			int ret =
 			    snprintf(path, PATH_MAX, "/sys/devices/system/cpu/cpu%ld/cache/index3/size", cpu);
 
 			if (ret > 0 && ret < PATH_MAX) {
@@ -118,9 +118,9 @@ static int walk_sysfs(char *cpulist, char **buf, size_t *buflen, GameModeCPUInfo
 
 			/* check for frequency non-uniformity among the cores */
 			ret = snprintf(path,
-				       PATH_MAX, 
-				       "/sys/devices/system/cpu/cpu%ld/cpufreq/cpuinfo_max_freq", 
-				       cpu);
+			               PATH_MAX,
+			               "/sys/devices/system/cpu/cpu%ld/cpufreq/cpuinfo_max_freq",
+			               cpu);
 
 			if (ret > 0 && ret < PATH_MAX) {
 				if (read_small_file(path, buf, buflen)) {
@@ -141,14 +141,14 @@ static int walk_sysfs(char *cpulist, char **buf, size_t *buflen, GameModeCPUInfo
 		}
 	}
 
-	if (CPU_EQUAL_S(CPU_ALLOC_SIZE(info->num_cpu), info->online, info->to_keep) || 
+	if (CPU_EQUAL_S(CPU_ALLOC_SIZE(info->num_cpu), info->online, info->to_keep) ||
 	    CPU_COUNT_S(CPU_ALLOC_SIZE(info->num_cpu), info->to_keep) == 0) {
 		LOG_MSG("cpu L3 cache was uniform, this is not a x3D with multiple chiplets\n");
 
 		CPU_FREE(info->to_keep);
 		info->to_keep = freq_cores;
 
-		if (CPU_EQUAL_S(CPU_ALLOC_SIZE(info->num_cpu), info->online, info->to_keep) || 
+		if (CPU_EQUAL_S(CPU_ALLOC_SIZE(info->num_cpu), info->online, info->to_keep) ||
 		    CPU_COUNT_S(CPU_ALLOC_SIZE(info->num_cpu), info->to_keep) == 0)
 			LOG_MSG("cpu frequency was uniform, this is not a big.LITTLE type of system\n");
 	} else {
@@ -209,11 +209,11 @@ int game_mode_initialise_cpu(GameModeConfig *config, GameModeCPUInfo **info)
 	int park_or_pin = -1;
 
 	if (pin_cores[0] != '\0') {
-		if (strcasecmp(pin_cores, "no") == 0 || strcasecmp(pin_cores, "false") == 0 || 
+		if (strcasecmp(pin_cores, "no") == 0 || strcasecmp(pin_cores, "false") == 0 ||
 		    strcmp(pin_cores, "0") == 0) {
 			park_or_pin = -2;
-		} else if (strcasecmp(pin_cores, "yes") == 0 || strcasecmp(pin_cores, "true") == 0 || 
-			   strcmp(pin_cores, "1") == 0) {
+		} else if (strcasecmp(pin_cores, "yes") == 0 || strcasecmp(pin_cores, "true") == 0 ||
+		           strcmp(pin_cores, "1") == 0) {
 			pin_cores[0] = '\0';
 			park_or_pin = IS_CPU_PIN;
 		} else {
@@ -222,14 +222,14 @@ int game_mode_initialise_cpu(GameModeConfig *config, GameModeCPUInfo **info)
 	}
 
 	if (park_or_pin != IS_CPU_PIN && park_cores[0] != '\0') {
-		if (strcasecmp(park_cores, "no") == 0 || strcasecmp(park_cores, "false") == 0 || 
+		if (strcasecmp(park_cores, "no") == 0 || strcasecmp(park_cores, "false") == 0 ||
 		    strcmp(park_cores, "0") == 0) {
 			if (park_or_pin == -2)
 				return 0;
 
 			park_or_pin = -1;
-		} else if (strcasecmp(park_cores, "yes") == 0 || strcasecmp(park_cores, "true") == 0 || 
-			   strcmp(park_cores, "1") == 0) {
+		} else if (strcasecmp(park_cores, "yes") == 0 || strcasecmp(park_cores, "true") == 0 ||
+		           strcmp(park_cores, "1") == 0) {
 			park_cores[0] = '\0';
 			park_or_pin = IS_CPU_PARK;
 		} else {
@@ -282,7 +282,7 @@ int game_mode_initialise_cpu(GameModeConfig *config, GameModeCPUInfo **info)
 		goto error_exit;
 	}
 
-	if (park_or_pin == IS_CPU_PARK && 
+	if (park_or_pin == IS_CPU_PARK &&
 	    CPU_EQUAL_S(CPU_ALLOC_SIZE(new_info->num_cpu), new_info->online, new_info->to_keep)) {
 		game_mode_free_cpu(&new_info);
 		LOG_MSG("I can find no reason to perform core parking on this system!\n");
@@ -355,7 +355,7 @@ int game_mode_park_cpu(const GameModeCPUInfo *info)
 	int pos = 0;
 
 	for (long cpu = 0; cpu < (long)(info->num_cpu); cpu++) {
-		if (CPU_ISSET_S((size_t)cpu, CPU_ALLOC_SIZE(info->num_cpu), info->online) && 
+		if (CPU_ISSET_S((size_t)cpu, CPU_ALLOC_SIZE(info->num_cpu), info->online) &&
 		    !CPU_ISSET_S((size_t)cpu, CPU_ALLOC_SIZE(info->num_cpu), info->to_keep)) {
 			if (first == -1) {
 				first = cpu;
@@ -400,7 +400,7 @@ int game_mode_unpark_cpu(const GameModeCPUInfo *info)
 	int pos = 0;
 
 	for (long cpu = 0; cpu < (long)(info->num_cpu); cpu++) {
-		if (CPU_ISSET_S((size_t)cpu, CPU_ALLOC_SIZE(info->num_cpu), info->online) && 
+		if (CPU_ISSET_S((size_t)cpu, CPU_ALLOC_SIZE(info->num_cpu), info->online) &&
 		    !CPU_ISSET_S((size_t)cpu, CPU_ALLOC_SIZE(info->num_cpu), info->to_keep)) {
 			if (first == -1) {
 				first = cpu;
@@ -434,7 +434,8 @@ int game_mode_unpark_cpu(const GameModeCPUInfo *info)
 	return 0;
 }
 
-static void apply_affinity_mask (pid_t pid, size_t cpusetsize, const cpu_set_t *mask, const bool be_silent)
+static void apply_affinity_mask(pid_t pid, size_t cpusetsize, const cpu_set_t *mask,
+                                const bool be_silent)
 {
 	char buffer[PATH_MAX];
 	char *proc_path = NULL;
@@ -442,26 +443,20 @@ static void apply_affinity_mask (pid_t pid, size_t cpusetsize, const cpu_set_t *
 
 	if (!(proc_path = buffered_snprintf(buffer, "/proc/%d/task", pid))) {
 		if (!be_silent) {
-			LOG_ERROR(
-			    "Unable to find executable for PID %d: %s\n",
-			    pid,
-			    strerror(errno));
+			LOG_ERROR("Unable to find executable for PID %d: %s\n", pid, strerror(errno));
 		}
 		return;
 	}
 
 	if (!(proc_dir = opendir(proc_path))) {
 		if (!be_silent) {
-			LOG_ERROR(
-			    "Unable to find executable for PID %d: %s\n",
-			    pid,
-			    strerror(errno));
+			LOG_ERROR("Unable to find executable for PID %d: %s\n", pid, strerror(errno));
 		}
 		return;
 	}
 
 	struct dirent *entry;
-	while((entry = readdir(proc_dir))) {
+	while ((entry = readdir(proc_dir))) {
 		if (entry->d_name[0] == '.')
 			continue;
 
@@ -474,7 +469,8 @@ static void apply_affinity_mask (pid_t pid, size_t cpusetsize, const cpu_set_t *
 	closedir(proc_dir);
 }
 
-void game_mode_apply_core_pinning(const GameModeCPUInfo *info, const pid_t client, const bool be_silent)
+void game_mode_apply_core_pinning(const GameModeCPUInfo *info, const pid_t client,
+                                  const bool be_silent)
 {
 	if (!info || info->park_or_pin == IS_CPU_PARK)
 		return;
