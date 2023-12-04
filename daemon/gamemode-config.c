@@ -375,7 +375,7 @@ static void load_config_files(GameModeConfig *self)
 	/* Set some non-zero defaults */
 	self->values.igpu_power_threshold = DEFAULT_IGPU_POWER_THRESHOLD;
 	self->values.inhibit_screensaver = 1; /* Defaults to on */
-	self->values.disable_splitlock = 1; /* Defaults to on */
+	self->values.disable_splitlock = 1;	/* Defaults to on */
 	self->values.reaper_frequency = DEFAULT_REAPER_FREQ;
 	self->values.gpu_device = 0;
 	self->values.nv_powermizer_mode = -1;
