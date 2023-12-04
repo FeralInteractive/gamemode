@@ -39,16 +39,14 @@ SortIncludes: true
 # IncludeBlocksStyle changed to IncludeBlocks, between xenial and disco, so we can't use it for consistency
 # IncludeBlocks: Regroup
 IncludeCategories:
-  - Regex: '^"gamemode.h"'
+  - Regex: '^<linux\/'
     Priority: 0
-  - Regex: '^"build-'
-    Priority: 1
-  - Regex: '^"common-'
-    Priority: 2
-  - Regex: '^"gamemode-'
-    Priority: 3
   - Regex: '^<'
-    Priority: 4
+    Priority: 1
+  - Regex: '^"gamemode.h"'
+    Priority: 2
+  - Regex: '^"'
+    Priority: 3
 # IncludeIsMainRegex: (project doesn't use a main includes that can add other includes via regex)
 IndentCaseLabels: false
 IndentWidth: 4
