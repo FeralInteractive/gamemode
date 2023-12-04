@@ -107,6 +107,7 @@ float config_get_igpu_power_threshold(GameModeConfig *self);
 void config_get_soft_realtime(GameModeConfig *self, char softrealtime[CONFIG_VALUE_MAX]);
 long config_get_renice_value(GameModeConfig *self);
 long config_get_ioprio_value(GameModeConfig *self);
+bool config_get_disable_splitlock(GameModeConfig *self);
 
 /*
  * Get various config info for gpu optimisations
