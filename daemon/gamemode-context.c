@@ -91,6 +91,8 @@ struct GameModeContext {
 	uint32_t last_cpu_energy_uj;
 	uint32_t last_igpu_energy_uj;
 
+	long initial_split_lock_mitigate;
+
 	/* Reaper control */
 	struct {
 		pthread_t thread;
@@ -114,6 +116,7 @@ static void game_mode_context_enter(GameModeContext *self);
 static void game_mode_context_leave(GameModeContext *self);
 static char *game_mode_context_find_exe(pid_t pid);
 static void game_mode_execute_scripts(char scripts[CONFIG_LIST_MAX][CONFIG_VALUE_MAX], int timeout);
+static int game_mode_disable_splitlock(GameModeContext *self, bool disable);
 
 static void start_reaper_thread(GameModeContext *self)
 {
@@ -150,6 +153,8 @@ void game_mode_context_init(GameModeContext *self)
 
 	/* Initialise the current CPU info */
 	game_mode_initialise_cpu(self->config, &self->cpu);
+
+	self->initial_split_lock_mitigate = -1;
 
 	pthread_rwlock_init(&self->rwlock, NULL);
 
@@ -200,6 +205,57 @@ void game_mode_context_destroy(GameModeContext *self)
 	config_destroy(self->config);
 
 	pthread_rwlock_destroy(&self->rwlock);
+}
+
+static int game_mode_disable_splitlock(GameModeContext *self, bool disable)
+{
+	if (!config_get_disable_splitlock(self->config))
+		return 0;
+
+	long value_num = self->initial_split_lock_mitigate;
+	char value_str[40];
+
+	if (disable) {
+		FILE *f = fopen("/proc/sys/kernel/split_lock_mitigate", "r");
+		if (f == NULL) {
+			if (errno == ENOENT)
+				return 0;
+
+			LOG_ERROR("Couldn't open /proc/sys/kernel/split_lock_mitigate : %s\n", strerror(errno));
+			return 1;
+		}
+
+		if (fgets(value_str, sizeof value_str, f) == NULL) {
+			LOG_ERROR("Couldn't read from /proc/sys/kernel/split_lock_mitigate : %s\n", strerror(errno));
+			fclose(f);
+			return 1;
+		}
+
+		self->initial_split_lock_mitigate = strtol (value_str, NULL, 10);
+		fclose(f);
+
+		value_num = 0;
+		if (self->initial_split_lock_mitigate == value_num)
+			return 0;
+	}
+
+	if (value_num == -1)
+		return 0;
+
+	sprintf(value_str, "%ld", value_num);
+
+	const char *const exec_args[] = {
+		"pkexec", LIBEXECDIR "/procsysctl", "split_lock_mitigate", value_str, NULL,
+	};
+
+	LOG_MSG("Requesting update of split_lock_mitigate to %s\n", value_str);
+	int ret = run_external_process(exec_args, NULL, -1);
+	if (ret != 0) {
+		LOG_ERROR("Failed to update split_lock_mitigate\n");
+		return ret;
+	}
+
+	return 0;
 }
 
 static int game_mode_set_governor(GameModeContext *self, enum GameModeGovernor gov)
@@ -369,6 +425,8 @@ static void game_mode_context_enter(GameModeContext *self)
 	if (config_get_inhibit_screensaver(self->config))
 		game_mode_inhibit_screensaver(true);
 
+	game_mode_disable_splitlock(self, true);
+	
 	/* Apply GPU optimisations by first getting the current values, and then setting the target */
 	game_mode_get_gpu(self->stored_gpu);
 	game_mode_apply_gpu(self->target_gpu);
@@ -404,6 +462,8 @@ static void game_mode_context_leave(GameModeContext *self)
 	if (config_get_inhibit_screensaver(self->config))
 		game_mode_inhibit_screensaver(false);
 
+	game_mode_disable_splitlock(self, false);
+	
 	game_mode_set_governor(self, GAME_MODE_GOVERNOR_DEFAULT);
 
 	game_mode_disable_igpu_optimization(self);
