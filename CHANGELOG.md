@@ -1,3 +1,15 @@
+## 1.8.1
+
+### Changes
+
+* Fix polkit parse error (#449)
+
+### Contributors
+
+* @Vam-Jam
+
+[View the full list of contributors](https://github.com/FeralInteractive/gamemode/graphs/contributors?from=2022-07-22&to=2023-12-12&type=c)
+
 ## 1.8
 
 ### Changes

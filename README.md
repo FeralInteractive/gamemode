@@ -131,12 +131,12 @@ ACCEPT_KEYWORDS="**" emerge --ask ~games-util/gamemode-9999
 ```
 
 ### Build and Install GameMode
-Then clone, build and install a release version of GameMode at 1.8:
+Then clone, build and install a release version of GameMode at 1.8.1:
 
 ```bash
 git clone https://github.com/FeralInteractive/gamemode.git
 cd gamemode
-git checkout 1.8 # omit to build the master branch
+git checkout 1.8.1 # omit to build the master branch
 ./bootstrap.sh
 ```
 To test GameMode installed and will run correctly:
