@@ -31,6 +31,8 @@ POSSIBILITY OF SUCH DAMAGE.
 
 #pragma once
 
+#define _GNU_SOURCE
+
 #include <sched.h>
 #include <stdlib.h>
 
