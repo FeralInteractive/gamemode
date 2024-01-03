@@ -134,7 +134,7 @@ static int walk_sysfs(char *cpulist, char **buf, size_t *buflen, GameModeCPUInfo
 						max_freq = freq;
 					}
 
-					if (freq - cutoff >= max_freq)
+					if (freq + cutoff >= max_freq)
 						CPU_SET_S((size_t)cpu, CPU_ALLOC_SIZE(info->num_cpu), freq_cores);
 				}
 			}
