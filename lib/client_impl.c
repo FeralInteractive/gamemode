@@ -150,7 +150,7 @@ static int log_error(const char *fmt, ...)
 
 static void hop_off_the_bus(DBusConnection **bus)
 {
-	if (bus == NULL)
+	if (bus == NULL || *bus == NULL)
 		return;
 
 	dbus_connection_unref(*bus);
