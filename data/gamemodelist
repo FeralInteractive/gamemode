@@ -28,5 +28,5 @@ if [ ! -d /proc ]; then
 fi
 
 find /proc -maxdepth 2 -type f -user "${USER}" -readable -name maps -exec \
-  awk -- '$0 ~ /libgamemodeauto\.so\.0/ {pid=FILENAME; gsub("[^0-9]", "", pid); print pid;nextfile}' {} + \
+  awk -- 'BEGINFILE { if (ERRNO) nextfile } $0 ~ /libgamemodeauto\.so\.0/ {pid=FILENAME; gsub("[^0-9]", "", pid); print pid;nextfile}' {} + \
   | xargs | xargs -I{} -- ps -o pid,ppid,user,ni,psr,comm --pid '{}'
