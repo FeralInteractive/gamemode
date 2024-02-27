@@ -41,6 +41,7 @@ POSSIBILITY OF SUCH DAMAGE.
 #include <ini.h>
 
 #include <dirent.h>
+#include <libgen.h>
 #include <math.h>
 #include <pthread.h>
 #include <pwd.h>
