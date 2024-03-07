@@ -87,6 +87,8 @@ struct GameModeContext {
 
 	struct GameModeCPUInfo *cpu; /**<Stored CPU info for the current CPU */
 
+	GameModeIdleInhibitor *idle_inhibitor;
+
 	bool igpu_optimization_enabled;
 	uint32_t last_cpu_energy_uj;
 	uint32_t last_igpu_energy_uj;
@@ -423,8 +425,10 @@ static void game_mode_context_enter(GameModeContext *self)
 	}
 
 	/* Inhibit the screensaver */
-	if (config_get_inhibit_screensaver(self->config))
-		game_mode_inhibit_screensaver(true);
+	if (config_get_inhibit_screensaver(self->config)) {
+		game_mode_destroy_idle_inhibitor(self->idle_inhibitor);
+		self->idle_inhibitor = game_mode_create_idle_inhibitor();
+	}
 
 	game_mode_disable_splitlock(self, true);
 
@@ -460,8 +464,10 @@ static void game_mode_context_leave(GameModeContext *self)
 	game_mode_unpark_cpu(self->cpu);
 
 	/* UnInhibit the screensaver */
-	if (config_get_inhibit_screensaver(self->config))
-		game_mode_inhibit_screensaver(false);
+	if (config_get_inhibit_screensaver(self->config)) {
+		game_mode_destroy_idle_inhibitor(self->idle_inhibitor);
+		self->idle_inhibitor = NULL;
+	}
 
 	game_mode_disable_splitlock(self, false);
 
