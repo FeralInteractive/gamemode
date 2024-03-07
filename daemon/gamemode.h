@@ -219,7 +219,9 @@ void game_mode_undo_core_pinning(const GameModeCPUInfo *info, const pid_t client
 /** gamemode-dbus.c
  * Provides an API interface for using dbus
  */
+typedef struct GameModeIdleInhibitor GameModeIdleInhibitor;
 void game_mode_context_loop(GameModeContext *context) __attribute__((noreturn));
-int game_mode_inhibit_screensaver(bool inhibit);
+GameModeIdleInhibitor *game_mode_create_idle_inhibitor(void);
+void game_mode_destroy_idle_inhibitor(GameModeIdleInhibitor *inhibitor);
 void game_mode_client_registered(pid_t);
 void game_mode_client_unregistered(pid_t);

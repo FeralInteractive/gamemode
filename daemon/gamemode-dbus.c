@@ -708,81 +708,106 @@ void game_mode_context_loop(GameModeContext *context)
 	}
 }
 
+struct GameModeIdleInhibitor {
+	sd_bus *bus;
+	unsigned int cookie;
+};
+
 /**
  * Attempts to inhibit the screensaver
  * Uses the "org.freedesktop.ScreenSaver" interface
  */
-static unsigned int screensaver_inhibit_cookie = 0;
-int game_mode_inhibit_screensaver(bool inhibit)
+GameModeIdleInhibitor *game_mode_create_idle_inhibitor(void)
 {
-	const char *service = "org.freedesktop.ScreenSaver";
-	const char *object_path = "/org/freedesktop/ScreenSaver";
-	const char *interface = "org.freedesktop.ScreenSaver";
-	const char *function = inhibit ? "Inhibit" : "UnInhibit";
-
 	sd_bus_message *msg = NULL;
 	sd_bus *bus_local = NULL;
-	sd_bus_error err;
-	memset(&err, 0, sizeof(sd_bus_error));
-
-	int result = -1;
+	sd_bus_error err = SD_BUS_ERROR_NULL;
 
 	// Open the user bus
 	int ret = sd_bus_open_user(&bus_local);
 	if (ret < 0) {
 		LOG_ERROR("Could not connect to user bus: %s\n", strerror(-ret));
-		return -1;
+		return NULL;
 	}
 
-	if (inhibit) {
-		ret = sd_bus_call_method(bus_local,
-		                         service,
-		                         object_path,
-		                         interface,
-		                         function,
-		                         &err,
-		                         &msg,
-		                         "ss",
-		                         "com.feralinteractive.GameMode",
-		                         "GameMode Activated");
-	} else {
-		ret = sd_bus_call_method(bus_local,
-		                         service,
-		                         object_path,
-		                         interface,
-		                         function,
-		                         &err,
-		                         &msg,
-		                         "u",
-		                         screensaver_inhibit_cookie);
-	}
+	ret = sd_bus_call_method(bus_local,
+	                         "org.freedesktop.ScreenSaver",
+	                         "/org/freedesktop/ScreenSaver",
+	                         "org.freedesktop.ScreenSaver",
+	                         "Inhibit",
+	                         &err,
+	                         &msg,
+	                         "ss",
+	                         "com.feralinteractive.GameMode",
+	                         "GameMode Activated");
 
 	if (ret < 0) {
 		LOG_ERROR(
-		    "Could not call %s on %s: %s\n"
+		    "Failed to call Inhibit on org.freedesktop.ScreenSaver: %s\n"
 		    "\t%s\n"
 		    "\t%s\n",
-		    function,
-		    service,
 		    strerror(-ret),
 		    err.name,
 		    err.message);
-	} else if (inhibit) {
-		// Read the reply
-		ret = sd_bus_message_read(msg, "u", &screensaver_inhibit_cookie);
-		if (ret < 0) {
-			LOG_ERROR("Failure to parse response from %s on %s: %s\n",
-			          function,
-			          service,
-			          strerror(-ret));
-		} else {
-			result = 0;
-		}
-	} else {
-		result = 0;
+		sd_bus_close(bus_local);
+		sd_bus_unrefp(&bus_local);
+		return NULL;
 	}
 
-	sd_bus_unref(bus_local);
+	// Read the reply
+	unsigned int cookie = 0;
+	ret = sd_bus_message_read(msg, "u", &cookie);
+	if (ret < 0) {
+		LOG_ERROR("Invalid response from Inhibit on org.freedesktop.ScreenSaver: %s\n",
+		          strerror(-ret));
+		sd_bus_close(bus_local);
+		sd_bus_unrefp(&bus_local);
+		return NULL;
+	}
 
-	return result;
+	GameModeIdleInhibitor *inhibitor = malloc(sizeof(GameModeIdleInhibitor));
+	if (inhibitor == NULL) {
+		sd_bus_close(bus_local);
+		sd_bus_unrefp(&bus_local);
+		return NULL;
+	}
+
+	inhibitor->bus = bus_local;
+	inhibitor->cookie = cookie;
+
+	return inhibitor;
+}
+
+void game_mode_destroy_idle_inhibitor(GameModeIdleInhibitor *inhibitor)
+{
+	sd_bus_message *msg = NULL;
+	sd_bus_error err = SD_BUS_ERROR_NULL;
+
+	if (inhibitor == NULL) {
+		return;
+	}
+
+	int ret = sd_bus_call_method(inhibitor->bus,
+	                             "org.freedesktop.ScreenSaver",
+	                             "/org/freedesktop/ScreenSaver",
+	                             "org.freedesktop.ScreenSaver",
+	                             "UnInhibit",
+	                             &err,
+	                             &msg,
+	                             "u",
+	                             inhibitor->cookie);
+
+	if (ret < 0) {
+		LOG_ERROR(
+		    "Failed to call UnInhibit on org.freedesktop.ScreenSaver: %s\n"
+		    "\t%s\n"
+		    "\t%s\n",
+		    strerror(-ret),
+		    err.name,
+		    err.message);
+	}
+
+	sd_bus_close(inhibitor->bus);
+	sd_bus_unrefp(&inhibitor->bus);
+	free(inhibitor);
 }
