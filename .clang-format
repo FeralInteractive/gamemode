@@ -19,7 +19,6 @@ AlwaysBreakTemplateDeclarations: false
 BinPackArguments: false
 BinPackParameters: true
 BreakBeforeBinaryOperators: None
-BreakBeforeBinaryOperators: None
 BreakBeforeBraces: Linux
 BreakBeforeTernaryOperators: true
 BreakConstructorInitializersBeforeComma: false
