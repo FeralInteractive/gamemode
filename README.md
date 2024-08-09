@@ -75,12 +75,13 @@ The following games are known to integrate GameMode support (meaning they don't 
 ### Others
 Other apps which can integrate with GameMode include:
 * [ATLauncher](https://atlauncher.com/downloads) Minecraft launcher
-* [Cemu](https://cemu.info/) Wii U emulator.
-* [GNOME Shell Extension](https://github.com/trsnaqe/gamemode-shell-extension) - GameMode status indicator extension for GNOME Shell.
-* Lutris - Enables GameMode for all games by default if available (must have both 32- and 64-bit GameMode libraries installed), configurable in preferences.
+* [Cemu](https://cemu.info/) Wii U emulator
+* [GNOME Shell Extension](https://github.com/trsnaqe/gamemode-shell-extension) GameMode status indicator extension for GNOME Shell
+* [Lutris](https://lutris.net/) Install and play any video game easily
+  * Enables GameMode for all games by default if available (must have both 32- and 64-bit GameMode libraries installed), configurable in preferences.
 * [Prism Launcher](https://prismlauncher.org/) Minecraft launcher
-* [RetroArch](https://www.retroarch.com) - is a frontend for emulators, game engines and media players.
-* [Vinegar](https://vinegarhq.org/) - Roblox Player/Studio bootstrapper.
+* [RetroArch](https://www.retroarch.com) Frontend for emulators, game engines and media players
+* [Vinegar](https://vinegarhq.org/) Roblox Player/Studio bootstrapper
 ---
 ## Development [![Build and test](https://github.com/FeralInteractive/gamemode/actions/workflows/build-and-test.yml/badge.svg)](https://github.com/FeralInteractive/gamemode/actions/workflows/build-and-test.yml)
 
