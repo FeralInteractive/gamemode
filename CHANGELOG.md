@@ -1,3 +1,24 @@
+## 1.8.2
+
+### Changes
+
+* Fix idle inhibitor closing bus connection too early (#466)
+* Fix hybrid CPU core pinning (#455)
+* Fix unreadable process maps in gamemodelist (#463)
+* Fixed crash if dbus is not accesible (#458)
+* Various bugfixes and improvements to documentation
+
+### Contributors
+
+* @notpeelz
+* @patatahooligan
+* Reilly Brogan @ReillyBrogan
+* Alexandru Ionut Tripon @Trial97
+* Kostadin @kostadinsh
+* Daniel Martinez @Calandracas606
+
+[View the full list of contributors](https://github.com/FeralInteractive/gamemode/graphs/contributors?from=2023-12-13&to=2024-08-19&type=c)
+
 ## 1.8.1
 
 ### Changes
