@@ -801,6 +801,8 @@ static int game_mode_run_feature_tests(struct GameModeConfig *config)
 			LOG_MSG("::: Passed\n");
 		else {
 			LOG_MSG("::: Failed!\n");
+			LOG_MSG("    -- You may need to add your user to the gamemode group:");
+			LOG_MSG("    -- $ sudo usermod -aG gamemode $(whoami)");
 			// Consider the CPU governor feature required
 			status = -1;
 		}
