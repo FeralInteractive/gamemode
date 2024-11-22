@@ -80,6 +80,7 @@ Other apps which can integrate with GameMode include:
 * [Lutris](https://lutris.net/) Install and play any video game easily
   * Enables GameMode for all games by default if available (must have both 32- and 64-bit GameMode libraries installed), configurable in preferences.
 * [Prism Launcher](https://prismlauncher.org/) Minecraft launcher
+* [PolyMC](https://polymc.org/) Minecraft launcher
 * [RetroArch](https://www.retroarch.com) Frontend for emulators, game engines and media players
 * [Vinegar](https://vinegarhq.org/) Roblox Player/Studio bootstrapper
 ---
