@@ -73,7 +73,7 @@ static int read_small_file(char *path, char **buf, size_t *buflen)
 	return 1;
 }
 
-static void set_online_from_list (char *cpulist, GameModeCPUInfo *info)
+static void set_online_from_list(char *cpulist, GameModeCPUInfo *info)
 {
 	long from, to;
 	while ((cpulist = parse_cpulist(cpulist, &from, &to))) {
