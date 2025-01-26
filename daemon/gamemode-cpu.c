@@ -309,7 +309,7 @@ int game_mode_initialise_cpu(GameModeConfig *config, GameModeCPUInfo **info)
 		if (!walk_string(buf, pin_cores, new_info))
 			goto error_exit;
 	} else {
-		set_online_from_list (buf, new_info);
+		set_online_from_list(buf, new_info);
 
 		if (!check_pe_cores(&buf2, &buf2len, new_info)) {
 			if (!walk_sysfs(buf, &buf2, &buf2len, new_info))
