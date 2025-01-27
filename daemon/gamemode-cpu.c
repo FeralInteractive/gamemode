@@ -73,6 +73,38 @@ static int read_small_file(char *path, char **buf, size_t *buflen)
 	return 1;
 }
 
+static void set_online_from_list(char *cpulist, GameModeCPUInfo *info)
+{
+	long from, to;
+	while ((cpulist = parse_cpulist(cpulist, &from, &to))) {
+		for (long cpu = from; cpu < to + 1; cpu++) {
+			CPU_SET_S((size_t)cpu, CPU_ALLOC_SIZE(info->num_cpu), info->online);
+		}
+	}
+}
+
+static int check_pe_cores(char **buf, size_t *buflen, GameModeCPUInfo *info)
+{
+	if (!read_small_file("/sys/devices/cpu_core/cpus", buf, buflen))
+		return 0;
+
+	LOG_MSG("found kernel support for checking P/E-cores\n");
+
+	long from, to;
+	char *list = *buf;
+	while ((list = parse_cpulist(list, &from, &to))) {
+		for (long cpu = from; cpu < to + 1; cpu++) {
+			CPU_SET_S((size_t)cpu, CPU_ALLOC_SIZE(info->num_cpu), info->to_keep);
+		}
+	}
+
+	if (CPU_EQUAL_S(CPU_ALLOC_SIZE(info->num_cpu), info->online, info->to_keep) ||
+	    CPU_COUNT_S(CPU_ALLOC_SIZE(info->num_cpu), info->to_keep) == 0)
+		LOG_MSG("kernel did not indicate that this was an P/E-cores system\n");
+
+	return 1;
+}
+
 static int walk_sysfs(char *cpulist, char **buf, size_t *buflen, GameModeCPUInfo *info)
 {
 	char path[PATH_MAX];
@@ -84,8 +116,6 @@ static int walk_sysfs(char *cpulist, char **buf, size_t *buflen, GameModeCPUInfo
 	char *list = cpulist;
 	while ((list = parse_cpulist(list, &from, &to))) {
 		for (long cpu = from; cpu < to + 1; cpu++) {
-			CPU_SET_S((size_t)cpu, CPU_ALLOC_SIZE(info->num_cpu), info->online);
-
 			/* check for L3 cache non-uniformity among the cores */
 			int ret =
 			    snprintf(path, PATH_MAX, "/sys/devices/system/cpu/cpu%ld/cache/index3/size", cpu);
@@ -125,7 +155,7 @@ static int walk_sysfs(char *cpulist, char **buf, size_t *buflen, GameModeCPUInfo
 			if (ret > 0 && ret < PATH_MAX) {
 				if (read_small_file(path, buf, buflen)) {
 					unsigned long long freq = strtoull(*buf, NULL, 10);
-					unsigned long long cutoff = (freq * 5) / 100;
+					unsigned long long cutoff = (freq * 10) / 100;
 
 					if (freq > max_freq) {
 						if (max_freq < freq - cutoff)
@@ -278,8 +308,13 @@ int game_mode_initialise_cpu(GameModeConfig *config, GameModeCPUInfo **info)
 	} else if (park_or_pin == IS_CPU_PIN && pin_cores[0] != '\0') {
 		if (!walk_string(buf, pin_cores, new_info))
 			goto error_exit;
-	} else if (!walk_sysfs(buf, &buf2, &buf2len, new_info)) {
-		goto error_exit;
+	} else {
+		set_online_from_list(buf, new_info);
+
+		if (!check_pe_cores(&buf2, &buf2len, new_info)) {
+			if (!walk_sysfs(buf, &buf2, &buf2len, new_info))
+				goto error_exit;
+		}
 	}
 
 	if (park_or_pin == IS_CPU_PARK &&
