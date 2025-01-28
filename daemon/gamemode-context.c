@@ -36,6 +36,7 @@ POSSIBILITY OF SUCH DAMAGE.
 #include "common-helpers.h"
 #include "common-logging.h"
 #include "common-power.h"
+#include "common-profile.h"
 
 #include "gamemode.h"
 #include "gamemode-config.h"
@@ -71,6 +72,11 @@ enum GameModeGovernor {
 	GAME_MODE_GOVERNOR_IGPU_DESIRED,
 };
 
+enum GameModeProfile {
+	GAME_MODE_PROFILE_DEFAULT,
+	GAME_MODE_PROFILE_DESIRED,
+};
+
 struct GameModeContext {
 	pthread_rwlock_t rwlock; /**<Guard access to the client list */
 	_Atomic int refcount;    /**<Allow cycling the game mode */
@@ -81,6 +87,9 @@ struct GameModeContext {
 	char initial_cpu_mode[64]; /**<Only updates when we can */
 
 	enum GameModeGovernor current_govenor;
+
+	char initial_profile[64];
+	enum GameModeProfile current_profile;
 
 	struct GameModeGPUInfo *stored_gpu; /**<Stored GPU info for the current GPU */
 	struct GameModeGPUInfo *target_gpu; /**<Target GPU info for the current GPU */
@@ -319,6 +328,59 @@ static int game_mode_set_governor(GameModeContext *self, enum GameModeGovernor g
 	return 0;
 }
 
+static int game_mode_set_profile(GameModeContext *self, enum GameModeProfile prof)
+{
+	if (self->current_profile == prof) {
+		return 0;
+	}
+
+	if (self->current_profile == GAME_MODE_PROFILE_DEFAULT) {
+		/* Read the initial platform profile so we can revert it correctly */
+		const char *initial_state = get_profile_state();
+		if (initial_state == NULL) {
+			return 0;
+		}
+
+		/* store the initial platform profile */
+		strncpy(self->initial_profile, initial_state, sizeof(self->initial_profile) - 1);
+		self->initial_profile[sizeof(self->initial_profile) - 1] = '\0';
+		LOG_MSG("platform profile was initially set to [%s]\n", initial_state);
+	}
+
+	const char *prof_str = NULL;
+	char prof_config_str[CONFIG_VALUE_MAX] = { 0 };
+	switch (prof) {
+	case GAME_MODE_PROFILE_DEFAULT:
+		config_get_default_profile(self->config, prof_config_str);
+		prof_str = prof_config_str[0] != '\0' ? prof_config_str : self->initial_profile;
+		break;
+
+	case GAME_MODE_PROFILE_DESIRED:
+		config_get_desired_profile(self->config, prof_config_str);
+		prof_str = prof_config_str[0] != '\0' ? prof_config_str : "performance";
+		break;
+
+	default:
+		assert(!"Invalid platform profile requested");
+	}
+
+	const char *const exec_args[] = {
+		"pkexec", LIBEXECDIR "/platprofctl", "set", prof_str, NULL,
+	};
+
+	LOG_MSG("Requesting update of platform profile to %s\n", prof_str);
+	int ret = run_external_process(exec_args, NULL, -1);
+	if (ret != 0) {
+		LOG_ERROR("Failed to update platform profile\n");
+		return ret;
+	}
+
+	/* Update the current govenor only if we succeed at setting govenors. */
+	self->current_profile = prof;
+
+	return 0;
+}
+
 static void game_mode_enable_igpu_optimization(GameModeContext *self)
 {
 	float threshold = config_get_igpu_power_threshold(self->config);
@@ -424,6 +486,8 @@ static void game_mode_context_enter(GameModeContext *self)
 		game_mode_enable_igpu_optimization(self);
 	}
 
+	game_mode_set_profile(self, GAME_MODE_PROFILE_DESIRED);
+
 	/* Inhibit the screensaver */
 	if (config_get_inhibit_screensaver(self->config)) {
 		game_mode_destroy_idle_inhibitor(self->idle_inhibitor);
@@ -470,6 +534,8 @@ static void game_mode_context_leave(GameModeContext *self)
 	}
 
 	game_mode_disable_splitlock(self, false);
+
+	game_mode_set_profile(self, GAME_MODE_PROFILE_DEFAULT);
 
 	game_mode_set_governor(self, GAME_MODE_GOVERNOR_DEFAULT);
 

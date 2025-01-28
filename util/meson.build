@@ -58,3 +58,18 @@ procsysctl = executable(
     install: true,
     install_dir: path_libexecdir,
 )
+
+# Small target util to get and set platform profile
+platprofctl_sources = [
+    'platprofctl.c',
+]
+
+platprofctl = executable(
+    'platprofctl',
+    sources: platprofctl_sources,
+    dependencies: [
+        link_daemon_common,
+    ],
+    install: true,
+    install_dir: path_libexecdir,
+)
