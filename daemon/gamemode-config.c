@@ -88,6 +88,9 @@ struct GameModeConfig {
 		char defaultgov[CONFIG_VALUE_MAX];
 		char desiredgov[CONFIG_VALUE_MAX];
 
+		char defaultprof[CONFIG_VALUE_MAX];
+		char desiredprof[CONFIG_VALUE_MAX];
+
 		char igpu_desiredgov[CONFIG_VALUE_MAX];
 		float igpu_power_threshold;
 
@@ -265,6 +268,10 @@ static int inih_handler(void *user, const char *section, const char *name, const
 			valid = get_string_value(value, self->values.defaultgov);
 		} else if (strcmp(name, "desiredgov") == 0) {
 			valid = get_string_value(value, self->values.desiredgov);
+		} else if (strcmp(name, "defaultprof") == 0) {
+			valid = get_string_value(value, self->values.defaultprof);
+		} else if (strcmp(name, "desiredprof") == 0) {
+			valid = get_string_value(value, self->values.desiredprof);
 		} else if (strcmp(name, "igpu_desiredgov") == 0) {
 			valid = get_string_value(value, self->values.igpu_desiredgov);
 		} else if (strcmp(name, "igpu_power_threshold") == 0) {
@@ -691,11 +698,27 @@ void config_get_default_governor(GameModeConfig *self, char governor[CONFIG_VALU
 }
 
 /*
- * Get the chosen desired governor
+ * Get the chosen desired platform profile
  */
 void config_get_desired_governor(GameModeConfig *self, char governor[CONFIG_VALUE_MAX])
 {
 	memcpy_locked_config(self, governor, self->values.desiredgov, sizeof(self->values.desiredgov));
+}
+
+/*
+ * Get the chosen default platform profile
+ */
+void config_get_default_profile(GameModeConfig *self, char profile[CONFIG_VALUE_MAX])
+{
+	memcpy_locked_config(self, profile, self->values.defaultprof, sizeof(self->values.defaultprof));
+}
+
+/*
+ * Get the chosen desired governor
+ */
+void config_get_desired_profile(GameModeConfig *self, char profile[CONFIG_VALUE_MAX])
+{
+	memcpy_locked_config(self, profile, self->values.desiredprof, sizeof(self->values.desiredprof));
 }
 
 /*
