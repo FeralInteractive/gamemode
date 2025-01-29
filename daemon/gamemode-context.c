@@ -218,6 +218,29 @@ void game_mode_context_destroy(GameModeContext *self)
 	pthread_rwlock_destroy(&self->rwlock);
 }
 
+static void game_mode_store_splitlock(GameModeContext *self)
+{
+	FILE *f = fopen("/proc/sys/kernel/split_lock_mitigate", "r");
+	if (f == NULL) {
+		if (errno == ENOENT)
+			return;
+
+		LOG_ERROR("Couldn't open /proc/sys/kernel/split_lock_mitigate : %s\n", strerror(errno));
+		return;
+	}
+
+	char value_str[40];
+	if (fgets(value_str, sizeof value_str, f) == NULL) {
+		LOG_ERROR("Couldn't read from /proc/sys/kernel/split_lock_mitigate : %s\n",
+		          strerror(errno));
+		fclose(f);
+		return;
+	}
+	fclose(f);
+
+	self->initial_split_lock_mitigate = strtol(value_str, NULL, 10);
+}
+
 static int game_mode_disable_splitlock(GameModeContext *self, bool disable)
 {
 	if (!config_get_disable_splitlock(self->config))
@@ -226,30 +249,8 @@ static int game_mode_disable_splitlock(GameModeContext *self, bool disable)
 	long value_num = self->initial_split_lock_mitigate;
 	char value_str[40];
 
-	if (disable) {
-		FILE *f = fopen("/proc/sys/kernel/split_lock_mitigate", "r");
-		if (f == NULL) {
-			if (errno == ENOENT)
-				return 0;
-
-			LOG_ERROR("Couldn't open /proc/sys/kernel/split_lock_mitigate : %s\n", strerror(errno));
-			return 1;
-		}
-
-		if (fgets(value_str, sizeof value_str, f) == NULL) {
-			LOG_ERROR("Couldn't read from /proc/sys/kernel/split_lock_mitigate : %s\n",
-			          strerror(errno));
-			fclose(f);
-			return 1;
-		}
-
-		self->initial_split_lock_mitigate = strtol(value_str, NULL, 10);
-		fclose(f);
-
-		value_num = 0;
-		if (self->initial_split_lock_mitigate == value_num)
-			return 0;
-	}
+	if (disable && value_num == 0)
+		return 0;
 
 	if (value_num == -1)
 		return 0;
@@ -270,23 +271,24 @@ static int game_mode_disable_splitlock(GameModeContext *self, bool disable)
 	return 0;
 }
 
+static void game_mode_store_governor(GameModeContext *self)
+{
+	if (self->current_govenor != GAME_MODE_GOVERNOR_DEFAULT)
+		return;
+
+	const char *initial_state = get_gov_state();
+	if (initial_state == NULL)
+		return;
+
+	strncpy(self->initial_cpu_mode, initial_state, sizeof(self->initial_cpu_mode) - 1);
+	self->initial_cpu_mode[sizeof(self->initial_cpu_mode) - 1] = '\0';
+	LOG_MSG("governor was initially set to [%s]\n", initial_state);
+}
+
 static int game_mode_set_governor(GameModeContext *self, enum GameModeGovernor gov)
 {
 	if (self->current_govenor == gov) {
 		return 0;
-	}
-
-	if (self->current_govenor == GAME_MODE_GOVERNOR_DEFAULT) {
-		/* Read the initial governor state so we can revert it correctly */
-		const char *initial_state = get_gov_state();
-		if (initial_state == NULL) {
-			return 0;
-		}
-
-		/* store the initial cpu governor mode */
-		strncpy(self->initial_cpu_mode, initial_state, sizeof(self->initial_cpu_mode) - 1);
-		self->initial_cpu_mode[sizeof(self->initial_cpu_mode) - 1] = '\0';
-		LOG_MSG("governor was initially set to [%s]\n", initial_state);
 	}
 
 	char *gov_str = NULL;
@@ -328,23 +330,24 @@ static int game_mode_set_governor(GameModeContext *self, enum GameModeGovernor g
 	return 0;
 }
 
+static void game_mode_store_profile(GameModeContext *self)
+{
+	if (self->current_profile != GAME_MODE_PROFILE_DEFAULT)
+		return;
+
+	const char *initial_state = get_profile_state();
+	if (initial_state == NULL)
+		return;
+
+	strncpy(self->initial_profile, initial_state, sizeof(self->initial_profile) - 1);
+	self->initial_profile[sizeof(self->initial_profile) - 1] = '\0';
+	LOG_MSG("platform profile was initially set to [%s]\n", initial_state);
+}
+
 static int game_mode_set_profile(GameModeContext *self, enum GameModeProfile prof)
 {
 	if (self->current_profile == prof) {
 		return 0;
-	}
-
-	if (self->current_profile == GAME_MODE_PROFILE_DEFAULT) {
-		/* Read the initial platform profile so we can revert it correctly */
-		const char *initial_state = get_profile_state();
-		if (initial_state == NULL) {
-			return 0;
-		}
-
-		/* store the initial platform profile */
-		strncpy(self->initial_profile, initial_state, sizeof(self->initial_profile) - 1);
-		self->initial_profile[sizeof(self->initial_profile) - 1] = '\0';
-		LOG_MSG("platform profile was initially set to [%s]\n", initial_state);
 	}
 
 	const char *prof_str = NULL;
@@ -468,6 +471,15 @@ unlock:
 	pthread_rwlock_unlock(&self->rwlock);
 }
 
+static void game_mode_context_store_defaults(GameModeContext *self)
+{
+	game_mode_store_profile(self);
+
+	game_mode_store_governor(self);
+
+	game_mode_store_splitlock(self);
+}
+
 /**
  * Pivot into game mode.
  *
@@ -479,14 +491,20 @@ static void game_mode_context_enter(GameModeContext *self)
 	LOG_MSG("Entering Game Mode...\n");
 	sd_notifyf(0, "STATUS=%sGameMode is now active.%s\n", "\x1B[1;32m", "\x1B[0m");
 
+	/* Store the default value for everything before anything changes. */
+	game_mode_context_store_defaults(self);
+
+	/* Set the profile before anything else since it can restrict things
+	 * like the governor.
+	 */
+	game_mode_set_profile(self, GAME_MODE_PROFILE_DESIRED);
+
 	if (game_mode_set_governor(self, GAME_MODE_GOVERNOR_DESIRED) == 0) {
 		/* We just switched to a non-default governor.  Enable the iGPU
 		 * optimization.
 		 */
 		game_mode_enable_igpu_optimization(self);
 	}
-
-	game_mode_set_profile(self, GAME_MODE_PROFILE_DESIRED);
 
 	/* Inhibit the screensaver */
 	if (config_get_inhibit_screensaver(self->config)) {
@@ -522,6 +540,11 @@ static void game_mode_context_leave(GameModeContext *self)
 	LOG_MSG("Leaving Game Mode...\n");
 	sd_notifyf(0, "STATUS=%sGameMode is currently deactivated.%s\n", "\x1B[1;36m", "\x1B[0m");
 
+	/* Restore profile before anything else since it can restrict things
+	 * like the governor.
+	 */
+	game_mode_set_profile(self, GAME_MODE_PROFILE_DEFAULT);
+
 	/* Remove GPU optimisations */
 	game_mode_apply_gpu(self->stored_gpu);
 
@@ -534,8 +557,6 @@ static void game_mode_context_leave(GameModeContext *self)
 	}
 
 	game_mode_disable_splitlock(self, false);
-
-	game_mode_set_profile(self, GAME_MODE_PROFILE_DEFAULT);
 
 	game_mode_set_governor(self, GAME_MODE_GOVERNOR_DEFAULT);
 
