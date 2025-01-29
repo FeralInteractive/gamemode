@@ -36,6 +36,7 @@ POSSIBILITY OF SUCH DAMAGE.
 #include "common-gpu.h"
 #include "common-helpers.h"
 #include "common-logging.h"
+#include "common-profile.h"
 
 #include "gamemode.h"
 #include "gamemode-config.h"
@@ -351,6 +352,59 @@ static int run_cpu_governor_tests(struct GameModeConfig *config)
 	currentgov = get_gov_state();
 	if (strncmp(currentgov, defaultgov, CONFIG_VALUE_MAX) != 0) {
 		LOG_ERROR("Governor was not set back to %s (was actually %s)!\n", defaultgov, currentgov);
+		return -1;
+	}
+
+	return 0;
+}
+
+/* Check the platform profile setting works */
+static int run_platform_profile_tests(struct GameModeConfig *config)
+{
+	/* get the two config parameters we care about */
+	char desiredprof[CONFIG_VALUE_MAX] = { 0 };
+	config_get_desired_profile(config, desiredprof);
+
+	if (desiredprof[0] == '\0')
+		strcpy(desiredprof, "performance");
+
+	char defaultprof[CONFIG_VALUE_MAX] = { 0 };
+	config_get_default_profile(config, defaultprof);
+
+	if (defaultprof[0] == '\0') {
+		const char *currentprof = get_profile_state();
+		if (currentprof) {
+			strncpy(defaultprof, currentprof, CONFIG_VALUE_MAX - 1);
+		} else {
+			LOG_ERROR(
+			    "Could not get current platform profile state, this indicates an error! See rest "
+			    "of log.\n");
+			return -1;
+		}
+	}
+
+	/* Start gamemode */
+	gamemode_request_start();
+
+	/* Verify the platform profile is the desired one */
+	const char *currentprof = get_profile_state();
+	if (strncmp(currentprof, desiredprof, CONFIG_VALUE_MAX) != 0) {
+		LOG_ERROR("Platform profile was not set to %s (was actually %s)!\n",
+		          desiredprof,
+		          currentprof);
+		gamemode_request_end();
+		return -1;
+	}
+
+	/* End gamemode */
+	gamemode_request_end();
+
+	/* Verify the platform profile has been set back */
+	currentprof = get_profile_state();
+	if (strncmp(currentprof, defaultprof, CONFIG_VALUE_MAX) != 0) {
+		LOG_ERROR("Platform profile was not set back to %s (was actually %s)!\n",
+		          defaultprof,
+		          currentprof);
 		return -1;
 	}
 
@@ -804,6 +858,23 @@ static int game_mode_run_feature_tests(struct GameModeConfig *config)
 			LOG_MSG("    -- You may need to add your user to the gamemode group:");
 			LOG_MSG("    -- $ sudo usermod -aG gamemode $(whoami)");
 			// Consider the CPU governor feature required
+			status = -1;
+		}
+	}
+
+	/* Does the platform profile get set properly? */
+	{
+		LOG_MSG("::: Verifying platform profile setting\n");
+
+		int govstatus = run_platform_profile_tests(config);
+
+		if (govstatus == 0)
+			LOG_MSG("::: Passed\n");
+		else {
+			LOG_MSG("::: Failed!\n");
+			LOG_MSG("    -- You may need to add your user to the gamemode group:");
+			LOG_MSG("    -- $ sudo usermod -aG gamemode $(whoami)");
+			// Consider the platform profile feature requried
 			status = -1;
 		}
 	}
