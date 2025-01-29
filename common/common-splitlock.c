@@ -31,48 +31,34 @@ POSSIBILITY OF SUCH DAMAGE.
 
 #define _GNU_SOURCE
 
-#include "common-profile.h"
+#include "common-splitlock.h"
 #include "common-logging.h"
 
 /**
- * Path for platform profile
+ * Path for the split lock mitigation state
  */
-const char *profile_path = "/sys/firmware/acpi/platform_profile";
+const char *splitlock_path = "/proc/sys/kernel/split_lock_mitigate";
 
 /**
- * Return the current platform profile state
+ * Return the current split lock mitigation state
  */
-const char *get_profile_state(void)
+long get_splitlock_state(void)
 {
-	/* Persistent profile state */
-	static char profile[64] = { 0 };
-	memset(profile, 0, sizeof(profile));
-
-	FILE *f = fopen(profile_path, "r");
+	FILE *f = fopen(splitlock_path, "r");
 	if (!f) {
-		LOG_ERROR("Failed to open file for read %s\n", profile_path);
-		return "none";
+		LOG_ERROR("Failed to open file for read %s\n", splitlock_path);
+		return -1;
 	}
 
-	/* Grab the file length */
-	fseek(f, 0, SEEK_END);
-	long length = ftell(f);
-	fseek(f, 0, SEEK_SET);
+	char contents[41] = { 0 };
+	long value = -1;
 
-	if (length == -1) {
-		LOG_ERROR("Failed to seek file %s\n", profile_path);
+	if (fread(contents, 1, sizeof contents - 1, f) > 0) {
+		value = strtol(contents, NULL, 10);
 	} else {
-		char contents[length + 1];
-
-		if (fread(contents, 1, (size_t)length, f) > 0) {
-			strtok(contents, "\n");
-			strncpy(profile, contents, sizeof(profile) - 1);
-		} else {
-			LOG_ERROR("Failed to read contents of %s\n", profile_path);
-		}
+		LOG_ERROR("Failed to read contents of %s\n", splitlock_path);
 	}
-
 	fclose(f);
 
-	return profile;
+	return value;
 }

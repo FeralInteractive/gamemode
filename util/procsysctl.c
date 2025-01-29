@@ -27,8 +27,9 @@ POSSIBILITY OF SUCH DAMAGE.
 #define _GNU_SOURCE
 #include <unistd.h>
 #include "common-logging.h"
+#include "common-splitlock.h"
 
-static bool write_value(char *key, char *value)
+static bool write_value(const char *key, const char *value)
 {
 	FILE *f = fopen(key, "w");
 
@@ -58,7 +59,7 @@ int main(int argc, char *argv[])
 
 	if (argc == 3) {
 		if (strcmp(argv[1], "split_lock_mitigate") == 0) {
-			if (!write_value("/proc/sys/kernel/split_lock_mitigate", argv[2]))
+			if (!write_value(splitlock_path, argv[2]))
 				return EXIT_FAILURE;
 
 			return EXIT_SUCCESS;

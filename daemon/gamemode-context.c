@@ -37,6 +37,7 @@ POSSIBILITY OF SUCH DAMAGE.
 #include "common-logging.h"
 #include "common-power.h"
 #include "common-profile.h"
+#include "common-splitlock.h"
 
 #include "gamemode.h"
 #include "gamemode-config.h"
@@ -220,25 +221,9 @@ void game_mode_context_destroy(GameModeContext *self)
 
 static void game_mode_store_splitlock(GameModeContext *self)
 {
-	FILE *f = fopen("/proc/sys/kernel/split_lock_mitigate", "r");
-	if (f == NULL) {
-		if (errno == ENOENT)
-			return;
-
-		LOG_ERROR("Couldn't open /proc/sys/kernel/split_lock_mitigate : %s\n", strerror(errno));
-		return;
-	}
-
-	char value_str[40];
-	if (fgets(value_str, sizeof value_str, f) == NULL) {
-		LOG_ERROR("Couldn't read from /proc/sys/kernel/split_lock_mitigate : %s\n",
-		          strerror(errno));
-		fclose(f);
-		return;
-	}
-	fclose(f);
-
-	self->initial_split_lock_mitigate = strtol(value_str, NULL, 10);
+	long initial_state = get_splitlock_state();
+	self->initial_split_lock_mitigate = initial_state;
+	LOG_MSG("split lock mitigation was initially set to [%ld]\n", initial_state);
 }
 
 static int game_mode_disable_splitlock(GameModeContext *self, bool disable)

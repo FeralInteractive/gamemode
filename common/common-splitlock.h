@@ -29,50 +29,16 @@ POSSIBILITY OF SUCH DAMAGE.
 
  */
 
-#define _GNU_SOURCE
+#pragma once
 
-#include "common-profile.h"
-#include "common-logging.h"
-
-/**
- * Path for platform profile
- */
-const char *profile_path = "/sys/firmware/acpi/platform_profile";
+#include <linux/limits.h>
 
 /**
- * Return the current platform profile state
+ * Path for the split lock mitagation state
  */
-const char *get_profile_state(void)
-{
-	/* Persistent profile state */
-	static char profile[64] = { 0 };
-	memset(profile, 0, sizeof(profile));
+extern const char *splitlock_path;
 
-	FILE *f = fopen(profile_path, "r");
-	if (!f) {
-		LOG_ERROR("Failed to open file for read %s\n", profile_path);
-		return "none";
-	}
-
-	/* Grab the file length */
-	fseek(f, 0, SEEK_END);
-	long length = ftell(f);
-	fseek(f, 0, SEEK_SET);
-
-	if (length == -1) {
-		LOG_ERROR("Failed to seek file %s\n", profile_path);
-	} else {
-		char contents[length + 1];
-
-		if (fread(contents, 1, (size_t)length, f) > 0) {
-			strtok(contents, "\n");
-			strncpy(profile, contents, sizeof(profile) - 1);
-		} else {
-			LOG_ERROR("Failed to read contents of %s\n", profile_path);
-		}
-	}
-
-	fclose(f);
-
-	return profile;
-}
+/**
+ * Get the current split lock mitigation state
+ */
+long get_splitlock_state(void);

@@ -3,6 +3,7 @@ common_sources = [
     'common-logging.c',
     'common-governors.c',
     'common-profile.c',
+    'common-splitlock.c',
     'common-external.c',
     'common-helpers.c',
     'common-gpu.c',
