@@ -857,6 +857,49 @@ int game_mode_context_query_status(GameModeContext *self, pid_t client, pid_t re
 	return ret;
 }
 
+int game_mode_context_restart(GameModeContext *self, pid_t client, pid_t requester)
+{
+	/* First check the requester settings */
+	{
+		char *executable = game_mode_context_find_exe(requester);
+		if (!executable) {
+			return -1;
+		}
+
+		/* Check our blacklist and whitelist */
+		if (!config_get_supervisor_whitelisted(self->config, executable)) {
+			LOG_MSG("Supervisor [%s] was rejected (not in whitelist)\n", executable);
+			free(executable);
+			return -2;
+		} else if (config_get_supervisor_blacklisted(self->config, executable)) {
+			LOG_MSG("Supervisor [%s] was rejected (in blacklist)\n", executable);
+			free(executable);
+			return -2;
+		}
+
+		free(executable);
+	}
+
+	/*
+	 * Check the current refcount on gamemode, this equates to whether gamemode is active or not,
+	 * see game_mode_context_register and game_mode_context_unregister
+	 */
+	if (!atomic_load_explicit(&self->refcount, memory_order_seq_cst)) {
+		return 1;
+	}
+
+	/* Requires locking. */
+	pthread_rwlock_rdlock(&self->rwlock);
+
+	game_mode_context_leave(self);
+	game_mode_context_enter(self);
+
+	/* Unlock here, potentially yielding */
+	pthread_rwlock_unlock(&self->rwlock);
+
+	return 0;
+}
+
 /**
  * Construct a new GameModeClient for the given process ID
  *
