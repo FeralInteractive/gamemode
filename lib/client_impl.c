@@ -379,6 +379,12 @@ extern int real_gamemode_query_status(void)
 {
 	return gamemode_request("QueryStatus", 0);
 }
+//
+// Wrapper to call RestartGamemode
+extern int real_gamemode_request_restart(void)
+{
+	return gamemode_request("RestartGamemode", 0);
+}
 
 // Wrapper to call RegisterGameByPID
 extern int real_gamemode_request_start_for(pid_t pid)
