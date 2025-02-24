@@ -59,31 +59,6 @@ You can do this by setting the environment variable `GAMEMODERUNEXEC` to your wr
 GameMode will not be injected to the wrapper.
 
 ---
-## Apps with GameMode integration
-
-### Games
-The following games are known to integrate GameMode support (meaning they don't require any additional configuration to activate GameMode while running):
-* DiRT 4
-* Rise of the Tomb Raider
-* Shadow of the Tomb Raider
-* Total War Saga: Thrones of Britannia
-* Total War: ROME REMASTERED
-* Total War: Three Kingdoms
-* Total War: WARHAMMER II
-* Total War: WARHAMMER III
-
-### Others
-Other apps which can integrate with GameMode include:
-* [ATLauncher](https://atlauncher.com/downloads) Minecraft launcher
-* [Cemu](https://cemu.info/) Wii U emulator
-* [GNOME Shell Extension](https://github.com/trsnaqe/gamemode-shell-extension) GameMode status indicator extension for GNOME Shell
-* [Lutris](https://lutris.net/) Install and play any video game easily
-  * Enables GameMode for all games by default if available (must have both 32- and 64-bit GameMode libraries installed), configurable in preferences.
-* [Prism Launcher](https://prismlauncher.org/) Minecraft launcher
-* [PolyMC](https://polymc.org/) Minecraft launcher
-* [RetroArch](https://www.retroarch.com) Frontend for emulators, game engines and media players
-* [Vinegar](https://vinegarhq.org/) Roblox Player/Studio bootstrapper
----
 ## Development [![Build and test](https://github.com/FeralInteractive/gamemode/actions/workflows/build-and-test.yml/badge.svg)](https://github.com/FeralInteractive/gamemode/actions/workflows/build-and-test.yml)
 
 The design of GameMode has a clear-cut abstraction between the host daemon and library (`gamemoded` and `libgamemode`), and the client loaders (`libgamemodeauto` and `gamemode_client.h`) that allows for safe use without worrying about whether the daemon is installed or running. This design also means that while the host library currently relies on `systemd` for exchanging messages with the daemon, it's entirely possible to implement other internals that still work with the same clients.
