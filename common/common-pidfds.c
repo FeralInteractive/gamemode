@@ -1,6 +1,6 @@
 /*
 
-Copyright (c) 2017-2019, Feral Interactive
+Copyright (c) 2017-2025, Feral Interactive and the GameMode contributors
 Copyright (c) 2019, Red Hat
 All rights reserved.
 

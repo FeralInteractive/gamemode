@@ -166,7 +166,7 @@ See the [contributors](https://github.com/FeralInteractive/gamemode/graphs/contr
 ---
 ## License
 
-Copyright © 2017-2024 Feral Interactive
+Copyright © 2017-2025 Feral Interactive and the GameMode contributors
 
 GameMode is available under the terms of the BSD 3-Clause License (Revised)
 
