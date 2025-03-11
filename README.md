@@ -20,7 +20,7 @@ Issues with GameMode should be reported here in the issues section, and not repo
 ---
 ## Requesting GameMode
 
-For games/launchers which integrate GameMode support (see list later on), simply running the game will automatically activate GameMode.
+For games/launchers which integrate GameMode support, simply running the game will automatically activate GameMode.
 
 For others, you must manually request GameMode when running the game. This can be done by launching the game through `gamemoderun`:
 ```bash
