@@ -361,6 +361,9 @@ static int run_cpu_governor_tests(struct GameModeConfig *config)
 /* Check the platform profile setting works */
 static int run_platform_profile_tests(struct GameModeConfig *config)
 {
+	if (!profile_exists())
+		return 1;
+
 	/* get the two config parameters we care about */
 	char desiredprof[CONFIG_VALUE_MAX] = { 0 };
 	config_get_desired_profile(config, desiredprof);
@@ -866,15 +869,17 @@ static int game_mode_run_feature_tests(struct GameModeConfig *config)
 	{
 		LOG_MSG("::: Verifying platform profile setting\n");
 
-		int govstatus = run_platform_profile_tests(config);
+		int profstatus = run_platform_profile_tests(config);
 
-		if (govstatus == 0)
+		if (profstatus == 1)
+			LOG_MSG("::: Passed (platform profile not supported)\n");
+		else if (profstatus == 0)
 			LOG_MSG("::: Passed\n");
 		else {
 			LOG_MSG("::: Failed!\n");
 			LOG_MSG("    -- You may need to add your user to the gamemode group:");
 			LOG_MSG("    -- $ sudo usermod -aG gamemode $(whoami)");
-			// Consider the platform profile feature requried
+			// If available, setting the platform profile should work
 			status = -1;
 		}
 	}
