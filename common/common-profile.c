@@ -40,6 +40,14 @@ POSSIBILITY OF SUCH DAMAGE.
 const char *profile_path = "/sys/firmware/acpi/platform_profile";
 
 /**
+ * Check if platform profile file exists
+ */
+int profile_exists(void)
+{
+	return !access(profile_path, F_OK);
+}
+
+/**
  * Return the current platform profile state
  */
 const char *get_profile_state(void)
