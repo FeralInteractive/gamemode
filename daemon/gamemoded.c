@@ -70,6 +70,7 @@ POSSIBILITY OF SUCH DAMAGE.
 	"                           When no PID given, requests gamemode and pauses\n"                 \
 	"  -s[PID], --status=[PID]  Query the status of gamemode for process\n"                        \
 	"                           When no PID given, queries the status globally\n"                  \
+	"  -R, --reset              If gamemode is currently running, stop it, then restart\n"         \
 	"  -d, --daemonize          Daemonize self after launch\n"                                     \
 	"  -l, --log-to-syslog      Log to syslog\n"                                                   \
 	"  -t, --test               Run tests\n"                                                       \
@@ -158,12 +159,17 @@ int main(int argc, char *argv[])
 
 	/* Options struct for getopt_long */
 	static struct option long_options[] = {
-		{ "daemonize", no_argument, 0, 'd' },     { "log-to-syslog", no_argument, 0, 'l' },
-		{ "request", optional_argument, 0, 'r' }, { "test", no_argument, 0, 't' },
-		{ "status", optional_argument, 0, 's' },  { "help", no_argument, 0, 'h' },
-		{ "version", no_argument, 0, 'v' },       { NULL, 0, NULL, 0 },
+		{ "daemonize", no_argument, 0, 'd' },
+		{ "log-to-syslog", no_argument, 0, 'l' },
+		{ "request", optional_argument, 0, 'r' },
+		{ "test", no_argument, 0, 't' },
+		{ "status", optional_argument, 0, 's' },
+		{ "reset", no_argument, 0, 'R' },
+		{ "help", no_argument, 0, 'h' },
+		{ "version", no_argument, 0, 'v' },
+		{ NULL, 0, NULL, 0 },
 	};
-	static const char *short_options = "dls::r::tvh";
+	static const char *short_options = "dls::r::tvhR";
 
 	while ((opt = getopt_long(argc, argv, short_options, long_options, 0)) != -1) {
 		switch (opt) {
@@ -288,6 +294,20 @@ int main(int argc, char *argv[])
 			}
 
 			exit(EXIT_SUCCESS);
+
+		case 'R':
+			switch (gamemode_request_restart()) {
+			case 0: /* success */
+				LOG_MSG("gamemode restart succeeded\n");
+				exit(EXIT_SUCCESS);
+			case 1: /* already off */
+				LOG_ERROR("gamemode was already deactivated\n");
+				break;
+			case -1: /* error */
+				LOG_ERROR("gamemode_request_restart failed: %s\n", gamemode_error_string());
+				break;
+			}
+			exit(EXIT_FAILURE);
 
 		case 't': {
 			int status = game_mode_run_client_tests();

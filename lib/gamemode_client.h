@@ -103,6 +103,7 @@ typedef int (*api_call_pid_return_int)(pid_t);
 static api_call_return_int REAL_internal_gamemode_request_start = NULL;
 static api_call_return_int REAL_internal_gamemode_request_end = NULL;
 static api_call_return_int REAL_internal_gamemode_query_status = NULL;
+static api_call_return_int REAL_internal_gamemode_request_restart = NULL;
 static api_call_return_cstring REAL_internal_gamemode_error_string = NULL;
 static api_call_pid_return_int REAL_internal_gamemode_request_start_for = NULL;
 static api_call_pid_return_int REAL_internal_gamemode_request_end_for = NULL;
@@ -165,6 +166,10 @@ __attribute__((always_inline)) static inline int internal_load_libgamemode(void)
 		{ "real_gamemode_query_status",
 		  (void **)&REAL_internal_gamemode_query_status,
 		  sizeof(REAL_internal_gamemode_query_status),
+		  false },
+		{ "real_gamemode_request_restart",
+		  (void **)&REAL_internal_gamemode_request_restart,
+		  sizeof(REAL_internal_gamemode_request_restart),
 		  false },
 		{ "real_gamemode_error_string",
 		  (void **)&REAL_internal_gamemode_error_string,
@@ -317,6 +322,24 @@ __attribute__((always_inline)) static inline int gamemode_query_status(void)
 	}
 
 	return REAL_internal_gamemode_query_status();
+}
+
+/* Redirect to the real libgamemode */
+__attribute__((always_inline)) static inline int gamemode_request_restart(void)
+{
+	/* Need to load gamemode */
+	if (internal_load_libgamemode() < 0) {
+		return -1;
+	}
+
+	if (REAL_internal_gamemode_request_restart == NULL) {
+		snprintf(internal_gamemode_client_error_string,
+		         sizeof(internal_gamemode_client_error_string),
+		         "gamemode_request_restart missing (older host?)");
+		return -1;
+	}
+
+	return REAL_internal_gamemode_request_restart();
 }
 
 /* Redirect to the real libgamemode */
