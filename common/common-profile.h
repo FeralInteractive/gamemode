@@ -32,11 +32,17 @@ POSSIBILITY OF SUCH DAMAGE.
 #pragma once
 
 #include <linux/limits.h>
+#include <unistd.h>
 
 /**
  * Path for platform profile
  */
 extern const char *profile_path;
+
+/**
+ * Check if platform profile file exists
+ */
+int profile_exists(void);
 
 /**
  * Get the current platform profile state
