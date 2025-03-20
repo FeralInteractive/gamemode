@@ -317,7 +317,7 @@ static int game_mode_set_governor(GameModeContext *self, enum GameModeGovernor g
 
 static void game_mode_store_profile(GameModeContext *self)
 {
-	if (self->current_profile != GAME_MODE_PROFILE_DEFAULT)
+	if (!profile_exists() || self->current_profile != GAME_MODE_PROFILE_DEFAULT)
 		return;
 
 	const char *initial_state = get_profile_state();
@@ -332,6 +332,11 @@ static void game_mode_store_profile(GameModeContext *self)
 static int game_mode_set_profile(GameModeContext *self, enum GameModeProfile prof)
 {
 	if (self->current_profile == prof) {
+		return 0;
+	}
+
+	if (!profile_exists()) {
+		LOG_MSG("Setting platform profile unsupported; skipping\n");
 		return 0;
 	}
 
