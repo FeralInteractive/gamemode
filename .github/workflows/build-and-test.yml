@@ -3,13 +3,13 @@ on: [push, pull_request]
 
 jobs:
   build-and-test:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v2
       - name: Install dependencies
         run: |
-          sudo apt install build-essential meson appstream clang clang-format clang-tools libdbus-1-dev libinih-dev libsystemd-dev
+          sudo DEBIAN_FRONTEND=noninteractive apt-get install -y build-essential meson appstream clang clang-format clang-tools libdbus-1-dev libinih-dev libsystemd-dev systemd-dev
       - name: Check format
         env:
           CI: "true"

@@ -4,6 +4,7 @@ project(
     default_options : ['c_std=c11', 'warning_level=3'],
     version: '1.8.2',
     license: 'BSD',
+    meson_version: '>= 1.3.1',
 )
 
 am_cflags = [
@@ -112,7 +113,7 @@ if sd_bus_provider == 'systemd'
         if path_systemd_unit_dir == ''
             message('Asking pkg-config for systemd\'s \'systemduserunitdir\' directory')
             pkgconfig_systemd = dependency('systemd')
-            path_systemd_unit_dir = pkgconfig_systemd.get_pkgconfig_variable('systemduserunitdir')
+            path_systemd_unit_dir = pkgconfig_systemd.get_variable(pkgconfig: 'systemduserunitdir')
         endif
     endif
     if with_privileged_group != ''
@@ -122,7 +123,7 @@ if sd_bus_provider == 'systemd'
           if path_systemd_group_dir == ''
               message('Asking pkg-config for systemd\'s \'sysusersdir\' directory')
               pkgconfig_systemd = dependency('systemd')
-              path_systemd_group_dir = pkgconfig_systemd.get_pkgconfig_variable('sysusersdir')
+              path_systemd_group_dir = pkgconfig_systemd.get_variable(pkgconfig: 'sysusersdir')
           endif
       endif
     else

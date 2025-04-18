@@ -9,7 +9,7 @@ data_conf.set('GAMEMODE_PRIVILEGED_GROUP', with_privileged_group)
 # Pull in the example config
 config_example = run_command(
     'cat',
-    join_paths(meson.source_root(), 'example', 'gamemode.ini'),
+    join_paths(meson.project_source_root(), 'example', 'gamemode.ini'),
     check: true,
 ).stdout().strip()
 data_conf.set('GAMEMODE_EXAMPLE_CONFIG', config_example)
