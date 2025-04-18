@@ -66,15 +66,16 @@ The design of GameMode has a clear-cut abstraction between the host daemon and l
 See repository subdirectories for information on each component.
 
 ### Install Dependencies
-GameMode depends on `meson` for building and `systemd` for internal communication. This repo contains a `bootstrap.sh` script to allow for quick install to the user bus, but check `meson_options.txt` for custom settings.
+GameMode depends on `meson` for building and `systemd` for internal communication. This repo contains a `bootstrap.sh` script to allow for quick install to the user bus, but check `meson_options.txt` for custom settings. These instructions all assume that you
+already have a C development environment (gcc or clang, libc-devel, etc) installed.
 
-#### Ubuntu/Debian (you may also need `dbus-user-session`)
-
+#### Ubuntu/Debian
+Note: Debian 13 and Ubuntu 25.04 (and later) need to install `systemd-dev` in addition to the dependencies below.
 ```bash
-apt install meson libsystemd-dev pkg-config ninja-build git libdbus-1-dev libinih-dev build-essential
+apt update && apt install meson libsystemd-dev pkg-config ninja-build git dbus-user-session libdbus-1-dev libinih-dev build-essential
 ```
 
-On Ubuntu 18.04, you'll need to install `python3` package and install the latest meson version from `pip`.
+On Debian 12 and Ubuntu 22 (and earlier), you'll need to install `python3` and `python3-venv` packages to install the latest meson version from `pip`.
 
 ```bash
 python3 -m venv .venv
@@ -91,12 +92,28 @@ rm -rf .venv
 
 #### Arch
 ```bash
-pacman -S meson systemd git dbus libinih
+pacman -S meson systemd git dbus libinih gcc pkgconf
 ```
+
+#### RHEL 10 and variants
+Note: Older versions of RHEL (and variants) cannot build gamemode due to not exposing libdbus-1 to pkg-config.
+(also - don't try and play games on RHEL, come on)
+
+You must have [EPEL](https://docs.fedoraproject.org/en-US/epel/getting-started/) enabled to install all dependencies.
+```bash
+dnf install meson systemd-devel pkg-config git dbus-devel inih-devel
+```
+
 #### Fedora
 ```bash
-dnf install meson systemd-devel pkg-config git dbus-devel
+dnf install meson systemd-devel pkg-config git dbus-devel inih-devel
 ```
+
+#### OpenSUSE Leap/Tumbleweed
+```bash
+zypper install meson systemd-devel git dbus-1-devel libgcc_s1 libstdc++-devel libinih-devel
+```
+
 #### Gentoo
 Gentoo has an ebuild which builds a stable release from sources. It will also pull in all the dependencies so you can work on the source code.
 ```bash
@@ -105,6 +122,12 @@ emerge --ask games-util/gamemode
 You can also install using the latest sources from git:
 ```bash
 ACCEPT_KEYWORDS="**" emerge --ask ~games-util/gamemode-9999
+```
+
+#### Nix
+Similar to Gentoo, nixOS already has a package for gamemode, so we can use that to setup an environment:
+```bash
+nix-shell -p pkgs.gamemode.buildInputs pkgs.gamemode.nativeBuildInputs
 ```
 
 ### Build and Install GameMode
