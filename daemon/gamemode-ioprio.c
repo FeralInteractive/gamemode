@@ -60,7 +60,7 @@ POSSIBILITY OF SUCH DAMAGE.
 #endif
 
 #ifndef IOPRIO_PRIO_DATA
-#define IOPRIO_PRIO_DATA(mask) ((mask)&IOPRIO_PRIO_MASK)
+#define IOPRIO_PRIO_DATA(mask) ((mask) & IOPRIO_PRIO_MASK)
 #endif
 
 #ifndef IOPRIO_PRIO_VALUE
