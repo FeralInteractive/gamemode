@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/sh
 # Helper script to launch games with gamemode
 
 GAMEMODEAUTO_NAME="libgamemodeauto.so.0"
