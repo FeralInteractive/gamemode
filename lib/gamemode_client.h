@@ -186,21 +186,34 @@ __attribute__((always_inline)) static inline int internal_load_libgamemode(void)
 
 	void *libgamemode = NULL;
 
-	/* Try and load libgamemode */
+	/* Try and load libgamemode from default paths */
 	libgamemode = dlopen("libgamemode.so.0", RTLD_NOW);
 	if (!libgamemode) {
 		/* Attempt to load unversioned library for compatibility with older
 		 * versions (as of writing, there are no ABI changes between the two -
 		 * this may need to change if ever ABI-breaking changes are made) */
 		libgamemode = dlopen("libgamemode.so", RTLD_NOW);
-		if (!libgamemode) {
-			snprintf(internal_gamemode_client_error_string,
-			         sizeof(internal_gamemode_client_error_string),
-			         "dlopen failed - %s",
-			         dlerror());
-			internal_libgamemode_loaded = -1;
-			return -1;
-		}
+	}
+
+	if (!libgamemode) {
+/* If default paths fail, try container/host-specific paths as a fallback */
+#if defined(__x86_64__) || defined(__aarch64__)
+		const char *host_path = "/run/host/usr/lib64/libgamemode.so.0";
+		libgamemode = dlopen(host_path, RTLD_NOW);
+#elif defined(__i386__) || defined(__arm__)
+		const char *host_path = "/run/host/usr/lib/libgamemode.so.0";
+		libgamemode = dlopen(host_path, RTLD_NOW);
+#endif
+	}
+
+	/* If all attempts fail, then report the error */
+	if (!libgamemode) {
+		snprintf(internal_gamemode_client_error_string,
+		         sizeof(internal_gamemode_client_error_string),
+		         "dlopen failed - %s",
+		         dlerror());
+		internal_libgamemode_loaded = -1;
+		return -1;
 	}
 
 	/* Attempt to bind all symbols */
