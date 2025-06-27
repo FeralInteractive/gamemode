@@ -1,9 +1,17 @@
 #!/bin/bash
 # Helper script to launch games with gamemode
 
-GAMEMODEAUTO_NAME="libgamemodeauto.so.0"
+# Check if we are running under a container via GAMEMODE_PROTON env var
+if [ -n "$GAMEMODE_PROTON" ] && [ "$GAMEMODE_PROTON" = "1" ]; then
+    # PROTON MODE: Use host paths, escaping \$LIB for the dynamic loader to interpret
+    GAMEMODEAUTO_NAME="/run/host/usr/\$LIB/libgamemodeauto.so.0"
+else
+    # NATIVE MODE: Use the default library name, ld.so will find the correct path
+    GAMEMODEAUTO_NAME="libgamemodeauto.so.0"
+fi
 
-# ld will find the right path to load the library, including for 32-bit apps.
+# Prepend our library to LD_PRELOAD, preserving existing values
 LD_PRELOAD="${GAMEMODEAUTO_NAME}${LD_PRELOAD:+:$LD_PRELOAD}"
 
+# Execute the game with the modified LD_PRELOAD
 exec env LD_PRELOAD="${LD_PRELOAD}" $GAMEMODERUNEXEC "$@"
