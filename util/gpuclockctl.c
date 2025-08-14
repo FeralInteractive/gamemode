@@ -67,6 +67,14 @@ static void print_usage_and_exit(void)
 	exit(EXIT_FAILURE);
 }
 
+/* Return 1 if /sys/class/drm/card<idx>/device/vendor exists and is readable, else 0 */
+static int drm_card_exists(int idx)
+{
+	char path[PATH_MAX];
+	snprintf(path, PATH_MAX, "/sys/class/drm/card%d/device/vendor", idx);
+	return access(path, R_OK) == 0;
+}
+
 static const char *get_nv_attr(const char *attr)
 {
 	static char out[EXTERNAL_BUFFER_MAX];
@@ -91,37 +99,41 @@ static int set_nv_attr(const char *attr)
 	return 0;
 }
 
-/* Get the nvidia driver index for the current GPU */
+/* Get the nvidia driver index for the current GPU
+ * Map DRM card index (info->device) -> nvidia-settings GPU index.
+ * We only count *existing* DRM cards and only increment on NVIDIA vendors.
+ */
 static long get_gpu_index_id_nv(struct GameModeGPUInfo *info)
 {
 	if (info->vendor != Vendor_NVIDIA)
 		return -1;
 
-	/* NOTE: This is currently based off of a best guess of how the NVidia gpu index works
-	 * ie. that the index is simply the index into available NV gpus in the same order as drm
-	 * If that is not the case then this may fail to discern the correct GPU
-	 */
-
-	int device = 0;
 	int nv_device = -1;
-	while (device <= info->device) {
-		/* Get the vendor for each gpu sequentially */
-		enum GPUVendor vendor = gamemode_get_gpu_vendor(device++);
 
-		switch (vendor) {
-		case Vendor_NVIDIA:
-			/* If we've found an nvidia device, increment our counter */
+	/* Iterate over DRM card numbers up to the requested one,
+	 * but skip holes like a missing card0.
+	 */
+	for (int device = 0; device <= info->device; device++) {
+		/* Skip non-existent DRM indices to avoid noisy /sys errors */
+		if (!drm_card_exists(device))
+			continue;
+
+		/* Probe vendor only for existing cards */
+		enum GPUVendor vendor = gamemode_get_gpu_vendor(device);
+
+		if (vendor == Vendor_NVIDIA) {
+			/* Each NVIDIA DRM card before/at info->device bumps the NV index */
 			nv_device++;
-			break;
-		case Vendor_Invalid:
-			/* Bail out, we've gone too far */
-			LOG_ERROR("Failed to find Nvidia GPU with expected index!\n");
-			break;
-		default:
-			/* Non-NV gpu, continue */
-			break;
+		} else {
+			/* Non-NVIDIA or unreadable -> just ignore */
+			continue;
 		}
-	};
+	}
+
+	if (nv_device < 0) {
+		LOG_ERROR("Could not resolve NVIDIA index for DRM card%ld (no NVIDIA cards found up to that index)\n",
+		          info->device);
+	}
 
 	return nv_device;
 }
