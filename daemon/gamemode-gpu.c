@@ -96,6 +96,7 @@ int game_mode_initialise_gpu(GameModeConfig *config, GameModeGPUInfo **info)
 		new_info->nv_core = config_get_nv_core_clock_mhz_offset(config);
 		new_info->nv_mem = config_get_nv_mem_clock_mhz_offset(config);
 		new_info->nv_powermizer_mode = config_get_nv_powermizer_mode(config);
+		new_info->nv_per_profile_editable = config_get_nv_per_profile_editable(config);
 
 		/* Reject values over some guessed values
 		 * If a user wants to go into very unsafe levels they can recompile
@@ -164,6 +165,8 @@ int game_mode_apply_gpu(const GameModeGPUInfo *info)
 	snprintf(nv_mem, 8, "%ld", info->nv_mem);
 	char nv_powermizer_mode[4];
 	snprintf(nv_powermizer_mode, 4, "%ld", info->nv_powermizer_mode);
+	char nv_per_profile_editable[4];
+	snprintf(nv_per_profile_editable, 4, "%ld", info->nv_per_profile_editable);
 
 	// Set up our command line to pass to gpuclockctl
 	const char *const exec_args[] = {
@@ -174,6 +177,7 @@ int game_mode_apply_gpu(const GameModeGPUInfo *info)
 		info->vendor == Vendor_NVIDIA ? nv_core : info->amd_performance_level,
 		info->vendor == Vendor_NVIDIA ? nv_mem : NULL,             /* Only use this if Nvidia */
 		info->vendor == Vendor_NVIDIA ? nv_powermizer_mode : NULL, /* Only use this if Nvidia */
+		info->vendor == Vendor_NVIDIA ? nv_per_profile_editable : NULL, /* Only use this if Nvidia */
 		NULL,
 	};
 
@@ -192,7 +196,9 @@ int game_mode_get_gpu(GameModeGPUInfo *info)
 
 	/* Generate the input strings */
 	char device[4];
+	char profile_editable[4];
 	snprintf(device, 4, "%ld", info->device);
+	snprintf(profile_editable, 4, "%ld", info->nv_per_profile_editable);
 
 	// Set up our command line to pass to gpuclockctl
 	// This doesn't need pkexec as get does not need elevated perms
@@ -200,6 +206,7 @@ int game_mode_get_gpu(GameModeGPUInfo *info)
 		LIBEXECDIR "/gpuclockctl",
 		device,
 		"get",
+		profile_editable, //TODO:refactor
 		NULL,
 	};
 

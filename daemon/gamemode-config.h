@@ -119,6 +119,7 @@ long config_get_gpu_device(GameModeConfig *self);
 long config_get_nv_core_clock_mhz_offset(GameModeConfig *self);
 long config_get_nv_mem_clock_mhz_offset(GameModeConfig *self);
 long config_get_nv_powermizer_mode(GameModeConfig *self);
+long config_get_nv_per_profile_editable(GameModeConfig *self);
 void config_get_amd_performance_level(GameModeConfig *self, char value[CONFIG_VALUE_MAX]);
 
 /*

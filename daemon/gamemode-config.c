@@ -110,6 +110,7 @@ struct GameModeConfig {
 		long nv_core_clock_mhz_offset;
 		long nv_mem_clock_mhz_offset;
 		long nv_powermizer_mode;
+		long nv_per_profile_editable;
 		char amd_performance_level[CONFIG_VALUE_MAX];
 
 		char cpu_park_cores[CONFIG_VALUE_MAX];
@@ -308,6 +309,8 @@ static int inih_handler(void *user, const char *section, const char *name, const
 			valid = get_long_value(name, value, &self->values.nv_mem_clock_mhz_offset);
 		} else if (strcmp(name, "nv_powermizer_mode") == 0) {
 			valid = get_long_value(name, value, &self->values.nv_powermizer_mode);
+		} else if (strcmp(name, "nv_per_profile_editable") == 0) {
+			valid = get_long_value(name, value, &self->values.nv_per_profile_editable);
 		} else if (strcmp(name, "amd_performance_level") == 0) {
 			valid = get_string_value(value, self->values.amd_performance_level);
 		}
@@ -387,6 +390,7 @@ static void load_config_files(GameModeConfig *self)
 	self->values.reaper_frequency = DEFAULT_REAPER_FREQ;
 	self->values.gpu_device = 0;
 	self->values.nv_powermizer_mode = -1;
+	self->values.nv_per_profile_editable = 1; /* Defaults to editable profiles */
 	self->values.nv_core_clock_mhz_offset = -1;
 	self->values.nv_mem_clock_mhz_offset = -1;
 	self->values.script_timeout = 10; /* Default to 10 seconds for scripts */
@@ -479,7 +483,7 @@ GameModeConfig *config_create(void)
 }
 
 /*
- * Initialise the config
+ * Initialize the config
  */
 void config_init(GameModeConfig *self)
 {
@@ -827,6 +831,7 @@ DEFINE_CONFIG_GET(gpu_device)
 DEFINE_CONFIG_GET(nv_core_clock_mhz_offset)
 DEFINE_CONFIG_GET(nv_mem_clock_mhz_offset)
 DEFINE_CONFIG_GET(nv_powermizer_mode)
+DEFINE_CONFIG_GET(nv_per_profile_editable)
 
 void config_get_amd_performance_level(GameModeConfig *self, char value[CONFIG_VALUE_MAX])
 {
