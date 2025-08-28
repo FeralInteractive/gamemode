@@ -177,7 +177,8 @@ int game_mode_apply_gpu(const GameModeGPUInfo *info)
 		info->vendor == Vendor_NVIDIA ? nv_core : info->amd_performance_level,
 		info->vendor == Vendor_NVIDIA ? nv_mem : NULL,             /* Only use this if Nvidia */
 		info->vendor == Vendor_NVIDIA ? nv_powermizer_mode : NULL, /* Only use this if Nvidia */
-		info->vendor == Vendor_NVIDIA ? nv_per_profile_editable : NULL, /* Only use this if Nvidia */
+		info->vendor == Vendor_NVIDIA ? nv_per_profile_editable : NULL, /* Only use this if Nvidia
+		                                                                 */
 		NULL,
 	};
 
@@ -203,11 +204,7 @@ int game_mode_get_gpu(GameModeGPUInfo *info)
 	// Set up our command line to pass to gpuclockctl
 	// This doesn't need pkexec as get does not need elevated perms
 	const char *const exec_args[] = {
-		LIBEXECDIR "/gpuclockctl",
-		device,
-		"get",
-		profile_editable, //TODO:refactor
-		NULL,
+		LIBEXECDIR "/gpuclockctl", device, "get", profile_editable, NULL,
 	};
 
 	char buffer[EXTERNAL_BUFFER_MAX] = { 0 };

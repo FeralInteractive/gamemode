@@ -48,9 +48,9 @@ struct GameModeGPUInfo {
 	long vendor;
 	long device; /* path to device, ie. /sys/class/drm/card#/ */
 
-	long nv_core;            /* Nvidia core clock */
-	long nv_mem;             /* Nvidia mem clock */
-	long nv_powermizer_mode; /* NV Powermizer Mode */
+	long nv_core;                 /* Nvidia core clock */
+	long nv_mem;                  /* Nvidia mem clock */
+	long nv_powermizer_mode;      /* NV Powermizer Mode */
 	long nv_per_profile_editable; /* Allows per profile editable offsets */
 
 	char amd_performance_level[GPU_VALUE_MAX]; /* The AMD performance level set to */

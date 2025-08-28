@@ -132,8 +132,10 @@ static long get_gpu_index_id_nv(struct GameModeGPUInfo *info)
 	}
 
 	if (nv_device < 0) {
-		LOG_ERROR("Could not resolve NVIDIA index for DRM card%ld (no NVIDIA cards found up to that index)\n",
-		          info->device);
+		LOG_ERROR(
+		    "Could not resolve NVIDIA index for DRM card%ld (no NVIDIA cards found up to that "
+		    "index)\n",
+		    info->device);
 	}
 
 	return nv_device;
@@ -206,11 +208,11 @@ static int get_gpu_state_nv(struct GameModeGPUInfo *info)
 
 		/* Get the GPUMemoryTransferRateOffset parameter */
 		snprintf(arg,
-				 NV_ARG_MAX,
-				 NV_ATTRIBUTE_FORMAT NV_PERF_LEVEL_FORMAT,
-				 info->device,
-				 NV_MEM_OFFSET_ATTRIBUTE,
-				 perf_level);
+		         NV_ARG_MAX,
+		         NV_ATTRIBUTE_FORMAT NV_PERF_LEVEL_FORMAT,
+		         info->device,
+		         NV_MEM_OFFSET_ATTRIBUTE,
+		         perf_level);
 
 		attr = get_nv_attr(arg); // Should declaration be joined with assigment?  :S
 		if (attr == NULL || attr[0] == '\0') {
@@ -257,10 +259,10 @@ static int get_gpu_state_nv(struct GameModeGPUInfo *info)
 
 		/* Get the GPUMemoryTransferRateOffset parameter */
 		snprintf(arg,
-				 NV_ARG_MAX,
-				 NV_ATTRIBUTE_FORMAT NV_ALL_PERF_LEVELS,
-				 info->device,
-				 NV_MEM_OFFSET_ATTRIBUTE);
+		         NV_ARG_MAX,
+		         NV_ATTRIBUTE_FORMAT NV_ALL_PERF_LEVELS,
+		         info->device,
+		         NV_MEM_OFFSET_ATTRIBUTE);
 
 		attr = get_nv_attr(arg); // Should declaration be joined with assigment?  :S
 		if (attr == NULL || attr[0] == '\0') {
@@ -305,12 +307,12 @@ static int set_gpu_state_nv(struct GameModeGPUInfo *info)
 		/* Set the GPUGraphicsClockOffset parameter */
 		if (info->nv_core != -1) {
 			snprintf(arg,
-					 NV_ARG_MAX,
-					 NV_ATTRIBUTE_FORMAT NV_PERF_LEVEL_FORMAT "=%ld",
-					 info->device,
-					 NV_CORE_OFFSET_ATTRIBUTE,
-					 perf_level,
-					 info->nv_core);
+			         NV_ARG_MAX,
+			         NV_ATTRIBUTE_FORMAT NV_PERF_LEVEL_FORMAT "=%ld",
+			         info->device,
+			         NV_CORE_OFFSET_ATTRIBUTE,
+			         perf_level,
+			         info->nv_core);
 			if (set_nv_attr(arg) != 0) {
 				status = -1;
 			}
@@ -319,12 +321,12 @@ static int set_gpu_state_nv(struct GameModeGPUInfo *info)
 		/* Set the GPUMemoryTransferRateOffset parameter */
 		if (info->nv_mem != -1) {
 			snprintf(arg,
-					 NV_ARG_MAX,
-					 NV_ATTRIBUTE_FORMAT NV_PERF_LEVEL_FORMAT "=%ld",
-					 info->device,
-					 NV_MEM_OFFSET_ATTRIBUTE,
-					 perf_level,
-					 info->nv_mem);
+			         NV_ARG_MAX,
+			         NV_ATTRIBUTE_FORMAT NV_PERF_LEVEL_FORMAT "=%ld",
+			         info->device,
+			         NV_MEM_OFFSET_ATTRIBUTE,
+			         perf_level,
+			         info->nv_mem);
 			if (set_nv_attr(arg) != 0) {
 				status = -1;
 			}
@@ -333,11 +335,11 @@ static int set_gpu_state_nv(struct GameModeGPUInfo *info)
 		/* Set the GPUPowerMizerMode parameter if requested */
 		if (info->nv_powermizer_mode != -1) {
 			snprintf(arg,
-					 NV_ARG_MAX,
-					 NV_ATTRIBUTE_FORMAT "=%ld",
-					 info->device,
-					 NV_POWERMIZER_MODE_ATTRIBUTE,
-					 info->nv_powermizer_mode);
+			         NV_ARG_MAX,
+			         NV_ATTRIBUTE_FORMAT "=%ld",
+			         info->device,
+			         NV_POWERMIZER_MODE_ATTRIBUTE,
+			         info->nv_powermizer_mode);
 			if (set_nv_attr(arg) != 0) {
 				status = -1;
 			}
@@ -348,11 +350,11 @@ static int set_gpu_state_nv(struct GameModeGPUInfo *info)
 		/* Set the GPUGraphicsClockOffset parameter */
 		if (info->nv_core != -1) {
 			snprintf(arg,
-					 NV_ARG_MAX,
-					 NV_ATTRIBUTE_FORMAT NV_ALL_PERF_LEVELS "=%ld",
-					 info->device,
-					 NV_CORE_OFFSET_ATTRIBUTE,
-					 info->nv_core);
+			         NV_ARG_MAX,
+			         NV_ATTRIBUTE_FORMAT NV_ALL_PERF_LEVELS "=%ld",
+			         info->device,
+			         NV_CORE_OFFSET_ATTRIBUTE,
+			         info->nv_core);
 			if (set_nv_attr(arg) != 0) {
 				status = -1;
 			}
@@ -361,11 +363,11 @@ static int set_gpu_state_nv(struct GameModeGPUInfo *info)
 		/* Set the GPUMemoryTransferRateOffset parameter */
 		if (info->nv_mem != -1) {
 			snprintf(arg,
-					 NV_ARG_MAX,
-					 NV_ATTRIBUTE_FORMAT NV_ALL_PERF_LEVELS "=%ld",
-					 info->device,
-					 NV_MEM_OFFSET_ATTRIBUTE,
-					 info->nv_mem);
+			         NV_ARG_MAX,
+			         NV_ATTRIBUTE_FORMAT NV_ALL_PERF_LEVELS "=%ld",
+			         info->device,
+			         NV_MEM_OFFSET_ATTRIBUTE,
+			         info->nv_mem);
 			if (set_nv_attr(arg) != 0) {
 				status = -1;
 			}
