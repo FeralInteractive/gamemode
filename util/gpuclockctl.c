@@ -131,8 +131,10 @@ static long get_gpu_index_id_nv(struct GameModeGPUInfo *info)
 	}
 
 	if (nv_device < 0) {
-		LOG_ERROR("Could not resolve NVIDIA index for DRM card%ld (no NVIDIA cards found up to that index)\n",
-		          info->device);
+		LOG_ERROR(
+		    "Could not resolve NVIDIA index for DRM card%ld (no NVIDIA cards found up to that "
+		    "index)\n",
+		    info->device);
 	}
 
 	return nv_device;
