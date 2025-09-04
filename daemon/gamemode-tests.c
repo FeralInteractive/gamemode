@@ -907,7 +907,6 @@ static int run_x3d_mode_tests(struct GameModeConfig *config)
 		return -1;
 	}
 
-
 	/* End gamemode */
 	gamemode_request_end();
 
@@ -934,7 +933,6 @@ static int run_x3d_mode_tests(struct GameModeConfig *config)
 		LOG_ERROR("X3D mode was not restored to %s (was actually %s)!\n", expected_mode, output);
 		return -1;
 	}
-
 
 	return 0;
 }
