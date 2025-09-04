@@ -127,6 +127,8 @@ void config_get_amd_performance_level(GameModeConfig *self, char value[CONFIG_VA
  */
 void config_get_cpu_park_cores(GameModeConfig *self, char value[CONFIG_VALUE_MAX]);
 void config_get_cpu_pin_cores(GameModeConfig *self, char value[CONFIG_VALUE_MAX]);
+void config_get_amd_x3d_mode_desired(GameModeConfig *self, char value[CONFIG_VALUE_MAX]);
+void config_get_amd_x3d_mode_default(GameModeConfig *self, char value[CONFIG_VALUE_MAX]);
 
 /**
  * Functions to get supervisor config permissions

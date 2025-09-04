@@ -73,3 +73,18 @@ platprofctl = executable(
     install: true,
     install_dir: path_libexecdir,
 )
+
+# Small target util to get and set AMD X3D cache mode
+x3dmodectl_sources = [
+    'x3dmodectl.c',
+]
+
+x3dmodectl = executable(
+    'x3dmodectl',
+    sources: x3dmodectl_sources,
+    dependencies: [
+        link_daemon_common,
+    ],
+    install: true,
+    install_dir: path_libexecdir,
+)

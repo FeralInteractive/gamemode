@@ -115,6 +115,8 @@ struct GameModeConfig {
 
 		char cpu_park_cores[CONFIG_VALUE_MAX];
 		char cpu_pin_cores[CONFIG_VALUE_MAX];
+		char amd_x3d_mode_desired[CONFIG_VALUE_MAX];
+		char amd_x3d_mode_default[CONFIG_VALUE_MAX];
 
 		long require_supervisor;
 		char supervisor_whitelist[CONFIG_LIST_MAX][CONFIG_VALUE_MAX];
@@ -243,6 +245,23 @@ static bool get_string_value(const char *value, char output[CONFIG_VALUE_MAX])
 	return true;
 }
 
+/*
+ * Get and validate an x3d mode value
+ */
+static bool get_x3d_mode_value(const char *name, const char *value, char output[CONFIG_VALUE_MAX])
+{
+	if (strcmp(value, "frequency") != 0 && strcmp(value, "cache") != 0) {
+		LOG_ERROR("Config: %s has invalid value '%s'. Valid values are 'frequency' or 'cache'\n",
+		          name,
+		          value);
+		return false;
+	}
+
+	strncpy(output, value, CONFIG_VALUE_MAX - 1);
+	output[CONFIG_VALUE_MAX - 1] = '\0';
+	return true;
+}
+
 /* Controls whether to read the protected config variables */
 static bool load_protected = false;
 
@@ -319,6 +338,10 @@ static int inih_handler(void *user, const char *section, const char *name, const
 			valid = get_string_value(value, self->values.cpu_park_cores);
 		} else if (strcmp(name, "pin_cores") == 0) {
 			valid = get_string_value(value, self->values.cpu_pin_cores);
+		} else if (strcmp(name, "amd_x3d_mode_desired") == 0) {
+			valid = get_x3d_mode_value(name, value, self->values.amd_x3d_mode_desired);
+		} else if (strcmp(name, "amd_x3d_mode_default") == 0) {
+			valid = get_x3d_mode_value(name, value, self->values.amd_x3d_mode_default);
 		}
 	} else if (strcmp(section, "supervisor") == 0) {
 		/* Supervisor subsection */
@@ -864,6 +887,22 @@ void config_get_cpu_pin_cores(GameModeConfig *self, char value[CONFIG_VALUE_MAX]
 	                     value,
 	                     &self->values.cpu_pin_cores,
 	                     sizeof(self->values.cpu_pin_cores));
+}
+
+void config_get_amd_x3d_mode_desired(GameModeConfig *self, char value[CONFIG_VALUE_MAX])
+{
+	memcpy_locked_config(self,
+	                     value,
+	                     &self->values.amd_x3d_mode_desired,
+	                     sizeof(self->values.amd_x3d_mode_desired));
+}
+
+void config_get_amd_x3d_mode_default(GameModeConfig *self, char value[CONFIG_VALUE_MAX])
+{
+	memcpy_locked_config(self,
+	                     value,
+	                     &self->values.amd_x3d_mode_default,
+	                     sizeof(self->values.amd_x3d_mode_default));
 }
 
 /*

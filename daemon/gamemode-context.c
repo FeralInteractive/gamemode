@@ -105,6 +105,8 @@ struct GameModeContext {
 
 	long initial_split_lock_mitigate;
 
+	char initial_x3d_mode[64]; /**<Initial x3d mode to restore */
+
 	/* Reaper control */
 	struct {
 		pthread_t thread;
@@ -167,6 +169,9 @@ void game_mode_context_init(GameModeContext *self)
 	game_mode_initialise_cpu(self->config, &self->cpu);
 
 	self->initial_split_lock_mitigate = -1;
+
+	/* clear the initial x3d mode string */
+	memset(self->initial_x3d_mode, 0, sizeof(self->initial_x3d_mode));
 
 	pthread_rwlock_init(&self->rwlock, NULL);
 
@@ -250,6 +255,89 @@ static int game_mode_disable_splitlock(GameModeContext *self, bool disable)
 	int ret = run_external_process(exec_args, NULL, -1);
 	if (ret != 0) {
 		LOG_ERROR("Failed to update split_lock_mitigate\n");
+		return ret;
+	}
+
+	return 0;
+}
+
+static void game_mode_store_x3d_mode(GameModeContext *self)
+{
+	char x3d_mode_desired[CONFIG_VALUE_MAX] = { 0 };
+	config_get_amd_x3d_mode_desired(self->config, x3d_mode_desired);
+	if (x3d_mode_desired[0] == '\0') {
+		return;
+	}
+
+	if (access(LIBEXECDIR "/x3dmodectl", X_OK) != 0) {
+		LOG_MSG("x3dmodectl utility not found, X3D mode control disabled\n");
+		return;
+	}
+
+	const char *const exec_args[] = {
+		LIBEXECDIR "/x3dmodectl",
+		"get",
+		NULL,
+	};
+
+	char output[EXTERNAL_BUFFER_MAX] = { 0 };
+	int ret = run_external_process(exec_args, output, -1);
+	if (ret != 0) {
+		LOG_MSG("X3D mode hardware not available or failed to get current mode\n");
+		return;
+	}
+
+	strncpy(self->initial_x3d_mode, output, sizeof(self->initial_x3d_mode) - 1);
+	self->initial_x3d_mode[sizeof(self->initial_x3d_mode) - 1] = '\0';
+	char *newline = strchr(self->initial_x3d_mode, '\n');
+	if (newline) {
+		*newline = '\0';
+	}
+
+	LOG_MSG("x3d mode was initially set to [%s]\n", self->initial_x3d_mode);
+}
+
+static int game_mode_set_x3d_mode(GameModeContext *self, bool desired)
+{
+	char x3d_mode_config[CONFIG_VALUE_MAX] = { 0 };
+
+	if (desired) {
+		config_get_amd_x3d_mode_desired(self->config, x3d_mode_config);
+	} else {
+		config_get_amd_x3d_mode_default(self->config, x3d_mode_config);
+		if (x3d_mode_config[0] == '\0') {
+			if (self->initial_x3d_mode[0] != '\0') {
+				strncpy(x3d_mode_config, self->initial_x3d_mode, CONFIG_VALUE_MAX - 1);
+				x3d_mode_config[CONFIG_VALUE_MAX - 1] = '\0';
+			} else {
+				return 0;
+			}
+		}
+	}
+
+	if (x3d_mode_config[0] == '\0') {
+		return 0;
+	}
+
+	if (access(LIBEXECDIR "/x3dmodectl", X_OK) != 0) {
+		LOG_MSG("x3dmodectl utility not found, skipping X3D mode change\n");
+		return 0;
+	}
+
+	if (strcmp(x3d_mode_config, "frequency") != 0 && strcmp(x3d_mode_config, "cache") != 0) {
+		LOG_ERROR("Invalid X3D mode '%s'. Valid modes are 'frequency' or 'cache'\n",
+		          x3d_mode_config);
+		return -1;
+	}
+
+	const char *const exec_args[] = {
+		"pkexec", LIBEXECDIR "/x3dmodectl", "set", x3d_mode_config, NULL,
+	};
+
+	LOG_MSG("Requesting update of X3D mode to %s\n", x3d_mode_config);
+	int ret = run_external_process(exec_args, NULL, -1);
+	if (ret != 0) {
+		LOG_ERROR("Failed to update X3D mode\n");
 		return ret;
 	}
 
@@ -468,6 +556,8 @@ static void game_mode_context_store_defaults(GameModeContext *self)
 	game_mode_store_governor(self);
 
 	game_mode_store_splitlock(self);
+
+	game_mode_store_x3d_mode(self);
 }
 
 /**
@@ -503,6 +593,8 @@ static void game_mode_context_enter(GameModeContext *self)
 	}
 
 	game_mode_disable_splitlock(self, true);
+
+	game_mode_set_x3d_mode(self, true);
 
 	/* Apply GPU optimisations by first getting the current values, and then setting the target */
 	game_mode_get_gpu(self->stored_gpu);
@@ -547,6 +639,8 @@ static void game_mode_context_leave(GameModeContext *self)
 	}
 
 	game_mode_disable_splitlock(self, false);
+
+	game_mode_set_x3d_mode(self, false);
 
 	game_mode_set_governor(self, GAME_MODE_GOVERNOR_DEFAULT);
 

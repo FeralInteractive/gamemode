@@ -42,6 +42,8 @@ POSSIBILITY OF SUCH DAMAGE.
 #include "gamemode-config.h"
 #include "gamemode_client.h"
 
+#include "build-config.h"
+
 #include <pthread.h>
 #include <sys/syscall.h>
 #include <sys/wait.h>
@@ -837,6 +839,104 @@ int run_ioprio_tests(struct GameModeConfig *config)
 	return ret;
 }
 
+/* Check the AMD X3D mode setting works */
+static int run_x3d_mode_tests(struct GameModeConfig *config)
+{
+	/* Get the two config parameters we care about */
+	char desired_mode[CONFIG_VALUE_MAX] = { 0 };
+	config_get_amd_x3d_mode_desired(config, desired_mode);
+
+	if (desired_mode[0] == '\0') {
+		/* Not configured */
+		return 1;
+	}
+
+	char default_mode[CONFIG_VALUE_MAX] = { 0 };
+	config_get_amd_x3d_mode_default(config, default_mode);
+
+	/* Get the initial X3D mode state */
+	char initial_mode[64] = { 0 };
+	const char *const get_args[] = {
+		LIBEXECDIR "/x3dmodectl",
+		"get",
+		NULL,
+	};
+
+	char output[EXTERNAL_BUFFER_MAX] = { 0 };
+	int ret = run_external_process(get_args, output, -1);
+	if (ret != 0) {
+		return 1;
+	}
+
+	/* Store the initial mode, removing any trailing newline */
+	strncpy(initial_mode, output, sizeof(initial_mode) - 1);
+	initial_mode[sizeof(initial_mode) - 1] = '\0';
+	char *newline = strchr(initial_mode, '\n');
+	if (newline) {
+		*newline = '\0';
+	}
+
+	/* Check if hardware is available */
+	if (strcmp(initial_mode, "unavailable") == 0) {
+		return 1;
+	}
+
+	/* Start gamemode */
+	gamemode_request_start();
+
+	/* Give gamemode time to apply settings */
+	usleep(500000);
+
+	/* Verify the mode is the desired one */
+	ret = run_external_process(get_args, output, -1);
+	if (ret != 0) {
+		LOG_ERROR("Failed to get X3D mode after gamemode start\n");
+		gamemode_request_end();
+		return -1;
+	}
+
+	/* Remove trailing newline from output */
+	newline = strchr(output, '\n');
+	if (newline) {
+		*newline = '\0';
+	}
+
+	if (strcmp(output, desired_mode) != 0) {
+		LOG_ERROR("X3D mode was not set to %s (was actually %s)!\n", desired_mode, output);
+		gamemode_request_end();
+		return -1;
+	}
+
+	/* End gamemode */
+	gamemode_request_end();
+
+	/* Give gamemode time to restore settings */
+	usleep(500000);
+
+	/* Verify the mode is restored */
+	ret = run_external_process(get_args, output, -1);
+	if (ret != 0) {
+		LOG_ERROR("Failed to get X3D mode after gamemode end\n");
+		return -1;
+	}
+
+	/* Remove trailing newline from output */
+	newline = strchr(output, '\n');
+	if (newline) {
+		*newline = '\0';
+	}
+
+	/* Determine expected restored mode */
+	const char *expected_mode = (default_mode[0] != '\0') ? default_mode : initial_mode;
+
+	if (strcmp(output, expected_mode) != 0) {
+		LOG_ERROR("X3D mode was not restored to %s (was actually %s)!\n", expected_mode, output);
+		return -1;
+	}
+
+	return 0;
+}
+
 /**
  * game_mode_run_feature_tests runs a set of tests for each current feature (based on the current
  * config) returns 0 for success, -1 for failure
@@ -940,6 +1040,21 @@ static int game_mode_run_feature_tests(struct GameModeConfig *config)
 		if (iopriostatus == 1)
 			LOG_MSG("::: Passed (no ioprio configured)\n");
 		else if (iopriostatus == 0)
+			LOG_MSG("::: Passed\n");
+		else {
+			LOG_MSG("::: Failed!\n");
+			status = -1;
+		}
+	}
+
+	/* Was the AMD X3D mode changed? */
+	{
+		LOG_MSG("::: Verifying AMD X3D mode\n");
+		int x3dstatus = run_x3d_mode_tests(config);
+
+		if (x3dstatus == 1)
+			LOG_MSG("::: Passed (AMD X3D mode not configured)\n");
+		else if (x3dstatus == 0)
 			LOG_MSG("::: Passed\n");
 		else {
 			LOG_MSG("::: Failed!\n");
