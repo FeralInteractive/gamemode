@@ -46,6 +46,7 @@ POSSIBILITY OF SUCH DAMAGE.
 #define NV_PCIDEVICE_ATTRIBUTE "PCIDevice"
 #define NV_ATTRIBUTE_FORMAT "[gpu:%ld]/%s"
 #define NV_PERF_LEVEL_FORMAT "[%ld]"
+#define NV_ALL_PERF_LEVELS "AllPerformanceLevels"
 #define NV_ARG_MAX 128
 
 /* AMD constants */
@@ -185,49 +186,98 @@ static int get_gpu_state_nv(struct GameModeGPUInfo *info)
 	const char *attr;
 	char *end;
 
-	/* Get the GPUGraphicsClockOffset parameter */
-	snprintf(arg,
-	         NV_ARG_MAX,
-	         NV_ATTRIBUTE_FORMAT NV_PERF_LEVEL_FORMAT,
-	         info->device,
-	         NV_CORE_OFFSET_ATTRIBUTE,
-	         perf_level);
-	if ((attr = get_nv_attr(arg)) == NULL) {
-		return -1;
+	if (info->nv_per_profile_editable == 1) {
+		/* Get the GPUGraphicsClockOffset parameter */
+		snprintf(arg,
+		         NV_ARG_MAX,
+		         NV_ATTRIBUTE_FORMAT NV_PERF_LEVEL_FORMAT,
+		         info->device,
+		         NV_CORE_OFFSET_ATTRIBUTE,
+		         perf_level);
+
+		attr = get_nv_attr(arg); // Should declaration be joined with assigment?  :S
+		if (attr == NULL || attr[0] == '\0') {
+			return -1;
+		}
+
+		info->nv_core = strtol(attr, &end, 10);
+		if (end == attr) {
+			LOG_ERROR("Failed to parse output for \"%s\" output was \"%s\"!\n", arg, attr);
+			return -1;
+		}
+
+		/* Get the GPUMemoryTransferRateOffset parameter */
+		snprintf(arg,
+		         NV_ARG_MAX,
+		         NV_ATTRIBUTE_FORMAT NV_PERF_LEVEL_FORMAT,
+		         info->device,
+		         NV_MEM_OFFSET_ATTRIBUTE,
+		         perf_level);
+
+		attr = get_nv_attr(arg); // Should declaration be joined with assigment?  :S
+		if (attr == NULL || attr[0] == '\0') {
+			return -1;
+		}
+
+		info->nv_mem = strtol(attr, &end, 10);
+		if (end == attr) {
+			LOG_ERROR("Failed to parse output for \"%s\" output was \"%s\"!\n", arg, attr);
+			return -1;
+		}
+
+		/* Get the GPUPowerMizerMode parameter */
+		snprintf(arg, NV_ARG_MAX, NV_ATTRIBUTE_FORMAT, info->device, NV_POWERMIZER_MODE_ATTRIBUTE);
+		if ((attr = get_nv_attr(arg)) == NULL) {
+			return -1;
+		}
+
+		info->nv_powermizer_mode = strtol(attr, &end, 10);
+		if (end == attr) {
+			LOG_ERROR("Failed to parse output for \"%s\" output was \"%s\"!\n", arg, attr);
+			return -1;
+		}
 	}
 
-	info->nv_core = strtol(attr, &end, 10);
-	if (end == attr) {
-		LOG_ERROR("Failed to parse output for \"%s\" output was \"%s\"!\n", arg, attr);
-		return -1;
+	else if (info->nv_per_profile_editable == 0) {
+		/* Get the GPUGraphicsClockOffset parameter */
+		snprintf(arg,
+		         NV_ARG_MAX,
+		         NV_ATTRIBUTE_FORMAT NV_ALL_PERF_LEVELS,
+		         info->device,
+		         NV_CORE_OFFSET_ATTRIBUTE);
+
+		attr = get_nv_attr(arg); // Should declaration be joined with assigment?  :S
+		if (attr == NULL || attr[0] == '\0') {
+			return -1;
+		}
+
+		info->nv_core = strtol(attr, &end, 10);
+		if (end == attr) {
+			LOG_ERROR("Failed to parse output for \"%s\" output was \"%s\"!\n", arg, attr);
+			return -1;
+		}
+
+		/* Get the GPUMemoryTransferRateOffset parameter */
+		snprintf(arg,
+		         NV_ARG_MAX,
+		         NV_ATTRIBUTE_FORMAT NV_ALL_PERF_LEVELS,
+		         info->device,
+		         NV_MEM_OFFSET_ATTRIBUTE);
+
+		attr = get_nv_attr(arg); // Should declaration be joined with assigment?  :S
+		if (attr == NULL || attr[0] == '\0') {
+			return -1;
+		}
+
+		info->nv_mem = strtol(attr, &end, 10);
+		if (end == attr) {
+			LOG_ERROR("Failed to parse output for \"%s\" output was \"%s\"!\n", arg, attr);
+			return -1;
+		}
 	}
 
-	/* Get the GPUMemoryTransferRateOffset parameter */
-	snprintf(arg,
-	         NV_ARG_MAX,
-	         NV_ATTRIBUTE_FORMAT NV_PERF_LEVEL_FORMAT,
-	         info->device,
-	         NV_MEM_OFFSET_ATTRIBUTE,
-	         perf_level);
-	if ((attr = get_nv_attr(arg)) == NULL) {
-		return -1;
-	}
-
-	info->nv_mem = strtol(attr, &end, 10);
-	if (end == attr) {
-		LOG_ERROR("Failed to parse output for \"%s\" output was \"%s\"!\n", arg, attr);
-		return -1;
-	}
-
-	/* Get the GPUPowerMizerMode parameter */
-	snprintf(arg, NV_ARG_MAX, NV_ATTRIBUTE_FORMAT, info->device, NV_POWERMIZER_MODE_ATTRIBUTE);
-	if ((attr = get_nv_attr(arg)) == NULL) {
-		return -1;
-	}
-
-	info->nv_powermizer_mode = strtol(attr, &end, 10);
-	if (end == attr) {
-		LOG_ERROR("Failed to parse output for \"%s\" output was \"%s\"!\n", arg, attr);
+	else {
+		LOG_ERROR("nv_per_profile_editable should be 0 or 1!");
 		return -1;
 	}
 
@@ -253,44 +303,74 @@ static int set_gpu_state_nv(struct GameModeGPUInfo *info)
 
 	char arg[NV_ARG_MAX] = { 0 };
 
-	/* Set the GPUGraphicsClockOffset parameter */
-	if (info->nv_core != -1) {
-		snprintf(arg,
-		         NV_ARG_MAX,
-		         NV_ATTRIBUTE_FORMAT NV_PERF_LEVEL_FORMAT "=%ld",
-		         info->device,
-		         NV_CORE_OFFSET_ATTRIBUTE,
-		         perf_level,
-		         info->nv_core);
-		if (set_nv_attr(arg) != 0) {
-			status = -1;
+	if (info->nv_per_profile_editable == 1) {
+		/* Set the GPUGraphicsClockOffset parameter */
+		if (info->nv_core != -1) {
+			snprintf(arg,
+			         NV_ARG_MAX,
+			         NV_ATTRIBUTE_FORMAT NV_PERF_LEVEL_FORMAT "=%ld",
+			         info->device,
+			         NV_CORE_OFFSET_ATTRIBUTE,
+			         perf_level,
+			         info->nv_core);
+			if (set_nv_attr(arg) != 0) {
+				status = -1;
+			}
+		}
+
+		/* Set the GPUMemoryTransferRateOffset parameter */
+		if (info->nv_mem != -1) {
+			snprintf(arg,
+			         NV_ARG_MAX,
+			         NV_ATTRIBUTE_FORMAT NV_PERF_LEVEL_FORMAT "=%ld",
+			         info->device,
+			         NV_MEM_OFFSET_ATTRIBUTE,
+			         perf_level,
+			         info->nv_mem);
+			if (set_nv_attr(arg) != 0) {
+				status = -1;
+			}
+		}
+
+		/* Set the GPUPowerMizerMode parameter if requested */
+		if (info->nv_powermizer_mode != -1) {
+			snprintf(arg,
+			         NV_ARG_MAX,
+			         NV_ATTRIBUTE_FORMAT "=%ld",
+			         info->device,
+			         NV_POWERMIZER_MODE_ATTRIBUTE,
+			         info->nv_powermizer_mode);
+			if (set_nv_attr(arg) != 0) {
+				status = -1;
+			}
 		}
 	}
 
-	/* Set the GPUMemoryTransferRateOffset parameter */
-	if (info->nv_mem != -1) {
-		snprintf(arg,
-		         NV_ARG_MAX,
-		         NV_ATTRIBUTE_FORMAT NV_PERF_LEVEL_FORMAT "=%ld",
-		         info->device,
-		         NV_MEM_OFFSET_ATTRIBUTE,
-		         perf_level,
-		         info->nv_mem);
-		if (set_nv_attr(arg) != 0) {
-			status = -1;
+	else if (info->nv_per_profile_editable == 0) {
+		/* Set the GPUGraphicsClockOffset parameter */
+		if (info->nv_core != -1) {
+			snprintf(arg,
+			         NV_ARG_MAX,
+			         NV_ATTRIBUTE_FORMAT NV_ALL_PERF_LEVELS "=%ld",
+			         info->device,
+			         NV_CORE_OFFSET_ATTRIBUTE,
+			         info->nv_core);
+			if (set_nv_attr(arg) != 0) {
+				status = -1;
+			}
 		}
-	}
 
-	/* Set the GPUPowerMizerMode parameter if requested */
-	if (info->nv_powermizer_mode != -1) {
-		snprintf(arg,
-		         NV_ARG_MAX,
-		         NV_ATTRIBUTE_FORMAT "=%ld",
-		         info->device,
-		         NV_POWERMIZER_MODE_ATTRIBUTE,
-		         info->nv_powermizer_mode);
-		if (set_nv_attr(arg) != 0) {
-			status = -1;
+		/* Set the GPUMemoryTransferRateOffset parameter */
+		if (info->nv_mem != -1) {
+			snprintf(arg,
+			         NV_ARG_MAX,
+			         NV_ATTRIBUTE_FORMAT NV_ALL_PERF_LEVELS "=%ld",
+			         info->device,
+			         NV_MEM_OFFSET_ATTRIBUTE,
+			         info->nv_mem);
+			if (set_nv_attr(arg) != 0) {
+				status = -1;
+			}
 		}
 	}
 
@@ -427,10 +507,17 @@ int main(int argc, char *argv[])
 	struct GameModeGPUInfo info;
 	memset(&info, 0, sizeof(info));
 
-	if (argc == 3 && strncmp(argv[2], "get", 3) == 0) {
+	if (argc >= 3 && strncmp(argv[2], "get", 3) == 0) {
 		/* Get and verify the vendor and device */
 		info.device = get_device(argv[1]);
 		info.vendor = gamemode_get_gpu_vendor(info.device);
+
+		/* Check for editable profiles argument */
+		if (argc == 3) {
+			info.nv_per_profile_editable = 1; /* If not specified, default to editable profiles */
+		} else if (argc == 4) {
+			info.nv_per_profile_editable = get_generic_value(argv[3]);
+		}
 
 		/* Fetch the state and print it out */
 		switch (info.vendor) {
@@ -471,9 +558,15 @@ int main(int argc, char *argv[])
 			info.device = get_gpu_index_id_nv(&info);
 
 			/* Optional */
+			/* If no per profile editable is defined, default to 1 */
 			info.nv_powermizer_mode = -1;
-			if (argc >= 6)
+			info.nv_per_profile_editable = 1;
+			if (argc >= 6) {
 				info.nv_powermizer_mode = get_generic_value(argv[5]);
+				if (argc == 7) {
+					info.nv_per_profile_editable = get_generic_value(argv[6]);
+				}
+			}
 
 			return set_gpu_state_nv(&info);
 			break;
