@@ -134,6 +134,26 @@ static int method_query_status(sd_bus_message *m, void *userdata,
 }
 
 /**
+ * Handles the RestartGamemode D-BUS Method
+ */
+static int method_restart_gamemode(sd_bus_message *m, void *userdata,
+                                   __attribute__((unused)) sd_bus_error *ret_error)
+{
+	int pid = 0;
+	GameModeContext *context = userdata;
+
+	int ret = sd_bus_message_read(m, "i", &pid);
+	if (ret < 0) {
+		LOG_ERROR("Failed to parse input parameters: %s\n", strerror(-ret));
+		return ret;
+	}
+
+	int status = game_mode_context_restart(context, (pid_t)pid, (pid_t)pid);
+
+	return sd_bus_reply_method_return(m, "i", status);
+}
+
+/**
  * Handles the RegisterGameByPID D-BUS Method
  */
 static int method_register_game_by_pid(sd_bus_message *m, void *userdata,
@@ -402,6 +422,7 @@ static const sd_bus_vtable gamemode_vtable[] = {
 	SD_BUS_METHOD("RegisterGame", "i", "i", method_register_game, SD_BUS_VTABLE_UNPRIVILEGED),
 	SD_BUS_METHOD("UnregisterGame", "i", "i", method_unregister_game, SD_BUS_VTABLE_UNPRIVILEGED),
 	SD_BUS_METHOD("QueryStatus", "i", "i", method_query_status, SD_BUS_VTABLE_UNPRIVILEGED),
+	SD_BUS_METHOD("RestartGamemode", "i", "i", method_restart_gamemode, SD_BUS_VTABLE_UNPRIVILEGED),
 	SD_BUS_METHOD("RegisterGameByPID", "ii", "i", method_register_game_by_pid,
 	              SD_BUS_VTABLE_UNPRIVILEGED),
 	SD_BUS_METHOD("UnregisterGameByPID", "ii", "i", method_unregister_game_by_pid,

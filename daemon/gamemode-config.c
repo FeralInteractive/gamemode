@@ -110,10 +110,13 @@ struct GameModeConfig {
 		long nv_core_clock_mhz_offset;
 		long nv_mem_clock_mhz_offset;
 		long nv_powermizer_mode;
+		long nv_per_profile_editable;
 		char amd_performance_level[CONFIG_VALUE_MAX];
 
 		char cpu_park_cores[CONFIG_VALUE_MAX];
 		char cpu_pin_cores[CONFIG_VALUE_MAX];
+		char amd_x3d_mode_desired[CONFIG_VALUE_MAX];
+		char amd_x3d_mode_default[CONFIG_VALUE_MAX];
 
 		long require_supervisor;
 		char supervisor_whitelist[CONFIG_LIST_MAX][CONFIG_VALUE_MAX];
@@ -242,6 +245,23 @@ static bool get_string_value(const char *value, char output[CONFIG_VALUE_MAX])
 	return true;
 }
 
+/*
+ * Get and validate an x3d mode value
+ */
+static bool get_x3d_mode_value(const char *name, const char *value, char output[CONFIG_VALUE_MAX])
+{
+	if (strcmp(value, "frequency") != 0 && strcmp(value, "cache") != 0) {
+		LOG_ERROR("Config: %s has invalid value '%s'. Valid values are 'frequency' or 'cache'\n",
+		          name,
+		          value);
+		return false;
+	}
+
+	strncpy(output, value, CONFIG_VALUE_MAX - 1);
+	output[CONFIG_VALUE_MAX - 1] = '\0';
+	return true;
+}
+
 /* Controls whether to read the protected config variables */
 static bool load_protected = false;
 
@@ -308,6 +328,8 @@ static int inih_handler(void *user, const char *section, const char *name, const
 			valid = get_long_value(name, value, &self->values.nv_mem_clock_mhz_offset);
 		} else if (strcmp(name, "nv_powermizer_mode") == 0) {
 			valid = get_long_value(name, value, &self->values.nv_powermizer_mode);
+		} else if (strcmp(name, "nv_per_profile_editable") == 0) {
+			valid = get_long_value(name, value, &self->values.nv_per_profile_editable);
 		} else if (strcmp(name, "amd_performance_level") == 0) {
 			valid = get_string_value(value, self->values.amd_performance_level);
 		}
@@ -316,6 +338,10 @@ static int inih_handler(void *user, const char *section, const char *name, const
 			valid = get_string_value(value, self->values.cpu_park_cores);
 		} else if (strcmp(name, "pin_cores") == 0) {
 			valid = get_string_value(value, self->values.cpu_pin_cores);
+		} else if (strcmp(name, "amd_x3d_mode_desired") == 0) {
+			valid = get_x3d_mode_value(name, value, self->values.amd_x3d_mode_desired);
+		} else if (strcmp(name, "amd_x3d_mode_default") == 0) {
+			valid = get_x3d_mode_value(name, value, self->values.amd_x3d_mode_default);
 		}
 	} else if (strcmp(section, "supervisor") == 0) {
 		/* Supervisor subsection */
@@ -387,6 +413,7 @@ static void load_config_files(GameModeConfig *self)
 	self->values.reaper_frequency = DEFAULT_REAPER_FREQ;
 	self->values.gpu_device = 0;
 	self->values.nv_powermizer_mode = -1;
+	self->values.nv_per_profile_editable = 1; /* Defaults to editable profiles */
 	self->values.nv_core_clock_mhz_offset = -1;
 	self->values.nv_mem_clock_mhz_offset = -1;
 	self->values.script_timeout = 10; /* Default to 10 seconds for scripts */
@@ -479,7 +506,7 @@ GameModeConfig *config_create(void)
 }
 
 /*
- * Initialise the config
+ * Initialize the config
  */
 void config_init(GameModeConfig *self)
 {
@@ -827,6 +854,7 @@ DEFINE_CONFIG_GET(gpu_device)
 DEFINE_CONFIG_GET(nv_core_clock_mhz_offset)
 DEFINE_CONFIG_GET(nv_mem_clock_mhz_offset)
 DEFINE_CONFIG_GET(nv_powermizer_mode)
+DEFINE_CONFIG_GET(nv_per_profile_editable)
 
 void config_get_amd_performance_level(GameModeConfig *self, char value[CONFIG_VALUE_MAX])
 {
@@ -859,6 +887,22 @@ void config_get_cpu_pin_cores(GameModeConfig *self, char value[CONFIG_VALUE_MAX]
 	                     value,
 	                     &self->values.cpu_pin_cores,
 	                     sizeof(self->values.cpu_pin_cores));
+}
+
+void config_get_amd_x3d_mode_desired(GameModeConfig *self, char value[CONFIG_VALUE_MAX])
+{
+	memcpy_locked_config(self,
+	                     value,
+	                     &self->values.amd_x3d_mode_desired,
+	                     sizeof(self->values.amd_x3d_mode_desired));
+}
+
+void config_get_amd_x3d_mode_default(GameModeConfig *self, char value[CONFIG_VALUE_MAX])
+{
+	memcpy_locked_config(self,
+	                     value,
+	                     &self->values.amd_x3d_mode_default,
+	                     sizeof(self->values.amd_x3d_mode_default));
 }
 
 /*

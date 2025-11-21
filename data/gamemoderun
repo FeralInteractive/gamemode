@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/sh
 # Helper script to launch games with gamemode
 
 # Check if we are running under a container via GAMEMODE_PROTON env var

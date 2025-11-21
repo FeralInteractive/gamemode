@@ -156,6 +156,16 @@ int game_mode_context_unregister(GameModeContext *self, pid_t pid, pid_t request
 int game_mode_context_query_status(GameModeContext *self, pid_t pid, pid_t requester);
 
 /**
+ * Restart gamemode if it is running
+ *
+ * @param pid Process ID for the remote client
+ * @returns 0 if gamemode was restarted
+ *          1 if gamemode was already deactivated
+ *          -2 if this request was rejected
+ */
+int game_mode_context_restart(GameModeContext *self, pid_t pid, pid_t requester);
+
+/**
  * Query the config of a gamemode context
  *
  * @param context A gamemode context
