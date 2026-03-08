@@ -70,7 +70,7 @@ GameMode depends on `meson` for building and `systemd` for internal communicatio
 already have a C development environment (gcc or clang, libc-devel, etc) installed.
 
 #### Ubuntu/Debian
-Note: Debian 13 and Ubuntu 25.04 (and later) need to install `systemd-dev` in addition to the dependencies below.
+Note: Debian 13 and Ubuntu 25.04 (and later) need to install `systemd-dev` and `libsystemd-dev` in addition to the dependencies below.
 ```bash
 apt update && apt install meson libsystemd-dev pkg-config ninja-build git dbus-user-session libdbus-1-dev libinih-dev build-essential
 ```
