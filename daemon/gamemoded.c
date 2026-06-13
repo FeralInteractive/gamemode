@@ -183,7 +183,8 @@ int main(int argc, char *argv[])
 		case 's':
 			if (optarg != NULL) {
 				pid_t pid = atoi(optarg);
-				switch (gamemode_query_status_for(pid)) {
+				int ret = gamemode_query_status_for(pid);
+				switch (ret) {
 				case 0: /* inactive */
 					LOG_MSG("gamemode is inactive\n");
 					break;
@@ -199,7 +200,7 @@ int main(int argc, char *argv[])
 					          gamemode_error_string());
 					exit(EXIT_FAILURE);
 				default:
-					LOG_ERROR("gamemode_query_status returned unexpected value 2\n");
+					LOG_ERROR("gamemode_query_status returned unexpected value %d\n", ret);
 					exit(EXIT_FAILURE);
 				}
 			} else {
