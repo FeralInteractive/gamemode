@@ -229,7 +229,8 @@ int main(int argc, char *argv[])
 				pid_t pid = atoi(optarg);
 
 				/* toggle gamemode for the process */
-				switch (gamemode_query_status_for(pid)) {
+				int ret = gamemode_query_status_for(pid);
+				switch (ret) {
 				case 0: /* inactive */
 				case 1: /* active not not registered */
 					LOG_MSG("gamemode not active for client, requesting start for %d...\n", pid);
@@ -256,6 +257,11 @@ int main(int argc, char *argv[])
 					          pid,
 					          gamemode_error_string());
 					exit(EXIT_FAILURE);
+				default:
+					LOG_ERROR("gamemode_query_status_for(%d) returned unexpected value %d\n",
+					          pid,
+					          ret);
+					exit(EXIT_FAILURE);
 				}
 
 			} else {
@@ -266,7 +272,8 @@ int main(int argc, char *argv[])
 				}
 
 				/* Request and report on the status */
-				switch (gamemode_query_status()) {
+				int ret = gamemode_query_status();
+				switch (ret) {
 				case 2: /* active for this client */
 					LOG_MSG("gamemode request succeeded and is active\n");
 					break;
@@ -278,6 +285,9 @@ int main(int argc, char *argv[])
 					exit(EXIT_FAILURE);
 				case -1: /* error */
 					LOG_ERROR("gamemode_query_status failed: %s\n", gamemode_error_string());
+					exit(EXIT_FAILURE);
+				default:
+					LOG_ERROR("gamemode_query_status returned unexpected value %d\n", ret);
 					exit(EXIT_FAILURE);
 				}
 
@@ -297,7 +307,8 @@ int main(int argc, char *argv[])
 			exit(EXIT_SUCCESS);
 
 		case 'R':
-			switch (gamemode_request_restart()) {
+			int ret = gamemode_request_restart();
+			switch (ret) {
 			case 0: /* success */
 				LOG_MSG("gamemode restart succeeded\n");
 				exit(EXIT_SUCCESS);
@@ -306,6 +317,9 @@ int main(int argc, char *argv[])
 				break;
 			case -1: /* error */
 				LOG_ERROR("gamemode_request_restart failed: %s\n", gamemode_error_string());
+				break;
+			default:
+				LOG_ERROR("gamemode_request_restart returned unexpected value %d\n", ret);
 				break;
 			}
 			exit(EXIT_FAILURE);
