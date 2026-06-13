@@ -1250,6 +1250,8 @@ static void *game_mode_context_reaper(void *userdata)
 		if (config_needs_reload(self->config)) {
 			LOG_MSG("Detected config file changes\n");
 			game_mode_reload_config_internal(self);
+			/* The reaper interval may have changed in the config, reload it */
+			reaper_interval = config_get_reaper_frequency(self->config);
 		}
 
 		ts.tv_sec = time(NULL) + reaper_interval;
