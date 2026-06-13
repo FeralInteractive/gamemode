@@ -658,7 +658,7 @@ static const sd_bus_vtable game_vtable[] = {
 /**
  * Main process loop for the daemon. Run until quitting has been requested.
  */
-void game_mode_context_loop(GameModeContext *context)
+__attribute__((noreturn)) void game_mode_context_loop(GameModeContext *context)
 {
 	/* Set up function to handle clean up of resources */
 	atexit(clean_up);

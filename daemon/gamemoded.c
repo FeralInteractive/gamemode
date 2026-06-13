@@ -353,9 +353,5 @@ int main(int argc, char *argv[])
 	/* Run the main dbus message loop */
 	game_mode_context_loop(context);
 
-	game_mode_context_destroy(context);
-
-	/* Log we're finished */
-	LOG_MSG("Quitting naturally...\n");
-	sd_notify(0, "STATUS=GameMode is quitting naturally...\n");
+	/* The contex loop is noreturn, exit is handled elsewhere */
 }
