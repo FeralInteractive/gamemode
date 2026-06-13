@@ -315,6 +315,7 @@ static int inih_handler(void *user, const char *section, const char *name, const
 			    "will be ignored!\n",
 			    name);
 			LOG_ERROR("Consider moving this option to /etc/gamemode.ini\n");
+			return 1;
 		}
 
 		/* GPU subsection */
