@@ -101,8 +101,8 @@ int game_mode_initialise_gpu(GameModeConfig *config, GameModeGPUInfo **info)
 		/* Reject values over some guessed values
 		 * If a user wants to go into very unsafe levels they can recompile
 		 */
-		const int nv_core_hard_limit = 200;
-		const int nv_mem_hard_limit = 2000;
+		const int nv_core_hard_limit = 300;
+		const int nv_mem_hard_limit = 3000;
 		if (new_info->nv_core > nv_core_hard_limit || new_info->nv_mem > nv_mem_hard_limit) {
 			LOG_ERROR(
 			    "NVIDIA Overclock value above safety levels of +%d (core) +%d (mem), will "
